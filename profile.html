@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple Account - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">Apple Account</h1>
+            <button class="edit-btn" onclick="editProfile()">Edit</button>
+        </div>
+
+        <!-- Profile Content -->
+        <div class="settings-content">
+            <!-- User Profile Card -->
+            <div class="profile-card-large">
+                <div class="profile-avatar-large">
+                    <span class="initials-large">U</span>
+                </div>
+                <div class="profile-info-large">
+                    <div class="profile-name-large">User</div>
+                    <div class="profile-email">user@icloud.com</div>
+                    <div class="profile-status">Apple Account</div>
+                </div>
+            </div>
+
+            <!-- Account Services -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showiCloud()">
+                    <div class="setting-icon icloud">☁️</div>
+                    <div class="setting-label">iCloud</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showAppStore()">
+                    <div class="setting-icon appstore">📱</div>
+                    <div class="setting-label">App Store & iTunes Store</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showWallet()">
+                    <div class="setting-icon wallet">💳</div>
+                    <div class="setting-label">Wallet & Apple Pay</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showSubscriptions()">
+                    <div class="setting-icon subscriptions">📊</div>
+                    <div class="setting-label">Subscriptions</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Device Management -->
+            <div class="settings-group">
+                <div class="section-header">DEVICES</div>
+                
+                <div class="device-card" onclick="showDeviceDetails('iPad')">
+                    <div class="device-info">
+                        <div class="device-icon">📱</div>
+                        <div class="device-details">
+                            <div class="device-name">user's iPad</div>
+                            <div class="device-model">iPad (10th generation)</div>
+                            <div class="device-status">This device</div>
+                        </div>
+                    </div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="device-card" onclick="showDeviceDetails('iPhone')">
+                    <div class="device-info">
+                        <div class="device-icon">📱</div>
+                        <div class="device-details">
+                            <div class="device-name">user's iPhone</div>
+                            <div class="device-model">iPhone 15 Pro</div>
+                            <div class="device-status">Last seen 2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Security -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showSignInSecurity()">
+                    <div class="setting-icon security">🔒</div>
+                    <div class="setting-label">Sign-In & Security</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showPrivacy()">
+                    <div class="setting-icon privacy">🛡️</div>
+                    <div class="setting-label">Privacy & Security</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Storage -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showiCloudStorage()">
+                    <div class="setting-label">iCloud Storage</div>
+                    <div class="setting-value">2.1 GB of 5 GB Used</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="storage-bar">
+                    <div class="storage-used" style="width: 42%;"></div>
+                </div>
+                
+                <div class="storage-legend">
+                    <div class="storage-item">
+                        <div class="storage-color photos"></div>
+                        <span>Photos</span>
+                        <span>1.2 GB</span>
+                    </div>
+                    <div class="storage-item">
+                        <div class="storage-color backup"></div>
+                        <span>Backup</span>
+                        <span>654 MB</span>
+                    </div>
+                    <div class="storage-item">
+                        <div class="storage-color documents"></div>
+                        <span>Documents</span>
+                        <span>243 MB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Family Sharing -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showFamilySharing()">
+                    <div class="setting-icon family">👨‍👩‍👧‍👦</div>
+                    <div class="setting-label">Family Sharing</div>
+                    <div class="setting-value">Set Up</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showAccountActions()">
+                    <div class="setting-label">Account Settings</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Sign Out -->
+            <div class="settings-group">
+                <div class="setting-row danger" onclick="signOut()">
+                    <div class="setting-label danger-text">Sign Out</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script src="profile.js"></script>
+</body>
+</html>

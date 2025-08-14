@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">Wi-Fi</h1>
+            <button class="edit-btn" id="editBtn">Edit</button>
+        </div>
+
+        <!-- Wi-Fi Content -->
+        <div class="settings-content">
+            <!-- Wi-Fi Icon and Description -->
+            <div class="feature-banner">
+                <div class="feature-icon wifi-icon">📶</div>
+                <div class="feature-info">
+                    <h2>Wi-Fi</h2>
+                    <p>Connect to Wi-Fi, view available networks, and manage settings for joining networks and nearby hotspots. <span class="learn-more">Learn more...</span></p>
+                </div>
+            </div>
+
+            <!-- Wi-Fi Toggle -->
+            <div class="settings-group">
+                <div class="setting-row">
+                    <div class="setting-label">Wi-Fi</div>
+                    <div class="toggle-switch active" id="wifiToggle" onclick="toggleWiFi()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Network -->
+            <div class="settings-group current-network">
+                <div class="network-row connected" onclick="showNetworkDetails('Free WiFi')">
+                    <div class="network-info">
+                        <div class="network-name">✓ Free WiFi</div>
+                        <div class="network-status">Weak Security</div>
+                    </div>
+                    <div class="network-icons">
+                        <span class="info-icon">🛈</span>
+                        <div class="signal-strength strong"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Networks -->
+            <div class="settings-group networks-section">
+                <div class="section-header">NETWORKS</div>
+                
+                <div class="network-row" onclick="connectToNetwork('Gloria1')">
+                    <div class="network-info">
+                        <div class="network-name">Gloria1</div>
+                    </div>
+                    <div class="network-icons">
+                        <span class="lock-icon">🔒</span>
+                        <span class="info-icon">🛈</span>
+                        <div class="signal-strength strong"></div>
+                    </div>
+                </div>
+
+                <div class="network-row" onclick="connectToNetwork('Mandi')">
+                    <div class="network-info">
+                        <div class="network-name">Mandi</div>
+                    </div>
+                    <div class="network-icons">
+                        <span class="lock-icon">🔒</span>
+                        <span class="info-icon">🛈</span>
+                        <div class="signal-strength medium"></div>
+                    </div>
+                </div>
+
+                <div class="network-row" onclick="showOtherNetworks()">
+                    <div class="network-info">
+                        <div class="network-name">Other...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Settings -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showNetworkNotifications()">
+                    <div class="setting-label">Ask to Join Networks</div>
+                    <div class="setting-value">Notify</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="setting-row" onclick="showHotspotSettings()">
+                    <div class="setting-label">Auto-Join Hotspot</div>
+                    <div class="setting-value">Ask to Join</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <!-- Network Password Modal -->
+    <div class="modal" id="passwordModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalNetworkName">Gloria1</h3>
+                <p>Enter the password for "Gloria1"</p>
+            </div>
+            <div class="modal-body">
+                <input type="password" id="networkPassword" placeholder="Password" class="password-input">
+                <div class="password-toggle" onclick="togglePasswordVisibility()">Show</div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn connect" onclick="connectWithPassword()">Join</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="wifi.js"></script>
+</body>
+</html>

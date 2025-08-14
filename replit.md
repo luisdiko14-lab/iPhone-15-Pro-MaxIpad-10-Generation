@@ -1,8 +1,8 @@
-# VPN Configuration Interface
+# iOS Settings App Replica
 
 ## Overview
 
-A web-based VPN configuration interface that provides a mobile-first, iOS-style user interface for setting up VPN connections. The application allows users to configure various VPN types (IKEv2, L2TP, IPSec) with comprehensive settings including server details, authentication credentials, and proxy configurations. Built as a single-page application using vanilla HTML, CSS, and JavaScript with a focus on clean design and user experience.
+A comprehensive web-based iOS Settings app replica that provides an authentic mobile-first interface for managing device settings. The application includes a complete settings ecosystem with functional pages for Wi-Fi, Bluetooth, Cellular Data, Battery, General settings, Control Centre, Display & Brightness, and Apple Account/iCloud management. Features authentic iOS dark theme, interactive functionality, real-time updates, and proper navigation throughout all settings categories. Built as a single-page application using vanilla HTML, CSS, and JavaScript with focus on authentic iOS design patterns and user experience.
 
 ## User Preferences
 
@@ -27,10 +27,13 @@ Preferred communication style: Simple, everyday language.
 - **Form Validation**: Real-time input validation with visual feedback
 
 ### User Interface Components
-- **Header Navigation**: Cancel/Done button pattern common in mobile interfaces
-- **Form Sections**: Grouped input fields with consistent styling
-- **Toggle Controls**: Custom proxy configuration toggles
-- **Input Types**: Text inputs, dropdowns, and toggle buttons with appropriate validation
+- **Status Bar**: Authentic iOS status bar with GMT-6 time, Verizon carrier, Wi-Fi, and battery indicators
+- **Header Navigation**: Back/Edit button patterns with proper iOS styling
+- **Settings Groups**: Grouped settings with rounded corners and proper spacing
+- **Toggle Controls**: iOS-style toggle switches with smooth animations
+- **Modal Dialogs**: Native iOS-style modals for confirmations and detailed settings
+- **Navigation**: Smooth page transitions with proper back navigation
+- **Interactive Elements**: Touch feedback, haptic simulation, and real-time updates
 
 ## External Dependencies
 
@@ -43,7 +46,12 @@ Preferred communication style: Simple, everyday language.
 - **Native CSS**: No CSS frameworks or preprocessors
 - **Self-Contained**: All assets and functionality contained within the three core files
 
-### Supported VPN Protocols
-- **IKEv2**: Internet Key Exchange version 2 protocol support
-- **L2TP**: Layer 2 Tunneling Protocol configuration
-- **IPSec**: Internet Protocol Security setup options
+### Functional Settings Pages
+- **Wi-Fi**: Network management, connection, password entry, and network discovery
+- **Bluetooth**: Device pairing, connection states, battery levels, and scanning
+- **Cellular Data**: SIM information (+1 834 872 127), data usage tracking, app permissions
+- **Battery**: Usage analytics, charts, Low Power Mode, and optimization settings
+- **General**: About device, software updates, storage management, and system settings
+- **Control Centre**: Customizable control layout with drag-and-drop functionality
+- **Display & Brightness**: Appearance modes, brightness control, True Tone, Night Shift
+- **Apple Account**: iCloud profile, device management, storage visualization, Family Sharing
