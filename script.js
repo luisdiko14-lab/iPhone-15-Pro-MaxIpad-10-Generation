@@ -18,7 +18,7 @@ class VPNConfig {
         this.proxyUrl = document.getElementById('proxyUrl');
 
         // Buttons
-        this.cancelBtn = document.getElementById('cancelBtn');
+        this.backBtn = document.getElementById('backBtn');
         this.doneBtn = document.getElementById('doneBtn');
         this.proxyBtns = document.querySelectorAll('.proxy-btn');
 
@@ -32,8 +32,7 @@ class VPNConfig {
     }
 
     setupEventListeners() {
-        // Header buttons
-        this.cancelBtn.addEventListener('click', () => this.handleCancel());
+        // Header buttons  
         this.doneBtn.addEventListener('click', () => this.handleDone());
 
         // Proxy toggle buttons
@@ -213,8 +212,7 @@ class VPNConfig {
             this.loadConfiguration(this.originalConfig);
         }
 
-        // Add cancel animation
-        this.addButtonAnimation(this.cancelBtn);
+        // Add navigation animation
         
         // You could add navigation logic here
         console.log('Configuration cancelled');
@@ -378,6 +376,18 @@ class VPNConfig {
             }
         }
     }
+}
+
+// Navigation function for back button
+function navigateBack() {
+    // Add navigation animation
+    const container = document.querySelector('.container');
+    container.style.opacity = '0.8';
+    container.style.transform = 'translateX(20px)';
+    
+    setTimeout(() => {
+        window.location.href = 'home.html';
+    }, 150);
 }
 
 // Initialize the VPN configuration interface when DOM is loaded
