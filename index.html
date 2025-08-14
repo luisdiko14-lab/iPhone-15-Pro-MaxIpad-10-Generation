@@ -8,9 +8,25 @@
 </head>
 <body>
     <div class="container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">14:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Thu 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="header">
-            <button class="header-btn cancel-btn" id="cancelBtn">Cancel</button>
+            <button class="header-btn back-btn" id="backBtn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>VPN & Device Management</span>
+            </button>
             <h1 class="header-title">VPN</h1>
             <button class="header-btn done-btn" id="doneBtn">Done</button>
         </div>
@@ -101,6 +117,9 @@
                 <span>VPN Configuration Saved</span>
             </div>
         </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
     </div>
 
     <script src="script.js"></script>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS Settings</title>
+    <link rel="stylesheet" href="home.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">14:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Thu 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Header -->
+        <div class="settings-header">
+            <h1>Settings</h1>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-section">
+            <div class="search-bar">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="Search" class="search-input">
+                <span class="mic-icon">🎤</span>
+            </div>
+        </div>
+
+        <!-- User Profile Section -->
+        <div class="profile-section">
+            <div class="profile-card" onclick="navigateTo('profile.html')">
+                <div class="profile-avatar">
+                    <span class="initials">LD</span>
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name">Luis Diko</div>
+                    <div class="profile-subtitle">Apple Account, iCloud and more</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Settings -->
+        <div class="quick-settings">
+            <div class="setting-row" onclick="toggleAirplane()">
+                <div class="setting-icon airplane">✈️</div>
+                <div class="setting-label">Airplane Mode</div>
+                <div class="toggle-switch" id="airplaneToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('wifi.html')">
+                <div class="setting-icon wifi">📶</div>
+                <div class="setting-label">Wi-Fi</div>
+                <div class="setting-value">LUISI</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('bluetooth.html')">
+                <div class="setting-icon bluetooth">🔗</div>
+                <div class="setting-label">Bluetooth</div>
+                <div class="setting-value">Not Connected</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('battery.html')">
+                <div class="setting-icon battery">🔋</div>
+                <div class="setting-label">Battery</div>
+            </div>
+        </div>
+
+        <!-- Main Settings Groups -->
+        <div class="settings-group">
+            <div class="setting-row" onclick="navigateTo('general.html')">
+                <div class="setting-icon general">⚙️</div>
+                <div class="setting-label">General</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('accessibility.html')">
+                <div class="setting-icon accessibility">♿</div>
+                <div class="setting-label">Accessibility</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('apple-pencil.html')">
+                <div class="setting-icon pencil">✏️</div>
+                <div class="setting-label">Apple Pencil</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('camera.html')">
+                <div class="setting-icon camera">📷</div>
+                <div class="setting-label">Camera</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('control-center.html')">
+                <div class="setting-icon control">🔘</div>
+                <div class="setting-label">Control Centre</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('display.html')">
+                <div class="setting-icon display">☀️</div>
+                <div class="setting-label">Display & Brightness</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('home-screen.html')">
+                <div class="setting-icon home">📱</div>
+                <div class="setting-label">Home Screen & App Library</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('multitasking.html')">
+                <div class="setting-icon multitask">⊞</div>
+                <div class="setting-label">Multitasking & Gestures</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- More Settings -->
+        <div class="settings-group">
+            <div class="setting-row" onclick="navigateTo('search.html')">
+                <div class="setting-icon search">🔍</div>
+                <div class="setting-label">Search</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('siri.html')">
+                <div class="setting-icon siri">🎤</div>
+                <div class="setting-label">Siri</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('wallpaper.html')">
+                <div class="setting-icon wallpaper">🖼️</div>
+                <div class="setting-label">Wallpaper</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- Privacy & Security -->
+        <div class="settings-group">
+            <div class="setting-row" onclick="navigateTo('notifications.html')">
+                <div class="setting-icon notifications">🔔</div>
+                <div class="setting-label">Notifications</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('sounds.html')">
+                <div class="setting-icon sounds">🔊</div>
+                <div class="setting-label">Sounds</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('focus.html')">
+                <div class="setting-icon focus">🌙</div>
+                <div class="setting-label">Focus</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('screen-time.html')">
+                <div class="setting-icon screentime">⏰</div>
+                <div class="setting-label">Screen Time</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('touchid.html')">
+                <div class="setting-icon touchid">👆</div>
+                <div class="setting-label">Touch ID & Passcode</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('privacy.html')">
+                <div class="setting-icon privacy">🔒</div>
+                <div class="setting-label">Privacy & Security</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- Services -->
+        <div class="settings-group">
+            <div class="setting-row" onclick="navigateTo('gamecenter.html')">
+                <div class="setting-icon gamecenter">🎮</div>
+                <div class="setting-label">Game Center</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('icloud.html')">
+                <div class="setting-icon icloud">☁️</div>
+                <div class="setting-label">iCloud</div>
+                <div class="chevron">›</div>
+            </div>
+            
+            <div class="setting-row" onclick="navigateTo('wallet.html')">
+                <div class="setting-icon wallet">💳</div>
+                <div class="setting-label">Wallet & Apple Pay</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- VPN Section - This will navigate to our VPN config -->
+        <div class="settings-group">
+            <div class="setting-row vpn-setting" onclick="navigateTo('index.html')">
+                <div class="setting-icon vpn">🔐</div>
+                <div class="setting-label">VPN & Device Management</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- Apps -->
+        <div class="settings-group">
+            <div class="setting-row" onclick="navigateTo('apps.html')">
+                <div class="setting-icon apps">📱</div>
+                <div class="setting-label">Apps</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script src="home.js"></script>
+</body>
+</html>
