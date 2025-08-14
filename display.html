@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display & Brightness - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">Display & Brightness</h1>
+        </div>
+
+        <!-- Display Content -->
+        <div class="settings-content">
+            <!-- Appearance -->
+            <div class="settings-group">
+                <div class="section-header">APPEARANCE</div>
+                <div class="appearance-selector">
+                    <button class="appearance-option" id="lightMode" onclick="setAppearance('light')">
+                        <div class="appearance-preview light">
+                            <div class="preview-header"></div>
+                            <div class="preview-content">
+                                <div class="preview-line"></div>
+                                <div class="preview-line short"></div>
+                            </div>
+                        </div>
+                        <span>Light</span>
+                    </button>
+                    <button class="appearance-option active" id="darkMode" onclick="setAppearance('dark')">
+                        <div class="appearance-preview dark">
+                            <div class="preview-header"></div>
+                            <div class="preview-content">
+                                <div class="preview-line"></div>
+                                <div class="preview-line short"></div>
+                            </div>
+                        </div>
+                        <span>Dark</span>
+                    </button>
+                    <button class="appearance-option" id="autoMode" onclick="setAppearance('auto')">
+                        <div class="appearance-preview auto">
+                            <div class="preview-half light">
+                                <div class="preview-header"></div>
+                                <div class="preview-line"></div>
+                            </div>
+                            <div class="preview-half dark">
+                                <div class="preview-header"></div>
+                                <div class="preview-line"></div>
+                            </div>
+                        </div>
+                        <span>Automatic</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Brightness Slider -->
+            <div class="settings-group">
+                <div class="brightness-section">
+                    <div class="brightness-header">
+                        <span class="brightness-icon dim">☀️</span>
+                        <input type="range" id="brightnessSlider" class="brightness-slider" min="0" max="100" value="65" oninput="adjustBrightness(this.value)">
+                        <span class="brightness-icon bright">☀️</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto-Brightness -->
+            <div class="settings-group">
+                <div class="setting-row">
+                    <div class="setting-label">Auto-Brightness</div>
+                    <div class="toggle-switch active" id="autoBrightnessToggle" onclick="toggleAutoBrightness()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <p>Auto-Brightness adjusts your screen brightness based on current lighting conditions.</p>
+            </div>
+
+            <!-- True Tone -->
+            <div class="settings-group">
+                <div class="setting-row">
+                    <div class="setting-label">True Tone</div>
+                    <div class="toggle-switch active" id="trueToneToggle" onclick="toggleTrueTone()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <p>True Tone adjusts your display's color temperature to match your surrounding lighting conditions.</p>
+            </div>
+
+            <!-- Night Shift -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showNightShiftSettings()">
+                    <div class="setting-label">Night Shift</div>
+                    <div class="setting-value" id="nightShiftStatus">Off</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Auto-Lock -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showAutoLockSettings()">
+                    <div class="setting-label">Auto-Lock</div>
+                    <div class="setting-value" id="autoLockValue">5 Minutes</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Raise to Wake -->
+            <div class="settings-group">
+                <div class="setting-row">
+                    <div class="setting-label">Raise to Wake</div>
+                    <div class="toggle-switch active" id="raiseToWakeToggle" onclick="toggleRaiseToWake()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text Size -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showTextSizeSettings()">
+                    <div class="setting-label">Text Size</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showBoldTextSettings()">
+                    <div class="setting-label">Bold Text</div>
+                    <div class="toggle-switch" id="boldTextToggle" onclick="toggleBoldText()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Night Shift Modal -->
+        <div class="modal" id="nightShiftModal" style="display: none;">
+            <div class="modal-content night-shift-modal">
+                <div class="modal-header">
+                    <h3>Night Shift</h3>
+                    <button class="close-btn" onclick="closeNightShiftModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="night-shift-toggle">
+                        <div class="setting-row">
+                            <div class="setting-label">Scheduled</div>
+                            <div class="toggle-switch" id="nightShiftScheduleToggle" onclick="toggleNightShiftSchedule()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-options" id="scheduleOptions" style="display: none;">
+                        <div class="setting-row" onclick="setNightShiftSchedule('sunset')">
+                            <div class="setting-label">Sunset to Sunrise</div>
+                            <div class="radio-button selected"></div>
+                        </div>
+                        <div class="setting-row" onclick="setNightShiftSchedule('custom')">
+                            <div class="setting-label">Custom Schedule</div>
+                            <div class="radio-button"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="color-temperature">
+                        <div class="temp-header">
+                            <span>Color Temperature</span>
+                        </div>
+                        <div class="temp-slider-container">
+                            <span class="temp-label">Less Warm</span>
+                            <input type="range" id="colorTempSlider" class="temp-slider" min="0" max="100" value="50">
+                            <span class="temp-label">More Warm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auto-Lock Modal -->
+        <div class="modal" id="autoLockModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Auto-Lock</h3>
+                    <button class="close-btn" onclick="closeAutoLockModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="auto-lock-options">
+                        <div class="setting-row" onclick="setAutoLock('30s')">
+                            <div class="setting-label">30 Seconds</div>
+                            <div class="radio-button"></div>
+                        </div>
+                        <div class="setting-row" onclick="setAutoLock('1m')">
+                            <div class="setting-label">1 Minute</div>
+                            <div class="radio-button"></div>
+                        </div>
+                        <div class="setting-row" onclick="setAutoLock('2m')">
+                            <div class="setting-label">2 Minutes</div>
+                            <div class="radio-button"></div>
+                        </div>
+                        <div class="setting-row" onclick="setAutoLock('5m')">
+                            <div class="setting-label">5 Minutes</div>
+                            <div class="radio-button selected"></div>
+                        </div>
+                        <div class="setting-row" onclick="setAutoLock('10m')">
+                            <div class="setting-label">10 Minutes</div>
+                            <div class="radio-button"></div>
+                        </div>
+                        <div class="setting-row" onclick="setAutoLock('15m')">
+                            <div class="setting-label">15 Minutes</div>
+                            <div class="radio-button"></div>
+                        </div>
+                        <div class="setting-row" onclick="setAutoLock('never')">
+                            <div class="setting-label">Never</div>
+                            <div class="radio-button"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script src="display.js"></script>
+</body>
+</html>

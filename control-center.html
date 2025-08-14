@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Centre - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">Control Centre</h1>
+        </div>
+
+        <!-- Control Centre Content -->
+        <div class="settings-content">
+            <!-- Access Settings -->
+            <div class="settings-group">
+                <div class="setting-row">
+                    <div class="setting-label">Access Within Apps</div>
+                    <div class="toggle-switch active" id="accessWithinApps" onclick="toggleAccessWithinApps()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+                
+                <div class="setting-row">
+                    <div class="setting-label">Access on Lock Screen</div>
+                    <div class="toggle-switch active" id="accessOnLockScreen" onclick="toggleAccessOnLockScreen()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Included Controls -->
+            <div class="settings-group">
+                <div class="section-header">INCLUDED CONTROLS</div>
+                
+                <div class="control-item" draggable="true" ondragstart="dragStart(event)" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="control-info">
+                        <div class="control-icon connectivity">📡</div>
+                        <div class="control-details">
+                            <div class="control-name">Connectivity</div>
+                            <div class="control-desc">Network settings</div>
+                        </div>
+                    </div>
+                    <div class="drag-handle">≡</div>
+                </div>
+
+                <div class="control-item" draggable="true" ondragstart="dragStart(event)" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="control-info">
+                        <div class="control-icon music">🎵</div>
+                        <div class="control-details">
+                            <div class="control-name">Music Recognition</div>
+                            <div class="control-desc">Shazam</div>
+                        </div>
+                    </div>
+                    <div class="drag-handle">≡</div>
+                </div>
+
+                <div class="control-item" draggable="true" ondragstart="dragStart(event)" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="control-info">
+                        <div class="control-icon orientation">🔄</div>
+                        <div class="control-details">
+                            <div class="control-name">Orientation Lock</div>
+                            <div class="control-desc">Portrait/Landscape</div>
+                        </div>
+                    </div>
+                    <div class="drag-handle">≡</div>
+                </div>
+
+                <div class="control-item" draggable="true" ondragstart="dragStart(event)" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="control-info">
+                        <div class="control-icon focus">🌙</div>
+                        <div class="control-details">
+                            <div class="control-name">Focus</div>
+                            <div class="control-desc">Do Not Disturb</div>
+                        </div>
+                    </div>
+                    <div class="drag-handle">≡</div>
+                </div>
+
+                <div class="control-item" draggable="true" ondragstart="dragStart(event)" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="control-info">
+                        <div class="control-icon screen-recording">⏺️</div>
+                        <div class="control-details">
+                            <div class="control-name">Screen Recording</div>
+                            <div class="control-desc">Record your screen</div>
+                        </div>
+                    </div>
+                    <div class="drag-handle">≡</div>
+                </div>
+
+                <div class="control-item" draggable="true" ondragstart="dragStart(event)" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="control-info">
+                        <div class="control-icon timer">⏰</div>
+                        <div class="control-details">
+                            <div class="control-name">Timer</div>
+                            <div class="control-desc">Quick timer access</div>
+                        </div>
+                    </div>
+                    <div class="drag-handle">≡</div>
+                </div>
+            </div>
+
+            <!-- More Controls -->
+            <div class="settings-group">
+                <div class="section-header">MORE CONTROLS</div>
+                
+                <div class="control-item available" onclick="addControl(this)">
+                    <div class="control-info">
+                        <div class="control-icon calculator">🔢</div>
+                        <div class="control-details">
+                            <div class="control-name">Calculator</div>
+                            <div class="control-desc">Quick calculations</div>
+                        </div>
+                    </div>
+                    <div class="add-button">+</div>
+                </div>
+
+                <div class="control-item available" onclick="addControl(this)">
+                    <div class="control-info">
+                        <div class="control-icon camera">📷</div>
+                        <div class="control-details">
+                            <div class="control-name">Camera</div>
+                            <div class="control-desc">Quick camera access</div>
+                        </div>
+                    </div>
+                    <div class="add-button">+</div>
+                </div>
+
+                <div class="control-item available" onclick="addControl(this)">
+                    <div class="control-info">
+                        <div class="control-icon flashlight">🔦</div>
+                        <div class="control-details">
+                            <div class="control-name">Flashlight</div>
+                            <div class="control-desc">LED flashlight</div>
+                        </div>
+                    </div>
+                    <div class="add-button">+</div>
+                </div>
+
+                <div class="control-item available" onclick="addControl(this)">
+                    <div class="control-info">
+                        <div class="control-icon notes">📝</div>
+                        <div class="control-details">
+                            <div class="control-name">Notes</div>
+                            <div class="control-desc">Quick note taking</div>
+                        </div>
+                    </div>
+                    <div class="add-button">+</div>
+                </div>
+
+                <div class="control-item available" onclick="addControl(this)">
+                    <div class="control-info">
+                        <div class="control-icon stopwatch">⏱️</div>
+                        <div class="control-details">
+                            <div class="control-name">Stopwatch</div>
+                            <div class="control-desc">Time measurement</div>
+                        </div>
+                    </div>
+                    <div class="add-button">+</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Centre Preview -->
+        <div class="cc-preview" id="ccPreview" style="display: none;">
+            <div class="preview-content">
+                <div class="preview-header">
+                    <h3>Control Centre Preview</h3>
+                    <button onclick="closePreview()" class="close-btn">✕</button>
+                </div>
+                <div class="cc-grid">
+                    <div class="cc-card connectivity">📡</div>
+                    <div class="cc-card music">🎵</div>
+                    <div class="cc-card orientation">🔄</div>
+                    <div class="cc-card focus">🌙</div>
+                    <div class="cc-card screen-recording">⏺️</div>
+                    <div class="cc-card timer">⏰</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script src="control-center.js"></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battery - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">Battery</h1>
+        </div>
+
+        <!-- Battery Content -->
+        <div class="settings-content">
+            <!-- Battery Settings -->
+            <div class="settings-group">
+                <div class="setting-row">
+                    <div class="setting-label">Battery Percentage</div>
+                    <div class="toggle-switch active" id="batteryPercentageToggle" onclick="toggleBatteryPercentage()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-label">Low Power Mode</div>
+                    <div class="toggle-switch active" id="lowPowerToggle" onclick="toggleLowPowerMode()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Power Mode Info -->
+            <div class="info-section">
+                <p>Low Power Mode temporarily reduces background activity like downloads and mail fetch until you can fully charge your iPad.</p>
+            </div>
+
+            <!-- Insights and Suggestions -->
+            <div class="settings-group">
+                <div class="section-header">INSIGHTS AND SUGGESTIONS</div>
+                
+                <div class="insight-card">
+                    <div class="insight-icon">📊</div>
+                    <div class="insight-content">
+                        <div class="insight-title">Recent Usage</div>
+                        <div class="insight-description">Your iPad has been used more than usual since upgrading iOS, which may affect battery life.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Battery Usage Tabs -->
+            <div class="battery-tabs">
+                <button class="tab-button active" onclick="showBatteryUsage('24h')">Last 24 Hours</button>
+                <button class="tab-button" onclick="showBatteryUsage('10d')">Last 10 Days</button>
+            </div>
+
+            <!-- Battery Level Chart -->
+            <div class="battery-chart-section">
+                <div class="battery-status">
+                    <div class="charge-info">
+                        <span class="charge-text">Last Charged to 43%</span>
+                        <span class="charge-time">2h ago</span>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="battery-chart" id="batteryChart">
+                        <!-- Battery Level Chart -->
+                        <div class="chart-header">
+                            <span class="chart-label">BATTERY LEVEL</span>
+                            <span class="chart-percentage">100%</span>
+                        </div>
+                        <div class="chart-bars">
+                            <div class="chart-bar" style="height: 60%; background: #ffcc00;"></div>
+                            <div class="chart-bar" style="height: 45%; background: #ffcc00;"></div>
+                            <div class="chart-bar" style="height: 70%; background: #ffcc00;"></div>
+                            <div class="chart-bar" style="height: 55%; background: #ffcc00;"></div>
+                            <div class="chart-bar" style="height: 40%; background: #ffcc00;"></div>
+                            <div class="chart-bar" style="height: 65%; background: #ffcc00;"></div>
+                            <div class="chart-bar" style="height: 50%; background: #ff6b6b;"></div>
+                            <div class="chart-bar" style="height: 35%; background: #ff6b6b;"></div>
+                            <div class="chart-bar" style="height: 25%; background: #ff3b30;"></div>
+                            <div class="chart-bar" style="height: 30%; background: #30d158;"></div>
+                            <div class="chart-bar" style="height: 45%; background: #30d158;"></div>
+                            <div class="chart-bar" style="height: 40%; background: #ffcc00;"></div>
+                        </div>
+                        <div class="chart-timeline">
+                            <span>15</span>
+                            <span>18</span>
+                            <span>21</span>
+                            <span>00</span>
+                            <span>03</span>
+                            <span>06</span>
+                            <span>09</span>
+                            <span>12</span>
+                        </div>
+
+                        <!-- Activity Chart -->
+                        <div class="activity-chart">
+                            <div class="chart-header">
+                                <span class="chart-label">ACTIVITY</span>
+                                <span class="chart-time">60m</span>
+                            </div>
+                            <div class="activity-bars">
+                                <div class="activity-bar" style="height: 30%;"></div>
+                                <div class="activity-bar" style="height: 45%;"></div>
+                                <div class="activity-bar" style="height: 25%;"></div>
+                                <div class="activity-bar" style="height: 50%;"></div>
+                                <div class="activity-bar" style="height: 35%;"></div>
+                                <div class="activity-bar" style="height: 60%;"></div>
+                                <div class="activity-bar" style="height: 40%;"></div>
+                                <div class="activity-bar" style="height: 30%;"></div>
+                                <div class="activity-bar" style="height: 45%;"></div>
+                                <div class="activity-bar" style="height: 70%;"></div>
+                                <div class="activity-bar" style="height: 55%;"></div>
+                                <div class="activity-bar" style="height: 40%;"></div>
+                            </div>
+                            <div class="chart-timeline">
+                                <span>15</span>
+                                <span>18</span>
+                                <span>21</span>
+                                <span>00</span>
+                                <span>03</span>
+                                <span>06</span>
+                                <span>09</span>
+                                <span>12</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script src="battery.js"></script>
+</body>
+</html>

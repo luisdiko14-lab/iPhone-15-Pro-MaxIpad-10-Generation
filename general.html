@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>General - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">General</h1>
+        </div>
+
+        <!-- General Content -->
+        <div class="settings-content">
+            <!-- Main Settings -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showAbout()">
+                    <div class="setting-label">About</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showSoftwareUpdate()">
+                    <div class="setting-label">Software Update</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showAirDropHandoff()">
+                    <div class="setting-label">AirDrop & Handoff</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showPictureInPicture()">
+                    <div class="setting-label">Picture in Picture</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showCarPlay()">
+                    <div class="setting-label">CarPlay</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showAirPlay()">
+                    <div class="setting-label">AirPlay & Handoff</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showKeyboard()">
+                    <div class="setting-label">Keyboard</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showFonts()">
+                    <div class="setting-label">Fonts</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showLanguageRegion()">
+                    <div class="setting-label">Language & Region</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showDictionary()">
+                    <div class="setting-label">Dictionary</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Storage and Transfer -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showIPadStorage()">
+                    <div class="setting-label">iPad Storage</div>
+                    <div class="chevron">›</div>
+                </div>
+                
+                <div class="setting-row" onclick="showBackgroundRefresh()">
+                    <div class="setting-label">Background App Refresh</div>
+                    <div class="setting-value">On</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Date & Time -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showDateTime()">
+                    <div class="setting-label">Date & Time</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- Reset Options -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showTransferReset()">
+                    <div class="setting-label">Transfer or Reset iPad</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+
+            <!-- VPN & Device Management -->
+            <div class="settings-group">
+                <div class="setting-row" onclick="showVPNManagement()">
+                    <div class="setting-label">VPN & Device Management</div>
+                    <div class="chevron">›</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Modal -->
+        <div class="modal" id="aboutModal" style="display: none;">
+            <div class="modal-content about-modal">
+                <div class="modal-header">
+                    <h3>About</h3>
+                    <button class="close-btn" onclick="closeAboutModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="about-section">
+                        <div class="about-row">
+                            <span class="about-label">Name</span>
+                            <span class="about-value">user's iPad</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">iPadOS Version</span>
+                            <span class="about-value">18.6</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Model Name</span>
+                            <span class="about-value">iPad (10th generation)</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Model Number</span>
+                            <span class="about-value">MPQ13AB/A</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Serial Number</span>
+                            <span class="about-value">G30CDGXJ24</span>
+                        </div>
+                    </div>
+                    
+                    <div class="about-section">
+                        <div class="about-row">
+                            <span class="about-label">Songs</span>
+                            <span class="about-value">0</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Videos</span>
+                            <span class="about-value">0</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Photos</span>
+                            <span class="about-value">24</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Applications</span>
+                            <span class="about-value">10</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Capacity</span>
+                            <span class="about-value">64 GB</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Available</span>
+                            <span class="about-value">31.51 GB</span>
+                        </div>
+                    </div>
+                    
+                    <div class="about-section">
+                        <div class="about-row">
+                            <span class="about-label">Wi-Fi Address</span>
+                            <span class="about-value">40:DA:5C:2D:69:98</span>
+                        </div>
+                        <div class="about-row">
+                            <span class="about-label">Bluetooth</span>
+                            <span class="about-value">40:DA:5C:28:4E:70</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script src="general.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluetooth - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">Bluetooth</h1>
+        </div>
+
+        <!-- Bluetooth Content -->
+        <div class="settings-content">
+            <!-- Bluetooth Banner -->
+            <div class="feature-banner">
+                <div class="feature-icon bluetooth-icon">🔗</div>
+                <div class="feature-info">
+                    <h2>Bluetooth</h2>
+                    <p>Connect to accessories you can use for activities such as streaming music, making phone calls and gaming. <span class="learn-more">Learn more...</span></p>
+                </div>
+            </div>
+
+            <!-- Bluetooth Toggle -->
+            <div class="settings-group">
+                <div class="setting-row">
+                    <div class="setting-label">Bluetooth</div>
+                    <div class="toggle-switch active" id="bluetoothToggle" onclick="toggleBluetooth()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Centre Notice -->
+            <div class="settings-group">
+                <div class="setting-row info-row" onclick="showControlCentreInfo()">
+                    <div class="setting-label">Allow New Connections</div>
+                    <div class="chevron">›</div>
+                </div>
+                <div class="info-text">
+                    New Bluetooth connections have been turned off from Control Centre.
+                </div>
+            </div>
+
+            <!-- My Devices -->
+            <div class="settings-group">
+                <div class="section-header">MY DEVICES</div>
+                
+                <div class="device-row connected" onclick="showDeviceDetails('AirPods Pro')">
+                    <div class="device-info">
+                        <div class="device-name">AirPods Pro</div>
+                        <div class="device-status connected">Connected</div>
+                    </div>
+                    <div class="device-icons">
+                        <span class="info-icon">🛈</span>
+                        <div class="battery-level">78%</div>
+                    </div>
+                </div>
+
+                <div class="device-row" onclick="showDeviceDetails('DUALSHOCK 4')">
+                    <div class="device-info">
+                        <div class="device-name">DUALSHOCK 4 Wireless Controller</div>
+                        <div class="device-status">Not Connected</div>
+                    </div>
+                    <div class="device-icons">
+                        <span class="info-icon">🛈</span>
+                    </div>
+                </div>
+
+                <div class="device-row" onclick="showDeviceDetails('JBL Flip')">
+                    <div class="device-info">
+                        <div class="device-name">JBL Flip 3 SE</div>
+                        <div class="device-status">Not Connected</div>
+                    </div>
+                    <div class="device-icons">
+                        <span class="info-icon">🛈</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Devices -->
+            <div class="settings-group scanning">
+                <div class="section-header">
+                    OTHER DEVICES
+                    <div class="scanning-indicator">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                
+                <div class="scanning-text">
+                    Looking for devices...
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script src="bluetooth.js"></script>
+</body>
+</html>
