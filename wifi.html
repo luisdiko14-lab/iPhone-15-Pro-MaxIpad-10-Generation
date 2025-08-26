@@ -67,8 +67,10 @@
             </div>
 
             <!-- Available Networks -->
-            <div class="settings-group networks-section">
+            <div class="settings-group networks-section available-networks">
                 <div class="section-header">NETWORKS</div>
+                
+                <!-- Dynamic networks will be inserted here -->
                 
                 <div class="network-row" onclick="connectToNetwork('Gloria1')">
                     <div class="network-info">
@@ -89,6 +91,17 @@
                         <span class="lock-icon">🔒</span>
                         <span class="info-icon">🛈</span>
                         <div class="signal-strength medium"></div>
+                    </div>
+                </div>
+                
+                <div class="network-row" onclick="connectToNetworkWithPassword('NoPasswordLoL123', 'NoPasswordLoL123')">
+                    <div class="network-info">
+                        <div class="network-name">NoPasswordLoL123</div>
+                    </div>
+                    <div class="network-icons">
+                        <span class="lock-icon">🔒</span>
+                        <span class="info-icon">🛈</span>
+                        <div class="signal-strength strong"></div>
                     </div>
                 </div>
 
