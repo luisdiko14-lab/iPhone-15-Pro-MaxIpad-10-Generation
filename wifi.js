@@ -38,6 +38,76 @@ class WiFiSettings {
             this.wifiToggle.classList.remove('active');
             this.disableWiFiFeatures();
         }
+        
+        // Load available networks including Personal Hotspot
+        this.loadAvailableNetworks();
+    }
+    
+    loadAvailableNetworks() {
+        const availableNetworks = JSON.parse(localStorage.getItem('availableWiFiNetworks') || '[]');
+        const networksContainer = document.querySelector('.available-networks');
+        
+        if (networksContainer && availableNetworks.length > 0) {
+            // Clear existing dynamic networks (keep the static ones)
+            const dynamicNetworks = networksContainer.querySelectorAll('.network-row[data-dynamic="true"]');
+            dynamicNetworks.forEach(network => network.remove());
+            
+            // Add networks from storage
+            availableNetworks.forEach(network => {
+                this.addNetworkToList(network);
+            });
+        }
+    }
+    
+    addNetworkToList(network) {
+        const networksContainer = document.querySelector('.available-networks');
+        if (!networksContainer) return;
+        
+        const networkElement = document.createElement('div');
+        networkElement.className = 'network-row';
+        networkElement.setAttribute('data-dynamic', 'true');
+        networkElement.onclick = () => this.connectToSpecificNetwork(network);
+        
+        const isHotspot = network.isPersonalHotspot;
+        const hotspotIcon = isHotspot ? '<span class="hotspot-indicator">📱</span>' : '';
+        
+        networkElement.innerHTML = `
+            <div class="network-info">
+                <div class="network-name">${network.name} ${hotspotIcon}</div>
+                ${network.connected ? '<div class="network-status">Connected</div>' : ''}
+            </div>
+            <div class="network-signal">${network.strength}</div>
+        `;
+        
+        // Add to the top if it's a hotspot, otherwise add normally
+        if (isHotspot) {
+            networksContainer.insertBefore(networkElement, networksContainer.firstChild);
+        } else {
+            networksContainer.appendChild(networkElement);
+        }
+    }
+    
+    connectToSpecificNetwork(network) {
+        const wifiEnabled = document.getElementById('wifiToggle').classList.contains('active');
+        if (!wifiEnabled) return;
+        
+        this.selectedNetwork = network;
+        
+        // Show password modal
+        document.getElementById('modalNetworkName').textContent = network.name;
+        document.getElementById('networkPassword').value = network.password || '';
+        document.getElementById('passwordModal').style.display = 'flex';
+        
+        // If it's a hotspot, pre-fill the password
+        if (network.isPersonalHotspot) {
+            document.getElementById('networkPassword').value = network.password;
+        }
+        
+        document.getElementById('networkPassword').focus();
+        
+        setTimeout(() => {
+            document.getElementById('passwordModal').style.opacity = '1';
+        }, 10);
     }
 
     disableWiFiFeatures() {
@@ -54,6 +124,36 @@ class WiFiSettings {
             row.style.opacity = '1';
             row.style.pointerEvents = 'auto';
         });
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `<span>${message}</span>`;
+        
+        const bgColor = type === 'error' ? '#ff3b30' : 
+                       type === 'warning' ? '#ff9500' : 
+                       type === 'success' ? '#30d158' : 'var(--bg-secondary)';
+        
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: ${bgColor};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 }
 
@@ -110,10 +210,20 @@ function closeModal() {
 function connectWithPassword() {
     const password = document.getElementById('networkPassword').value;
     const networkName = document.getElementById('modalNetworkName').textContent;
+    const wifiSettings = window.wifiSettings;
     
     if (!password.trim()) {
-        alert('Please enter a password');
+        wifiSettings.showNotification('Please enter a password', 'warning');
         return;
+    }
+    
+    // Check if this is a Personal Hotspot with correct password
+    if (wifiSettings.selectedNetwork && wifiSettings.selectedNetwork.isPersonalHotspot) {
+        const correctPassword = wifiSettings.selectedNetwork.password;
+        if (password !== correctPassword) {
+            wifiSettings.showNotification('Incorrect password for Personal Hotspot', 'error');
+            return;
+        }
     }
     
     // Simulate connection
