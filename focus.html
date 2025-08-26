@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='home.html'">
+                <span class="back-arrow">‹</span>
+                <span>Settings</span>
+            </button>
+            <h1 class="header-title">Focus</h1>
+        </div>
+
+        <!-- Settings Groups -->
+        <div class="settings-group">
+            <div class="setting-row focus-item" data-focus="dnd">
+                <div class="focus-icon dnd">🌙</div>
+                <div class="setting-label">Do Not Disturb</div>
+                <div class="toggle-switch">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row focus-item" data-focus="work">
+                <div class="focus-icon work">💼</div>
+                <div class="setting-label">Work</div>
+                <div class="toggle-switch">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row focus-item" data-focus="personal">
+                <div class="focus-icon personal">🏠</div>
+                <div class="setting-label">Personal Time</div>
+                <div class="toggle-switch">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row focus-item" data-focus="sleep">
+                <div class="focus-icon sleep">😴</div>
+                <div class="setting-label">Sleep</div>
+                <div class="toggle-switch">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <div class="setting-row">
+                <div class="setting-label">Focus Status</div>
+                <div class="toggle-switch active">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <style>
+        .focus-icon {
+            width: 29px;
+            height: 29px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 18px;
+            background: var(--bg-tertiary);
+        }
+
+        .focus-icon.dnd { background: linear-gradient(135deg, #5856d6, #7b79e0); }
+        .focus-icon.work { background: linear-gradient(135deg, #ff9500, #ffad33); }
+        .focus-icon.personal { background: linear-gradient(135deg, #007aff, #339cff); }
+        .focus-icon.sleep { background: linear-gradient(135deg, #30d158, #66e185); }
+    </style>
+
+    <script src="focus.js"></script>
+</body>
+</html>

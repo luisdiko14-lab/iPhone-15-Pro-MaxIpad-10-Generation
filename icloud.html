@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iCloud - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='home.html'">
+                <span class="back-arrow">‹</span>
+                <span>Settings</span>
+            </button>
+            <h1 class="header-title">iCloud</h1>
+        </div>
+
+        <!-- iCloud Storage -->
+        <div class="icloud-storage">
+            <div class="storage-info">
+                <div class="storage-icon">☁️</div>
+                <div class="storage-details">
+                    <div class="storage-used">2.3 GB of 5 GB Used</div>
+                    <div class="storage-bar">
+                        <div class="storage-fill" style="width: 46%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Groups -->
+        <div class="settings-group">
+            <div class="setting-row">
+                <div class="setting-label">Photos</div>
+                <div class="toggle-switch active">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Mail</div>
+                <div class="toggle-switch active">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Contacts</div>
+                <div class="toggle-switch active">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Calendars</div>
+                <div class="toggle-switch active">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Reminders</div>
+                <div class="toggle-switch active">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <div class="setting-row">
+                <div class="setting-label">iCloud Backup</div>
+                <div class="toggle-switch active">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Find My iPad</div>
+                <div class="toggle-switch active">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <style>
+        .icloud-storage {
+            padding: 20px;
+            background-color: var(--bg-secondary);
+            margin: 0 20px 20px;
+            border-radius: 10px;
+        }
+
+        .storage-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .storage-icon {
+            font-size: 40px;
+        }
+
+        .storage-details {
+            flex: 1;
+        }
+
+        .storage-used {
+            font-size: 17px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .storage-bar {
+            height: 4px;
+            background-color: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .storage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007aff, #339cff);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+    </style>
+
+    <script src="icloud.js"></script>
+</body>
+</html>
