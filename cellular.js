@@ -304,24 +304,182 @@ function showDataRoaming() {
 function showPersonalHotspot() {
     console.log('Opening Personal Hotspot settings');
     
-    // Check if the class instance exists
-    if (!window.cellularSettings) {
-        alert('CellularSettings not initialized');
-        return;
-    }
-    
-    // Check if the method exists
-    if (typeof window.cellularSettings.showPersonalHotspotModal !== 'function') {
-        alert('showPersonalHotspotModal method not found');
-        return;
-    }
-    
-    try {
+    // Directly call the modal function
+    if (window.cellularSettings && window.cellularSettings.showPersonalHotspotModal) {
         window.cellularSettings.showPersonalHotspotModal();
-    } catch (error) {
-        alert('Error in showPersonalHotspotModal: ' + error.message);
-        console.error('Personal Hotspot Error:', error);
+    } else {
+        // Fallback: create the modal directly
+        showPersonalHotspotDirectly();
     }
+}
+
+function showPersonalHotspotDirectly() {
+    const currentHotspotName = localStorage.getItem('hotspotName') || 'iPhone';
+    const currentPassword = localStorage.getItem('hotspotPassword') || 'IPhone';
+    const isHotspotEnabled = localStorage.getItem('hotspotEnabled') === 'true';
+
+    const modal = document.createElement('div');
+    modal.className = 'hotspot-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Personal Hotspot</h3>
+                <p>Share your cellular connection with other devices</p>
+            </div>
+            <div class="hotspot-toggle-section">
+                <div class="hotspot-main-toggle">
+                    <span>Personal Hotspot</span>
+                    <div class="toggle-switch ${isHotspotEnabled ? 'active' : ''}" id="hotspotMainToggle">
+                        <div class="toggle-slider"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="hotspot-settings" id="hotspotSettings" style="display: ${isHotspotEnabled ? 'block' : 'none'};">
+                <div class="hotspot-info">
+                    <div class="info-text">To connect using Wi-Fi</div>
+                    <div class="network-info">
+                        <div class="network-item">
+                            <span class="network-label">Network Name:</span>
+                            <span class="network-value" id="displayHotspotName">${currentHotspotName}</span>
+                        </div>
+                        <div class="network-item">
+                            <span class="network-label">Password:</span>
+                            <span class="network-value" id="displayPassword">${currentPassword}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hotspot-options">
+                    <div class="hotspot-setting" onclick="editHotspotName()">
+                        <span>Wi-Fi Password</span>
+                        <span class="setting-value">${currentPassword}</span>
+                        <span class="chevron">›</span>
+                    </div>
+                    <div class="hotspot-setting" onclick="editNetworkName()">
+                        <span>Network Name</span>
+                        <span class="setting-value">${currentHotspotName}</span>
+                        <span class="chevron">›</span>
+                    </div>
+                </div>
+                <div class="connected-devices">
+                    <div class="devices-header">Connected Devices</div>
+                    <div class="devices-list" id="connectedDevices">
+                        <div class="no-devices">No devices connected</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn" onclick="this.closest('.hotspot-modal').remove()">Done</button>
+            </div>
+        </div>
+    `;
+    
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    `;
+
+    document.body.appendChild(modal);
+
+    // Add toggle functionality
+    const hotspotToggle = modal.querySelector('#hotspotMainToggle');
+    const hotspotSettings = modal.querySelector('#hotspotSettings');
+
+    hotspotToggle.addEventListener('click', () => {
+        const isActive = hotspotToggle.classList.contains('active');
+        
+        if (isActive) {
+            hotspotToggle.classList.remove('active');
+            hotspotSettings.style.display = 'none';
+            localStorage.setItem('hotspotEnabled', 'false');
+            updatePersonalHotspotStatus('Off');
+            removeFromWiFiNetworks();
+            showNotificationDirect('Personal Hotspot disabled', 'warning');
+        } else {
+            hotspotToggle.classList.add('active');
+            hotspotSettings.style.display = 'block';
+            localStorage.setItem('hotspotEnabled', 'true');
+            updatePersonalHotspotStatus('On');
+            addToWiFiNetworks();
+            showNotificationDirect('Personal Hotspot enabled', 'success');
+        }
+        
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+        }
+    });
+
+    // Remove on tap outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+function updatePersonalHotspotStatus(status) {
+    const hotspotRow = document.querySelector('[onclick="showPersonalHotspot()"] .setting-value');
+    if (hotspotRow) {
+        hotspotRow.textContent = status;
+    }
+}
+
+function addToWiFiNetworks() {
+    const hotspotName = localStorage.getItem('hotspotName') || 'iPhone';
+    const hotspotData = {
+        name: hotspotName,
+        type: 'hotspot',
+        password: localStorage.getItem('hotspotPassword') || 'IPhone',
+        connected: false,
+        strength: '📶📶📶',
+        isPersonalHotspot: true
+    };
+    
+    let wifiNetworks = JSON.parse(localStorage.getItem('availableWiFiNetworks') || '[]');
+    wifiNetworks = wifiNetworks.filter(network => !network.isPersonalHotspot);
+    wifiNetworks.unshift(hotspotData);
+    localStorage.setItem('availableWiFiNetworks', JSON.stringify(wifiNetworks));
+    console.log(`Added "${hotspotName}" to available Wi-Fi networks`);
+}
+
+function removeFromWiFiNetworks() {
+    let wifiNetworks = JSON.parse(localStorage.getItem('availableWiFiNetworks') || '[]');
+    wifiNetworks = wifiNetworks.filter(network => !network.isPersonalHotspot);
+    localStorage.setItem('availableWiFiNetworks', JSON.stringify(wifiNetworks));
+    console.log('Removed Personal Hotspot from available Wi-Fi networks');
+}
+
+function showNotificationDirect(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `<span>${message}</span>`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 2000);
 }
 
 function showSystemServices() {
