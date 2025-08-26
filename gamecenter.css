@@ -1,0 +1,57 @@
+/* DARK MODE APPLE GAME CENTER STYLE */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #0f111a;
+    color: #e4e4e7;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 0;
+    margin: 0;
+}
+
+.gc-container {
+    background: #1a1a2e;
+    padding: 35px 40px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    width: 400px;
+}
+
+h1, h2 {
+    margin-bottom: 15px;
+}
+
+.user-info {
+    margin-bottom: 25px;
+    font-weight: bold;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 25px 0;
+}
+
+li {
+    background: #2c2c44;
+    margin: 8px 0;
+    padding: 12px 15px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s, background 0.2s;
+    cursor: pointer;
+}
+
+li:hover {
+    transform: scale(1.03);
+    background: #3b3b60;
+}
+
+.achievement-unlocked {
+    background: #1b472a !important;
+    border: 1px solid #2e7d32;
+    color: #a5d6a7;
+}

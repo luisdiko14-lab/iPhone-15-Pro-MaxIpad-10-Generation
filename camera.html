@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>iPhone 17 Pro Max — Camera (Concept)</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b0d12; --card:#12151c; --muted:#9aa3af; --text:#e5e7eb; --accent:#60a5fa; --ring:rgba(96,165,250,.35);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text); background:radial-gradient(1200px 700px at 75% -10%, #1a1f2e 0%, #0b0d12 60%), #0b0d12;
+    }
+    a{color:var(--accent); text-decoration:none}
+    .wrap{max-width:1120px; margin:0 auto; padding:24px}
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:16px; padding:8px 0 20px;
+    }
+    .brand{display:flex; gap:12px; align-items:center}
+    .chip{
+      padding:6px 10px; border:1px solid #222733; color:#9fb7ff; border-radius:999px; background:#0f1422;
+      font-size:12px; letter-spacing:.3px;
+    }
+    .title{font-size:clamp(24px,3vw,38px); font-weight:800; line-height:1.1}
+    .subtitle{color:var(--muted); margin-top:6px}
+    .grid{display:grid; gap:18px}
+    @media (min-width:980px){ .grid{grid-template-columns: 1.1fr .9fr} }
+
+    .card{
+      background:linear-gradient(180deg, #141823, #0f1219); border:1px solid #1c2130; border-radius:var(--radius);
+      box-shadow:0 20px 50px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.02);
+      overflow:hidden;
+    }
+    .card-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #1a1f29}
+    .card-body{padding:16px}
+    .btn{
+      background:#111827; border:1px solid #222a3a; color:#dbeafe; padding:10px 14px; border-radius:14px; cursor:pointer;
+      transition:.2s transform ease, .2s background ease; font-weight:600; font-size:14px;
+    }
+    .btn:hover{transform:translateY(-1px); background:#0f172a}
+    .btn.primary{background:linear-gradient(180deg,#2563eb,#1d4ed8); border-color:#1d4ed8}
+    .specs{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px}
+    .spec{
+      background:#0f1320; border:1px solid #1e2434; border-radius:14px; padding:12px;
+    }
+    .spec h4{margin:0 0 4px; font-size:13px; color:#9fb7ff; letter-spacing:.3px}
+    .spec p{margin:0; color:#dbeafe; font-weight:600; font-size:15px}
+
+    /* Zoom Playground */
+    .zoom-wrap{position:relative; border-radius:16px; overflow:hidden; border:1px solid #1d2232}
+    .zoom-stage{position:relative; padding-top:62%; background:#0a0e18}
+    .zoom-target{
+      position:absolute; inset:0; background-size:cover; background-position:center;
+      transform:scale(1); transition:transform .25s ease;
+      /* Unsplash placeholder cityscape */
+      background-image:url('https://images.unsplash.com/photo-1520975962203-b5aef9c5f0ff?q=80&w=1400&auto=format&fit=crop');
+      filter:contrast(1.06) saturate(1.05);
+    }
+    .zoom-ui{display:flex; align-items:center; gap:12px; padding:12px}
+    input[type="range"]{width:100%}
+    .badge{font-size:12px; padding:6px 10px; border-radius:999px; background:#0b1224; border:1px solid #1e2a44; color:#c7d2fe}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+
+    /* Compare slider */
+    .compare{
+      position:relative; border-radius:16px; overflow:hidden; border:1px solid #1d2232; background:#0a0e18;
+      user-select:none; touch-action:none;
+    }
+    .compare .img{display:block; width:100%; height:auto}
+    .compare .top{
+      position:absolute; inset:0; overflow:hidden; width:50%;
+    }
+    .compare .divider{
+      position:absolute; top:0; bottom:0; width:3px; background:var(--accent); left:50%;
+      box-shadow:0 0 0 6px var(--ring);
+    }
+    .legend{display:flex; justify-content:space-between; font-size:12px; color:#aab2c5; padding:6px 10px}
+
+    /* Night mode filter to simulate low-light boost */
+    .night .zoom-target, .night .top img{
+      filter:brightness(1.25) contrast(1.1);
+    }
+
+    footer{opacity:.7; font-size:12px; margin:20px 0}
+    .notice{
+      margin-top:10px; color:#9aa3af; font-size:12px
+    }
+    .pill-switch{
+      display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid #1e2434; background:#0d1220;
+    }
+    .pill-switch input{accent-color:#60a5fa}
+    .spacer{height:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="chip">Concept</div>
+        <div>
+          <div class="title">iPhone 17 Pro Max — Camera</div>
+          <div class="subtitle">Interactive mock page with editable specs & simple demos.</div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="exportJson">Export specs JSON</button>
+        <button class="btn primary" id="ctaBuy">Pre-order (Demo)</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Interactives -->
+      <section class="card">
+        <div class="card-head">
+          <strong>Zoom Playground</strong>
+          <div class="pill-switch">
+            <label for="nightToggle">Night Boost</label>
+            <input type="checkbox" id="nightToggle" />
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="zoom-wrap" id="zoomWrap">
+            <div class="zoom-stage">
+              <div class="zoom-target" id="zoomTarget" role="img" aria-label="Zoom demo cityscape"></div>
+            </div>
+            <div class="zoom-ui">
+              <span class="badge" id="zoomLabel">1×</span>
+              <input type="range" id="zoomRange" min="1" max="25" step="0.1" value="1" aria-label="Zoom level" />
+              <button class="btn" id="resetZoom">Reset</button>
+            </div>
+            <div class="notice">Tip: drag the range to simulate a 1×–25× framing (visual approximation).</div>
+          </div>
+
+          <div class="spacer"></div>
+
+          <div class="compare" id="compare">
+            <img class="img" src="https://images.unsplash.com/photo-1520975962203-b5aef9c5f0ff?q=80&w=1400&auto=format&fit=crop" alt="Before" />
+            <div class="top" id="compareTop" style="width:50%">
+              <img class="img" src="https://images.unsplash.com/photo-1520975962203-b5aef9c5f0ff?q=80&w=1400&auto=format&fit=crop" alt="After (simulated)" style="filter: clarity(1.0);" />
+            </div>
+            <div class="divider" id="compareDivider" style="left:50%"></div>
+            <div class="legend"><span>Before</span><span>After (noise-reduced demo)</span></div>
+          </div>
+          <div class="notice">Drag horizontally on the image to move the before/after divider.</div>
+        </div>
+      </section>
+
+      <!-- Right: Specs -->
+      <aside class="card">
+        <div class="card-head">
+          <strong>Camera Specs (TBD)</strong>
+          <button class="btn" id="editSpecs">Edit</button>
+        </div>
+        <div class="card-body">
+          <div class="specs" id="specList">
+            <!-- Populated by JS -->
+          </div>
+          <div class="notice">These are placeholder fields for the iPhone 17 Pro Max. Replace with official specs once Apple announces them.</div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <p>Disclaimer: This page is a **concept mock** for demonstration. Replace “TBD” with official details after Apple’s announcement.</p>
+    </footer>
+  </div>
+
+  <script src="./camera.js" defer></script>
+</body>
+</html>
