@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallpaper - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='home.html'">
+                <span class="back-arrow">‹</span>
+                <span>Settings</span>
+            </button>
+            <h1 class="header-title">Wallpaper</h1>
+        </div>
+
+        <!-- Current Wallpapers -->
+        <div class="wallpaper-preview">
+            <div class="wallpaper-pair">
+                <div class="wallpaper-item">
+                    <div class="wallpaper-screen lock-screen">
+                        <div class="screen-time">9:41</div>
+                        <div class="screen-date">Tuesday, August 15</div>
+                    </div>
+                    <div class="wallpaper-label">Lock Screen</div>
+                </div>
+                <div class="wallpaper-item">
+                    <div class="wallpaper-screen home-screen">
+                        <div class="screen-time">9:41</div>
+                        <div class="app-icons">
+                            <div class="app-dot"></div>
+                            <div class="app-dot"></div>
+                            <div class="app-dot"></div>
+                        </div>
+                    </div>
+                    <div class="wallpaper-label">Home Screen</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Groups -->
+        <div class="settings-group">
+            <div class="setting-row">
+                <div class="setting-label">Add New Wallpaper</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <style>
+        .wallpaper-preview {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .wallpaper-pair {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .wallpaper-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .wallpaper-screen {
+            width: 120px;
+            height: 160px;
+            background: linear-gradient(135deg, #1a1a1a, #000);
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px 12px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .lock-screen {
+            background: linear-gradient(135deg, #2c2c54, #40407a);
+        }
+
+        .home-screen {
+            background: linear-gradient(135deg, #1a1a1a, #000);
+        }
+
+        .screen-time {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            text-align: center;
+        }
+
+        .screen-date {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+        }
+
+        .app-icons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: auto;
+        }
+
+        .app-dot {
+            width: 16px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .wallpaper-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+    </style>
+</body>
+</html>
