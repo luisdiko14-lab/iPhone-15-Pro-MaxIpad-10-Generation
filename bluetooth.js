@@ -207,6 +207,46 @@ function showControlCentreInfo() {
     console.log('Showing Control Centre Bluetooth info');
 }
 
+function connectToBluetoothDevice(deviceName) {
+    const bluetoothEnabled = document.getElementById('bluetoothToggle').classList.contains('active');
+    if (!bluetoothEnabled) {
+        window.bluetoothSettings.showNotification('Turn on Bluetooth to connect to devices', 'warning');
+        return;
+    }
+
+    // Show pairing animation
+    const pairingDiv = document.createElement('div');
+    pairingDiv.className = 'pairing-message';
+    pairingDiv.innerHTML = `
+        <div class="pairing-content">
+            <div class="spinner"></div>
+            <span>Pairing with ${deviceName}...</span>
+        </div>
+    `;
+    pairingDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: var(--bg-secondary);
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text-primary);
+    `;
+
+    document.body.appendChild(pairingDiv);
+
+    setTimeout(() => {
+        pairingDiv.remove();
+        window.bluetoothSettings.showNotification(`Connected to ${deviceName}`, 'success');
+        console.log(`Connected to Bluetooth device: ${deviceName}`);
+    }, 2000);
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.bluetoothSettings = new BluetoothSettings();

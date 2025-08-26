@@ -27,7 +27,7 @@ class WiFiSettings {
         // Password input enter key
         this.passwordInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                this.connectWithPassword();
+                connectWithPassword();
             }
         });
     }
@@ -210,6 +210,45 @@ function connectToNetworkWithPassword(networkName, knownPassword) {
     setTimeout(() => {
         document.getElementById('passwordModal').style.opacity = '1';
     }, 10);
+}
+
+function connectToFreeNetwork(networkName) {
+    const wifiEnabled = document.getElementById('wifiToggle').classList.contains('active');
+    if (!wifiEnabled) return;
+    
+    const wifiSettings = window.wifiSettings;
+    
+    // Show connecting animation directly
+    const connectingDiv = document.createElement('div');
+    connectingDiv.className = 'connecting-message';
+    connectingDiv.innerHTML = `
+        <div class="connecting-content">
+            <div class="spinner"></div>
+            <span>Connecting to ${networkName}...</span>
+        </div>
+    `;
+    connectingDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: var(--bg-secondary);
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    `;
+    
+    document.body.appendChild(connectingDiv);
+    
+    setTimeout(() => {
+        connectingDiv.remove();
+        updateCurrentNetwork(networkName);
+        wifiSettings.showNotification(`Connected to ${networkName}`, 'success');
+        console.log(`Connected to ${networkName}`);
+    }, 1500);
 }
 
 function closeModal() {

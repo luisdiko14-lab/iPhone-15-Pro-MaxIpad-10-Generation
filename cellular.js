@@ -303,14 +303,7 @@ function showDataRoaming() {
 
 function showPersonalHotspot() {
     console.log('Opening Personal Hotspot settings');
-    
-    // Directly call the modal function
-    if (window.cellularSettings && window.cellularSettings.showPersonalHotspotModal) {
-        window.cellularSettings.showPersonalHotspotModal();
-    } else {
-        // Fallback: create the modal directly
-        showPersonalHotspotDirectly();
-    }
+    showPersonalHotspotDirectly();
 }
 
 function showPersonalHotspotDirectly() {
