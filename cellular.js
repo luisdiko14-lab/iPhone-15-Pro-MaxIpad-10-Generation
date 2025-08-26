@@ -303,7 +303,25 @@ function showDataRoaming() {
 
 function showPersonalHotspot() {
     console.log('Opening Personal Hotspot settings');
-    window.cellularSettings.showPersonalHotspotModal();
+    
+    // Check if the class instance exists
+    if (!window.cellularSettings) {
+        alert('CellularSettings not initialized');
+        return;
+    }
+    
+    // Check if the method exists
+    if (typeof window.cellularSettings.showPersonalHotspotModal !== 'function') {
+        alert('showPersonalHotspotModal method not found');
+        return;
+    }
+    
+    try {
+        window.cellularSettings.showPersonalHotspotModal();
+    } catch (error) {
+        alert('Error in showPersonalHotspotModal: ' + error.message);
+        console.error('Personal Hotspot Error:', error);
+    }
 }
 
 function showSystemServices() {
