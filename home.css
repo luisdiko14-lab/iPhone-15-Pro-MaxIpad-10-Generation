@@ -1,212 +1,212 @@
 /* iOS Settings App Styles */
 :root {
-    --bg-primary: #000000;
-    --bg-secondary: #1c1c1e;
-    --bg-tertiary: #2c2c2e;
-    --bg-quaternary: #3a3a3c;
-    --text-primary: #ffffff;
-    --text-secondary: #8e8e93;
-    --text-tertiary: #48484a;
-    --accent-blue: #007aff;
-    --accent-blue-hover: #0056b3;
-    --border-color: #38383a;
-    --success-green: #30d158;
-    --border-radius: 10px;
-    --transition: all 0.2s ease;
-    --setting-height: 44px;
+--bg-primary: #000000;
+--bg-secondary: #1c1c1e;
+--bg-tertiary: #2c2c2e;
+--bg-quaternary: #3a3a3c;
+--text-primary: #ffffff;
+--text-secondary: #8e8e93;
+--text-tertiary: #48484a;
+--accent-blue: #007aff;
+--accent-blue-hover: #0056b3;
+--border-color: #38383a;
+--success-green: #30d158;
+--border-radius: 10px;
+--transition: all 0.2s ease;
+--setting-height: 44px;
 }
 
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+margin: 0;
+padding: 0;
+box-sizing: border-box;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    line-height: 1.4;
-    min-height: 100vh;
-    overflow-x: hidden;
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+background-color: var(--bg-primary);
+color: var(--text-primary);
+line-height: 1.4;
+min-height: 100vh;
+overflow-x: hidden;
 }
 
 .ios-container {
-    max-width: 500px;
-    margin: 0 auto;
-    min-height: 100vh;
-    background-color: var(--bg-primary);
-    position: relative;
+max-width: 500px;
+margin: 0 auto;
+min-height: 100vh;
+background-color: var(--bg-primary);
+position: relative;
 }
 
 /* Status Bar */
 .status-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 20px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    height: 44px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 8px 20px 0;
+font-size: 14px;
+font-weight: 600;
+color: var(--text-primary);
+height: 44px;
 }
 
 .time {
-    font-weight: 600;
+font-weight: 600;
 }
 
 .status-indicators {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+display: flex;
+align-items: center;
+gap: 20px;
 }
 
 .carrier {
-    font-size: 14px;
+font-size: 14px;
 }
 
 .right-indicators {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
+display: flex;
+align-items: center;
+gap: 5px;
+font-size: 12px;
 }
 
 /* Settings Header */
 .settings-header {
-    padding: 20px 20px 16px;
+padding: 20px 20px 16px;
 }
 
 .settings-header h1 {
-    font-size: 34px;
-    font-weight: 700;
-    color: var(--text-primary);
+font-size: 34px;
+font-weight: 700;
+color: var(--text-primary);
 }
 
 /* Search Section */
 .search-section {
-    padding: 0 20px 20px;
+padding: 0 20px 20px;
 }
 
 .search-bar {
-    background-color: var(--bg-tertiary);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    gap: 8px;
+background-color: var(--bg-tertiary);
+border-radius: 10px;
+display: flex;
+align-items: center;
+padding: 8px 12px;
+gap: 8px;
 }
 
 .search-icon, .mic-icon {
-    color: var(--text-secondary);
-    font-size: 16px;
+color: var(--text-secondary);
+font-size: 16px;
 }
 
 .search-input {
-    flex: 1;
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    font-size: 17px;
-    outline: none;
+flex: 1;
+background: none;
+border: none;
+color: var(--text-primary);
+font-size: 17px;
+outline: none;
 }
 
 .search-input::placeholder {
-    color: var(--text-secondary);
+color: var(--text-secondary);
 }
 
 /* Profile Section */
 .profile-section {
-    padding: 0 20px 20px;
+padding: 0 20px 20px;
 }
 
 .profile-card {
-    background-color: var(--bg-secondary);
-    border-radius: var(--border-radius);
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    cursor: pointer;
-    transition: var(--transition);
+background-color: var(--bg-secondary);
+border-radius: var(--border-radius);
+padding: 16px;
+display: flex;
+align-items: center;
+gap: 16px;
+cursor: pointer;
+transition: var(--transition);
 }
 
 .profile-card:hover {
-    background-color: var(--bg-tertiary);
+background-color: var(--bg-tertiary);
 }
 
 .profile-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 30px;
-    background-color: var(--bg-tertiary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--text-primary);
+width: 60px;
+height: 60px;
+border-radius: 30px;
+background-color: var(--bg-tertiary);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 24px;
+font-weight: 600;
+color: var(--text-primary);
 }
 
 .profile-info {
-    flex: 1;
+flex: 1;
 }
 
 .profile-name {
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 2px;
+font-size: 22px;
+font-weight: 600;
+color: var(--text-primary);
+margin-bottom: 2px;
 }
 
 .profile-subtitle {
-    font-size: 15px;
-    color: var(--text-secondary);
+font-size: 15px;
+color: var(--text-secondary);
 }
 
 /* Settings Groups */
 .quick-settings,
 .settings-group {
-    background-color: var(--bg-secondary);
-    border-radius: var(--border-radius);
-    margin: 0 20px 20px;
-    overflow: hidden;
+background-color: var(--bg-secondary);
+border-radius: var(--border-radius);
+margin: 0 20px 20px;
+overflow: hidden;
 }
 
 .setting-row {
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    min-height: var(--setting-height);
-    border-bottom: 0.5px solid var(--border-color);
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
+display: flex;
+align-items: center;
+padding: 12px 16px;
+min-height: var(--setting-height);
+border-bottom: 0.5px solid var(--border-color);
+cursor: pointer;
+transition: var(--transition);
+position: relative;
 }
 
 .setting-row:last-child {
-    border-bottom: none;
+border-bottom: none;
 }
 
 .setting-row:hover {
-    background-color: var(--bg-tertiary);
+background-color: var(--bg-tertiary);
 }
 
 .setting-row:active {
-    background-color: var(--bg-quaternary);
-    transform: scale(0.98);
+background-color: var(--bg-quaternary);
+transform: scale(0.98);
 }
 
 .setting-icon {
-    width: 29px;
-    height: 29px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 16px;
-    font-size: 18px;
-    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+width: 29px;
+height: 29px;
+border-radius: 6px;
+display: flex;
+align-items: center;
+justify-content: center;
+margin-right: 16px;
+font-size: 18px;
+background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
 }
 
 /* Icon specific colors */
@@ -238,161 +238,161 @@ body {
 .setting-icon.apps { background: linear-gradient(135deg, #007aff, #339cff); }
 
 .setting-label {
-    flex: 1;
-    font-size: 17px;
-    color: var(--text-primary);
-    font-weight: 400;
+flex: 1;
+font-size: 17px;
+color: var(--text-primary);
+font-weight: 400;
 }
 
 .setting-value {
-    font-size: 17px;
-    color: var(--text-secondary);
-    margin-right: 8px;
+font-size: 17px;
+color: var(--text-secondary);
+margin-right: 8px;
 }
 
 .chevron {
-    color: var(--text-tertiary);
-    font-size: 18px;
-    font-weight: 400;
+color: var(--text-tertiary);
+font-size: 18px;
+font-weight: 400;
 }
 
 /* Toggle Switch */
 .toggle-switch {
-    width: 51px;
-    height: 31px;
-    background-color: var(--bg-tertiary);
-    border-radius: 15.5px;
-    position: relative;
-    cursor: pointer;
-    transition: var(--transition);
+width: 51px;
+height: 31px;
+background-color: var(--bg-tertiary);
+border-radius: 15.5px;
+position: relative;
+cursor: pointer;
+transition: var(--transition);
 }
 
 .toggle-switch.active {
-    background-color: var(--success-green);
+background-color: var(--success-green);
 }
 
 .toggle-slider {
-    width: 27px;
-    height: 27px;
-    background-color: white;
-    border-radius: 13.5px;
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    transition: var(--transition);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+width: 27px;
+height: 27px;
+background-color: white;
+border-radius: 13.5px;
+position: absolute;
+top: 2px;
+left: 2px;
+transition: var(--transition);
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .toggle-switch.active .toggle-slider {
-    transform: translateX(20px);
+transform: translateX(20px);
 }
 
 /* VPN Setting Highlight */
 .vpn-setting {
-    background: linear-gradient(90deg, rgba(255, 149, 0, 0.1), rgba(255, 173, 51, 0.05));
+background: linear-gradient(90deg, rgba(255, 149, 0, 0.1), rgba(255, 173, 51, 0.05));
 }
 
 .vpn-setting:hover {
-    background: linear-gradient(90deg, rgba(255, 149, 0, 0.15), rgba(255, 173, 51, 0.1));
+background: linear-gradient(90deg, rgba(255, 149, 0, 0.15), rgba(255, 173, 51, 0.1));
 }
 
 /* Home Indicator */
 .home-indicator {
-    position: fixed;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 134px;
-    height: 5px;
-    background-color: var(--text-primary);
-    border-radius: 2.5px;
-    opacity: 0.7;
+position: fixed;
+bottom: 8px;
+left: 50%;
+transform: translateX(-50%);
+width: 134px;
+height: 5px;
+background-color: var(--text-primary);
+border-radius: 2.5px;
+opacity: 0.7;
 }
 
 /* Animations */
 @keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+from {
+opacity: 0;
+transform: translateY(20px);
+}
+to {
+opacity: 1;
+transform: translateY(0);
+}
 }
 
 .setting-row {
-    animation: slideIn 0.3s ease-out;
+animation: slideIn 0.3s ease-out;
 }
 
 /* Responsive Design */
 @media (max-width: 480px) {
-    .ios-container {
-        margin: 0;
-    }
-    
-    .status-bar,
-    .settings-header,
-    .search-section {
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-    
-    .quick-settings,
-    .settings-group {
-        margin-left: 16px;
-        margin-right: 16px;
-    }
-    
-    .setting-row {
-        padding: 10px 14px;
-        min-height: 40px;
-    }
-    
-    .setting-icon {
-        width: 26px;
-        height: 26px;
-        font-size: 16px;
-        margin-right: 14px;
-    }
-    
-    .setting-label,
-    .setting-value {
-        font-size: 16px;
-    }
+.ios-container {
+margin: 0;
+}
+
+.status-bar,
+.settings-header,
+.search-section {
+padding-left: 16px;
+padding-right: 16px;
+}
+
+.quick-settings,
+.settings-group {
+margin-left: 16px;
+margin-right: 16px;
+}
+
+.setting-row {
+padding: 10px 14px;
+min-height: 40px;
+}
+
+.setting-icon {
+width: 26px;
+height: 26px;
+font-size: 16px;
+margin-right: 14px;
+}
+
+.setting-label,
+.setting-value {
+font-size: 16px;
+}
 }
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
-    /* Already using dark theme, but can add overrides if needed */
+/* Already using dark theme, but can add overrides if needed */
 }
 
 /* Smooth scrolling */
 html {
-    scroll-behavior: smooth;
+scroll-behavior: smooth;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-    width: 6px;
+width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+background: var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--text-tertiary);
-    border-radius: 3px;
+background: var(--text-tertiary);
+border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
+background: var(--text-secondary);
 }
 
 /* Focus states for accessibility */
 .setting-row:focus,
 .profile-card:focus {
-    outline: 2px solid var(--accent-blue);
-    outline-offset: 2px;
+outline: 2px solid var(--accent-blue);
+outline-offset: 2px;
 }

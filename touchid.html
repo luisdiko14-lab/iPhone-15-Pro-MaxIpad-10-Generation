@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Touch ID</title>
+  <link rel="stylesheet" href="touchid.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🔒 Touch ID Required</h1>
+    <p id="status" class="muted">Authenticate to continue</p>
+
+    <div class="card">
+      <button id="touchIdBtn" class="btn btn-primary">Use Touch ID</button>
+      <div class="divider"><span>or</span></div>
+      <input type="password" id="passcodeInput" placeholder="Enter Passcode" autocomplete="current-password" />
+      <button id="unlockBtn" class="btn">Unlock with Passcode</button>
+    </div>
+
+    <div class="card">
+      <h2>Change Passcode</h2>
+      <input type="password" id="currentPasscodeInput" placeholder="Current Passcode" autocomplete="current-password" />
+      <input type="text" id="newPasscodeInput" placeholder="New Passcode (any text or digits)" autocomplete="new-password" />
+      <input type="text" id="confirmNewPasscodeInput" placeholder="Confirm New Passcode" autocomplete="new-password" />
+      <button id="savePasscodeBtn" class="btn btn-secondary">Save New Passcode</button>
+      <p class="hint">Default passcode (if none set): <code>1234</code></p>
+    </div>
+  </div>
+
+  <script src="touchid.js"></script>
+</body>
+</html>

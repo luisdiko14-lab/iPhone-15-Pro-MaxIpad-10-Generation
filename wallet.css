@@ -1,0 +1,114 @@
+/* GENERAL DARK MODE */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #1a1a1d;
+    color: #e4e4e7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.wallet-container {
+    background: #2c2c34;
+    padding: 35px 40px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    text-align: center;
+    width: 350px;
+    border: 1px solid #444;
+}
+
+h1, h2 {
+    margin-bottom: 15px;
+}
+
+.balance {
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.store-section {
+    margin-top: 20px;
+    text-align: left;
+}
+
+#item-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#item-list li {
+    background: #3b3b46;
+    margin: 8px 0;
+    padding: 10px 15px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s, background 0.2s;
+    cursor: pointer;
+}
+
+#item-list li:hover {
+    transform: scale(1.03);
+    background: #4b4b57;
+}
+
+.purchase-section {
+    margin-top: 25px;
+}
+
+#quantity {
+    margin: 10px 0 20px;
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    background: #3b3b46;
+    color: #e4e4e7;
+}
+
+.apple-pay-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: black;
+    color: white;
+    font-size: 18px;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.apple-pay-btn img {
+    width: 20px;
+    margin-right: 10px;
+    filter: invert(1);
+}
+
+.apple-pay-btn:hover {
+    transform: scale(1.05);
+    background: #111;
+}
+
+.confirmation {
+    margin-top: 20px;
+    padding: 15px;
+    background: #1b472a;
+    border: 1px solid #2e7d32;
+    border-radius: 12px;
+    display: none;
+    color: #a5d6a7;
+    font-weight: bold;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
