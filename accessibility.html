@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='home.html'">
+                <span class="back-arrow">‹</span>
+                <span>Settings</span>
+            </button>
+            <h1 class="header-title">Accessibility</h1>
+        </div>
+
+        <!-- Settings Groups -->
+        <div class="settings-group">
+            <div class="setting-row">
+                <div class="setting-label">VoiceOver</div>
+                <div class="toggle-switch">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Magnifier</div>
+                <div class="toggle-switch">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Display & Text Size</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Motion</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Touch</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <div class="setting-row">
+                <div class="setting-label">Hearing Devices</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">Sound Recognition</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-label">RTT/TTY</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+</body>
+</html>

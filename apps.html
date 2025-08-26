@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apps - Settings</title>
+    <link rel="stylesheet" href="settings-page.css">
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='home.html'">
+                <span class="back-arrow">‹</span>
+                <span>Settings</span>
+            </button>
+            <h1 class="header-title">Apps</h1>
+        </div>
+
+        <!-- Settings Groups -->
+        <div class="settings-group">
+            <div class="setting-row">
+                <div class="app-icon-small">📱</div>
+                <div class="setting-label">App Store</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">📷</div>
+                <div class="setting-label">Camera</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">🎮</div>
+                <div class="setting-label">Game Center</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">✉️</div>
+                <div class="setting-label">Mail</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">💬</div>
+                <div class="setting-label">Messages</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">📞</div>
+                <div class="setting-label">Phone</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">🌐</div>
+                <div class="setting-label">Safari</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">⚙️</div>
+                <div class="setting-label">Settings</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">🎤</div>
+                <div class="setting-label">Siri</div>
+                <div class="chevron">›</div>
+            </div>
+            <div class="setting-row">
+                <div class="app-icon-small">💳</div>
+                <div class="setting-label">Wallet</div>
+                <div class="chevron">›</div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <style>
+        .app-icon-small {
+            width: 29px;
+            height: 29px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 18px;
+        }
+    </style>
+
+    <script src="apps.js"></script>
+</body>
+</html>
