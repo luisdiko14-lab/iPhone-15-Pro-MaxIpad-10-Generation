@@ -188,8 +188,22 @@ function connectToNetwork(networkName) {
     const wifiEnabled = document.getElementById('wifiToggle').classList.contains('active');
     if (!wifiEnabled) return;
     
-    document.getElementById('selectedNetwork').textContent = networkName;
     document.getElementById('modalNetworkName').textContent = networkName;
+    document.getElementById('passwordModal').style.display = 'flex';
+    document.getElementById('networkPassword').value = '';
+    document.getElementById('networkPassword').focus();
+    
+    setTimeout(() => {
+        document.getElementById('passwordModal').style.opacity = '1';
+    }, 10);
+}
+
+function connectToNetworkWithPassword(networkName, knownPassword) {
+    const wifiEnabled = document.getElementById('wifiToggle').classList.contains('active');
+    if (!wifiEnabled) return;
+    
+    document.getElementById('modalNetworkName').textContent = networkName;
+    document.getElementById('networkPassword').value = knownPassword;
     document.getElementById('passwordModal').style.display = 'flex';
     document.getElementById('networkPassword').focus();
     
@@ -222,6 +236,14 @@ function connectWithPassword() {
         const correctPassword = wifiSettings.selectedNetwork.password;
         if (password !== correctPassword) {
             wifiSettings.showNotification('Incorrect password for Personal Hotspot', 'error');
+            return;
+        }
+    }
+    
+    // Special handling for NoPasswordLoL123 network
+    if (networkName === 'NoPasswordLoL123') {
+        if (password !== 'NoPasswordLoL123') {
+            wifiSettings.showNotification('Incorrect password for NoPasswordLoL123', 'error');
             return;
         }
     }
