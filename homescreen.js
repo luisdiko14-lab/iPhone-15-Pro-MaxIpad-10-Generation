@@ -1,55 +1,96 @@
-(() => {
-  const TOUCH_ID_URL =
-    "https://322a44cb-3336-4f7a-9384-2fd6c6824466-00-2ypwmzwt52p8b.worf.replit.dev/touchid.html";
-  const ONE_SHOT_KEY = "justUnlocked";  // set by touchid.js on success
+// iOS Home Screen JavaScript
+class HomeScreen {
+  constructor() {
+    this.initializeElements();
+    this.setupEventListeners();
+    this.startClock();
+  }
 
-  // 1) Security gate: only allow entry immediately after Touch ID success
-  document.addEventListener("DOMContentLoaded", () => {
-    const justUnlocked = sessionStorage.getItem(ONE_SHOT_KEY) === "true";
-    if (!justUnlocked) {
-      // Always require Touch ID on direct visit or refresh
-      window.location.replace(TOUCH_ID_URL);
-      return;
-    }
-    // Consume the one-shot so refresh locks again
-    sessionStorage.removeItem(ONE_SHOT_KEY);
+  initializeElements() {
+    this.timeElement = document.getElementById("time");
+    this.apps = document.querySelectorAll('.app');
+  }
 
-    wireApps();
-    startClock();
-  });
+  setupEventListeners() {
+    // Wire up app clicks
+    this.wireApps();
 
-  function wireApps(){
-    // Your exact app redirects
+    // Add touch feedback to all apps
+    this.apps.forEach(app => {
+      app.addEventListener('touchstart', this.addTouchFeedback, {passive: true});
+      app.addEventListener('touchend', this.removeTouchFeedback, {passive: true});
+    });
+  }
+
+  wireApps() {
+    // App click handlers with relative paths
     document.getElementById('settings-app')?.addEventListener('click', () => {
-      window.location.href = 'https://322a44cb-3336-4f7a-9384-2fd6c6824466-00-2ypwmzwt52p8b.worf.replit.dev/home.html';
+      this.navigateToApp('home.html');
     });
 
     document.getElementById('vpn-app')?.addEventListener('click', () => {
-      window.location.href = 'https://322a44cb-3336-4f7a-9384-2fd6c6824466-00-2ypwmzwt52p8b.worf.replit.dev/index.html';
+      this.navigateToApp('index.html');
     });
 
     document.getElementById('camera-app')?.addEventListener('click', () => {
-      window.location.href = 'https://322a44cb-3336-4f7a-9384-2fd6c6824466-00-2ypwmzwt52p8b.worf.replit.dev/camera.html';
+      this.navigateToApp('camera.html');
     });
 
     document.getElementById('mail-app')?.addEventListener('click', () => {
-      window.location.href = 'https://322a44cb-3336-4f7a-9384-2fd6c6824466-00-2ypwmzwt52p8b.worf.replit.dev/mail.html';
+      this.navigateToApp('mail.html');
     });
 
     document.getElementById('ios-update-app')?.addEventListener('click', () => {
-      window.location.href = 'https://322a44cb-3336-4f7a-9384-2fd6c6824466-00-2ypwmzwt52p8b.worf.replit.dev/iOS_update.html';
+      this.navigateToApp('iOS_update.html');
     });
   }
 
-  function startClock(){
-    const el = document.getElementById("time");
-    if (!el) return;
-    const tick = () => {
-      const d = new Date();
-      const hh = String(d.getHours()).padStart(2, "0");
-      const mm = String(d.getMinutes()).padStart(2, "0");
-      el.textContent = `${hh}:${mm}`;
-    };
-    tick(); setInterval(tick, 1000);
+  navigateToApp(url) {
+    // Add navigation animation
+    const body = document.body;
+    body.style.opacity = '0.8';
+    body.style.transform = 'scale(0.95)';
+
+    setTimeout(() => {
+      window.location.href = url;
+    }, 150);
   }
-})();
+
+  addTouchFeedback(event) {
+    event.target.style.transform = 'scale(0.95)';
+    event.target.style.opacity = '0.8';
+  }
+
+  removeTouchFeedback(event) {
+    event.target.style.transform = 'scale(1)';
+    event.target.style.opacity = '1';
+  }
+
+  startClock() {
+    if (!this.timeElement) return;
+    
+    const tick = () => {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      this.timeElement.textContent = `${hours}:${minutes}`;
+    };
+    
+    tick(); // Update immediately
+    setInterval(tick, 1000); // Update every second
+  }
+}
+
+// Initialize the home screen when DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
+  new HomeScreen();
+});
+
+// Handle back navigation
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) {
+    // Reset any transition states when navigating back
+    document.body.style.opacity = '1';
+    document.body.style.transform = 'scale(1)';
+  }
+});

@@ -7,27 +7,52 @@
     <link rel="stylesheet" href="homescreen.css">
 </head>
 <body>
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="time" id="time">14:30</div>
+        <div class="status-indicators">
+            <span class="carrier">Thu 14 Aug</span>
+            <div class="right-indicators">
+                <span class="signal">📶</span>
+                <span class="wifi">📶</span>
+                <span class="battery">26% 🔋</span>
+            </div>
+        </div>
+    </div>
+
     <div class="homescreen">
-        <div class="app">
-            <img src="https://cdn.discordapp.com/attachments/1404009284760506398/1405941956005073028/IOS_18.jpeg" alt="iOS Update">
+        <div class="app" id="ios-update-app">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                📱
+            </div>
             <span>iOS Update</span>
         </div>
-        <div class="app">
-            <img src="https://cdn.discordapp.com/attachments/1404009284760506398/1405942423347003442/VPN_Proxy.jpeg" alt="VPN">
+        <div class="app" id="vpn-app">
+            <div class="app-icon" style="background: linear-gradient(135deg, #ff9500, #ffad33);">
+                🔐
+            </div>
             <span>VPN</span>
         </div>
-        <div class="app">
-            <img src="https://cdn.discordapp.com/attachments/1404009284760506398/1405942776041967708/Camera_app_logo.jpeg" alt="Camera">
+        <div class="app" id="camera-app">
+            <div class="app-icon" style="background: linear-gradient(135deg, #8e8e93, #adadad);">
+                📷
+            </div>
             <span>Camera</span>
         </div>
-        <div class="app">
-            <img src="https://cdn.discordapp.com/attachments/1404009284760506398/1405943131370688562/Mail_logo.jpeg" alt="Mail">
+        <div class="app" id="mail-app">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                ✉️
+            </div>
             <span>Mail</span>
         </div>
-        <div class="app">
-            <img src="https://cdn.discordapp.com/attachments/1404009284760506398/1405943436229480549/Settings_logo.jpeg" alt="Settings">
+        <div class="app" id="settings-app">
+            <div class="app-icon" style="background: linear-gradient(135deg, #8e8e93, #adadad);">
+                ⚙️
+            </div>
             <span>Settings</span>
         </div>
     </div>
+
+    <script src="homescreen.js"></script>
 </body>
 </html>
