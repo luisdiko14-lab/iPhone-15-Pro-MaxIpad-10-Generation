@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robux Wallet - Dark Mode</title>
+<link rel="stylesheet" href="wallet.css">
+</head>
+<body>
+<div class="wallet-container">
+    <h1>Robux Wallet</h1>
+    <p class="balance">Total Balance: <span id="balance">$1000.00</span></p>
+
+    <div class="store-section">
+        <h2>Available Items</h2>
+        <ul id="item-list">
+            <!-- Items will be injected here by JS -->
+        </ul>
+    </div>
+
+    <div class="purchase-section">
+        <label for="quantity">Select Quantity:</label>
+        <select id="quantity">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+            <option value="5">5x</option>
+        </select>
+
+        <button id="apple-pay-btn" class="apple-pay-btn">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple Logo">
+            Pay with Apple Pay
+        </button>
+    </div>
+
+    <div id="confirmation" class="confirmation">
+        <p>Payment Successful! ✅</p>
+        <p>You bought <span id="quantity-confirm">1</span> <span id="item-confirm"></span> for $<span id="total-confirm">10</span>.</p>
+    </div>
+</div>
+
+<script src="wallet.js"></script>
+</body>
+</html>
