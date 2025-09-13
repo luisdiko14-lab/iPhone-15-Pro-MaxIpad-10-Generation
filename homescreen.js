@@ -28,6 +28,7 @@ class HomeScreen {
     this.setupAppClick('app-store-app', 'app-store.html');
     this.setupAppClick('vpn-app', 'index.html');
     this.setupAppClick('auth-app', 'auth.html');
+    this.setupAppClick('wallet-app', 'wallet.html');
     
     // Dock apps
     this.setupAppClick('dock-phone', null, 'Phone');
@@ -39,7 +40,7 @@ class HomeScreen {
     const comingSoonApps = ['phone-app', 'messages-app', 'camera-app', 'photos-app', 
                            'safari-app', 'mail-app', 'music-app', 'notes-app', 
                            'calculator-app', 'weather-app', 'clock-app', 'maps-app',
-                           'facetime-app', 'wallet-app', 'health-app', 'find-my-app'];
+                           'facetime-app', 'health-app', 'find-my-app'];
     
     comingSoonApps.forEach(appId => {
       const appElement = document.getElementById(appId);
