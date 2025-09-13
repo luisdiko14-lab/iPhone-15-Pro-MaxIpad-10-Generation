@@ -21,35 +21,158 @@
     </div>
 
     <div class="homescreen">
-        <div class="app" id="ios-update-app">
+        <!-- First Row -->
+        <div class="app" id="phone-app" onclick="openApp('phone')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
+                📞
+            </div>
+            <span>Phone</span>
+        </div>
+        <div class="app" id="messages-app" onclick="openApp('messages')">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
-                📱
+                💬
             </div>
-            <span>iOS Update</span>
+            <span>Messages</span>
         </div>
-        <div class="app" id="vpn-app">
-            <div class="app-icon" style="background: linear-gradient(135deg, #ff9500, #ffad33);">
-                🔐
-            </div>
-            <span>VPN</span>
-        </div>
-        <div class="app" id="camera-app">
+        <div class="app" id="camera-app" onclick="openApp('camera')">
             <div class="app-icon" style="background: linear-gradient(135deg, #8e8e93, #adadad);">
                 📷
             </div>
             <span>Camera</span>
         </div>
-        <div class="app" id="mail-app">
+        <div class="app" id="photos-app" onclick="openApp('photos')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                🖼️
+            </div>
+            <span>Photos</span>
+        </div>
+
+        <!-- Second Row -->
+        <div class="app" id="settings-app" onclick="openApp('settings')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #8e8e93, #adadad);">
+                ⚙️
+            </div>
+            <span>Settings</span>
+        </div>
+        <div class="app" id="app-store-app" onclick="openApp('app-store')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                🏪
+            </div>
+            <span>App Store</span>
+        </div>
+        <div class="app" id="safari-app" onclick="openApp('safari')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                🌐
+            </div>
+            <span>Safari</span>
+        </div>
+        <div class="app" id="mail-app" onclick="openApp('mail')">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 ✉️
             </div>
             <span>Mail</span>
         </div>
-        <div class="app" id="settings-app">
-            <div class="app-icon" style="background: linear-gradient(135deg, #8e8e93, #adadad);">
-                ⚙️
+
+        <!-- Third Row -->
+        <div class="app" id="music-app" onclick="openApp('music')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #ff2d92, #ff6bb3);">
+                🎵
             </div>
-            <span>Settings</span>
+            <span>Music</span>
+        </div>
+        <div class="app" id="notes-app" onclick="openApp('notes')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #ffcc02, #ffd60a);">
+                📝
+            </div>
+            <span>Notes</span>
+        </div>
+        <div class="app" id="calculator-app" onclick="openApp('calculator')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
+                🧮
+            </div>
+            <span>Calculator</span>
+        </div>
+        <div class="app" id="weather-app" onclick="openApp('weather')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                ⛅
+            </div>
+            <span>Weather</span>
+        </div>
+
+        <!-- Fourth Row -->
+        <div class="app" id="clock-app" onclick="openApp('clock')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
+                ⏰
+            </div>
+            <span>Clock</span>
+        </div>
+        <div class="app" id="maps-app" onclick="openApp('maps')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
+                🗺️
+            </div>
+            <span>Maps</span>
+        </div>
+        <div class="app" id="facetime-app" onclick="openApp('facetime')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
+                📹
+            </div>
+            <span>FaceTime</span>
+        </div>
+        <div class="app" id="wallet-app" onclick="openApp('wallet')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
+                💳
+            </div>
+            <span>Wallet</span>
+        </div>
+
+        <!-- Fifth Row with authentication and VPN -->
+        <div class="app" id="auth-app" onclick="openApp('auth')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                🔐
+            </div>
+            <span>Sign In</span>
+        </div>
+        <div class="app" id="vpn-app" onclick="openApp('vpn')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #ff9500, #ffad33);">
+                🛡️
+            </div>
+            <span>VPN</span>
+        </div>
+        <div class="app" id="health-app" onclick="openApp('health')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff6961);">
+                ❤️
+            </div>
+            <span>Health</span>
+        </div>
+        <div class="app" id="find-my-app" onclick="openApp('find-my')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
+                📍
+            </div>
+            <span>Find My</span>
+        </div>
+    </div>
+
+    <!-- Dock -->
+    <div class="dock">
+        <div class="app" id="dock-phone" onclick="openApp('phone')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
+                📞
+            </div>
+        </div>
+        <div class="app" id="dock-safari" onclick="openApp('safari')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                🌐
+            </div>
+        </div>
+        <div class="app" id="dock-messages" onclick="openApp('messages')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
+                💬
+            </div>
+        </div>
+        <div class="app" id="dock-music" onclick="openApp('music')">
+            <div class="app-icon" style="background: linear-gradient(135deg, #ff2d92, #ff6bb3);">
+                🎵
+            </div>
         </div>
     </div>
 
