@@ -23,25 +23,95 @@ class HomeScreen {
   }
 
   wireApps() {
-    // App click handlers with relative paths
-    document.getElementById('settings-app')?.addEventListener('click', () => {
-      this.navigateToApp('home.html');
+    // Main app navigation
+    this.setupAppClick('settings-app', 'home.html');
+    this.setupAppClick('app-store-app', 'app-store.html');
+    this.setupAppClick('vpn-app', 'index.html');
+    this.setupAppClick('auth-app', 'auth.html');
+    
+    // Dock apps
+    this.setupAppClick('dock-phone', null, 'Phone');
+    this.setupAppClick('dock-safari', null, 'Safari');
+    this.setupAppClick('dock-messages', null, 'Messages');
+    this.setupAppClick('dock-music', null, 'Music');
+    
+    // Other apps - show coming soon
+    const comingSoonApps = ['phone-app', 'messages-app', 'camera-app', 'photos-app', 
+                           'safari-app', 'mail-app', 'music-app', 'notes-app', 
+                           'calculator-app', 'weather-app', 'clock-app', 'maps-app',
+                           'facetime-app', 'wallet-app', 'health-app', 'find-my-app'];
+    
+    comingSoonApps.forEach(appId => {
+      const appElement = document.getElementById(appId);
+      if (appElement) {
+        const appName = appElement.querySelector('span')?.textContent || 'App';
+        this.setupAppClick(appId, null, appName);
+      }
     });
-
-    document.getElementById('vpn-app')?.addEventListener('click', () => {
-      this.navigateToApp('index.html');
+  }
+  
+  setupAppClick(appId, url, appName) {
+    const element = document.getElementById(appId);
+    if (!element) return;
+    
+    element.addEventListener('click', () => {
+      if (url) {
+        this.navigateToApp(url);
+      } else if (appName) {
+        this.showComingSoon(appName);
+      }
     });
-
-    document.getElementById('camera-app')?.addEventListener('click', () => {
-      this.navigateToApp('camera.html');
-    });
-
-    document.getElementById('mail-app')?.addEventListener('click', () => {
-      this.navigateToApp('mail.html');
-    });
-
-    document.getElementById('ios-update-app')?.addEventListener('click', () => {
-      this.navigateToApp('iOS_update.html');
+  }
+  
+  showComingSoon(appName) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+      <div style="
+        background: rgba(40, 40, 40, 0.95);
+        backdrop-filter: blur(20px);
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        max-width: 300px;
+      ">
+        <div style="font-size: 50px; margin-bottom: 15px;">📱</div>
+        <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 600;">${appName}</h3>
+        <p style="margin: 0 0 20px 0; font-size: 14px; opacity: 0.8;">This app is not available in the demo.</p>
+        <button onclick="this.closest('div').parentElement.remove()" style="
+          background: #007aff;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-size: 16px;
+          font-weight: 500;
+          cursor: pointer;
+        ">OK</button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Remove on click outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
     });
   }
 

@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Store - iOS</title>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #1c1c1e;
+            --bg-tertiary: #2c2c2e;
+            --text-primary: #ffffff;
+            --text-secondary: #8e8e93;
+            --accent-blue: #007aff;
+            --success-green: #34c759;
+            --warning-orange: #ff9500;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ios-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 430px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 20px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            height: 44px;
+        }
+
+        .time {
+            font-weight: 600;
+        }
+
+        .status-indicators {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .carrier {
+            font-size: 14px;
+        }
+
+        .right-indicators {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--accent-blue);
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .back-arrow {
+            font-size: 18px;
+        }
+
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-size: 17px;
+            font-weight: 600;
+            margin-left: -60px;
+        }
+
+        /* App Store Content */
+        .app-store-content {
+            flex: 1;
+            padding: 0;
+            overflow-y: auto;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding: 20px;
+            background: linear-gradient(135deg, #007aff, #5856d6);
+            color: white;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .hero-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            padding: 0 20px;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 0;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        /* Section */
+        .section {
+            padding: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .section-link {
+            color: var(--accent-blue);
+            font-size: 16px;
+            text-decoration: none;
+        }
+
+        /* App Cards */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .app-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .app-card:hover {
+            transform: translateY(-2px);
+            background: var(--bg-tertiary);
+        }
+
+        .app-card:active {
+            transform: scale(0.98);
+        }
+
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+            border-radius: 15px;
+        }
+
+        .app-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            line-height: 1.2;
+        }
+
+        .app-developer {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .app-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .stars {
+            color: #ffcc02;
+            font-size: 12px;
+        }
+
+        .rating-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .app-price {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .app-price.free {
+            background: var(--success-green);
+        }
+
+        .app-price.installed {
+            background: var(--bg-tertiary);
+            color: var(--accent-blue);
+        }
+
+        .app-price:hover {
+            opacity: 0.8;
+        }
+
+        /* Featured App */
+        .featured-app {
+            background: linear-gradient(135deg, #ff2d92, #5856d6);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .featured-app:hover {
+            transform: translateY(-2px);
+        }
+
+        .featured-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .featured-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .featured-info {
+            flex: 1;
+        }
+
+        .featured-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .featured-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .featured-description {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.3;
+        }
+
+        /* Search */
+        .search-section {
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-bar {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-icon {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .search-input {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 16px;
+            flex: 1;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Categories */
+        .categories {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .category-chip {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 10px 20px;
+            border-radius: 20px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .category-chip.active {
+            background: var(--accent-blue);
+        }
+
+        .category-chip:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .category-chip.active:hover {
+            background: var(--accent-blue);
+        }
+
+        /* Home Indicator */
+        .home-indicator {
+            width: 134px;
+            height: 5px;
+            background: var(--text-primary);
+            border-radius: 2.5px;
+            margin: 20px auto;
+            opacity: 0.3;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid var(--text-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hide sections initially */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="ios-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time" id="time">20:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Fri 13 Sep</span>
+                <div class="right-indicators">
+                    <span class="signal">Verizon 📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">85% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="back-btn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>Back</span>
+            </button>
+            <h1 class="header-title">App Store</h1>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <h1 class="hero-title">Discover Amazing Apps</h1>
+            <p class="hero-subtitle">Find your next favorite game or productivity app</p>
+        </div>
+
+        <!-- Search -->
+        <div class="search-section">
+            <div class="search-bar">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="Search apps and games" id="searchInput">
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="today" onclick="switchTab('today')">Today</div>
+            <div class="tab" data-tab="games" onclick="switchTab('games')">Games</div>
+            <div class="tab" data-tab="apps" onclick="switchTab('apps')">Apps</div>
+            <div class="tab" data-tab="arcade" onclick="switchTab('arcade')">Arcade</div>
+        </div>
+
+        <!-- App Store Content -->
+        <div class="app-store-content">
+            <!-- Today Tab -->
+            <div class="tab-content active" id="today-content">
+                <!-- Featured App -->
+                <div class="section">
+                    <div class="featured-app" onclick="openApp('subway-surfers')">
+                        <div class="featured-content">
+                            <div class="featured-icon">🏃</div>
+                            <div class="featured-info">
+                                <div class="featured-label">Game of the Day</div>
+                                <div class="featured-name">Subway Surfers</div>
+                                <div class="featured-description">Endless running adventure through the subway</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recently Updated -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Recently Updated</h2>
+                        <a href="#" class="section-link">See All</a>
+                    </div>
+                    <div class="app-grid">
+                        <div class="app-card" onclick="openApp('temple-run')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #ff6b35, #f7931e);">🏃‍♂️</div>
+                            <div class="app-name">Temple Run</div>
+                            <div class="app-developer">Imangi Studios</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.5</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('angry-birds')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff9500);">🐦</div>
+                            <div class="app-name">Angry Birds</div>
+                            <div class="app-developer">Rovio</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.2</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Games Tab -->
+            <div class="tab-content" id="games-content">
+                <!-- Categories -->
+                <div class="categories">
+                    <div class="category-chip active">Action</div>
+                    <div class="category-chip">Adventure</div>
+                    <div class="category-chip">Puzzle</div>
+                    <div class="category-chip">Racing</div>
+                    <div class="category-chip">Sports</div>
+                    <div class="category-chip">Strategy</div>
+                </div>
+
+                <!-- Popular Games -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Popular Games</h2>
+                        <a href="#" class="section-link">See All</a>
+                    </div>
+                    <div class="app-grid">
+                        <div class="app-card" onclick="openApp('candy-crush')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #ff2d92, #ff6bb3);">🍭</div>
+                            <div class="app-name">Candy Crush Saga</div>
+                            <div class="app-developer">King</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.3</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('clash-royale')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #5856d6);">⚔️</div>
+                            <div class="app-name">Clash Royale</div>
+                            <div class="app-developer">Supercell</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.6</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('minecraft')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">⛏️</div>
+                            <div class="app-name">Minecraft</div>
+                            <div class="app-developer">Mojang</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.8</div>
+                            </div>
+                            <button class="app-price">$6.99</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('roblox')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff9500);">🎮</div>
+                            <div class="app-name">Roblox</div>
+                            <div class="app-developer">Roblox Corporation</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.4</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('pokemon-go')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #ffcc02, #ffd60a);">⚡</div>
+                            <div class="app-name">Pokémon GO</div>
+                            <div class="app-developer">Niantic</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.1</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('among-us')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff6961);">👽</div>
+                            <div class="app-name">Among Us</div>
+                            <div class="app-developer">InnerSloth LLC</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.2</div>
+                            </div>
+                            <button class="app-price">$4.99</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Apps Tab -->
+            <div class="tab-content" id="apps-content">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Essential Apps</h2>
+                        <a href="#" class="section-link">See All</a>
+                    </div>
+                    <div class="app-grid">
+                        <div class="app-card" onclick="openApp('whatsapp')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">💬</div>
+                            <div class="app-name">WhatsApp</div>
+                            <div class="app-developer">WhatsApp Inc.</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.7</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('instagram')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #ff2d92, #ff6bb3);">📷</div>
+                            <div class="app-name">Instagram</div>
+                            <div class="app-developer">Instagram, Inc.</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.3</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('spotify')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">🎵</div>
+                            <div class="app-name">Spotify</div>
+                            <div class="app-developer">Spotify AB</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.6</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                        <div class="app-card" onclick="openApp('netflix')">
+                            <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff6961);">🎬</div>
+                            <div class="app-name">Netflix</div>
+                            <div class="app-developer">Netflix, Inc.</div>
+                            <div class="app-rating">
+                                <div class="stars">⭐⭐⭐⭐</div>
+                                <div class="rating-text">4.2</div>
+                            </div>
+                            <button class="app-price free">GET</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arcade Tab -->
+            <div class="tab-content" id="arcade-content">
+                <div class="section">
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                        <div style="font-size: 60px; margin-bottom: 20px;">🎮</div>
+                        <h2 style="font-size: 24px; margin-bottom: 10px; color: var(--text-primary);">Apple Arcade</h2>
+                        <p style="font-size: 16px; line-height: 1.4;">Discover premium games with no ads and no in-app purchases. Try Apple Arcade today!</p>
+                        <button style="
+                            background: var(--accent-blue);
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 20px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            margin-top: 20px;
+                            cursor: pointer;
+                        " onclick="showComingSoon('Apple Arcade')">Try Free</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script>
+        class AppStore {
+            constructor() {
+                this.currentTab = 'today';
+                this.installedApps = JSON.parse(localStorage.getItem('installedApps') || '[]');
+                
+                this.setupEventListeners();
+                this.updateTime();
+                this.updateInstallButtons();
+            }
+
+            setupEventListeners() {
+                const searchInput = document.getElementById('searchInput');
+                searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+
+                // Category chips
+                document.querySelectorAll('.category-chip').forEach(chip => {
+                    chip.addEventListener('click', (e) => this.selectCategory(e.target));
+                });
+            }
+
+            updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour12: false, 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                document.getElementById('time').textContent = timeString;
+                
+                setTimeout(() => this.updateTime(), 60000);
+            }
+
+            updateInstallButtons() {
+                document.querySelectorAll('.app-card').forEach(card => {
+                    const button = card.querySelector('.app-price');
+                    const appName = card.querySelector('.app-name').textContent;
+                    
+                    if (this.installedApps.includes(appName)) {
+                        button.textContent = 'OPEN';
+                        button.className = 'app-price installed';
+                    }
+                });
+            }
+
+            handleSearch(query) {
+                // Simple search functionality
+                const cards = document.querySelectorAll('.app-card');
+                const searchTerm = query.toLowerCase();
+                
+                cards.forEach(card => {
+                    const appName = card.querySelector('.app-name').textContent.toLowerCase();
+                    const developer = card.querySelector('.app-developer').textContent.toLowerCase();
+                    
+                    if (appName.includes(searchTerm) || developer.includes(searchTerm) || !searchTerm) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+
+            selectCategory(chipElement) {
+                document.querySelectorAll('.category-chip').forEach(chip => {
+                    chip.classList.remove('active');
+                });
+                chipElement.classList.add('active');
+            }
+        }
+
+        // Global functions
+        function navigateBack() {
+            const container = document.querySelector('.ios-container');
+            container.style.opacity = '0.8';
+            container.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                window.location.href = 'homescreen.html';
+            }, 150);
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-content`).classList.add('active');
+        }
+
+        function openApp(appId) {
+            const appCard = event.currentTarget;
+            const appName = appCard.querySelector('.app-name').textContent;
+            const button = appCard.querySelector('.app-price');
+
+            // Add tap animation
+            appCard.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                appCard.style.transform = 'scale(1)';
+            }, 100);
+
+            if (button.textContent === 'OPEN') {
+                showComingSoon(appName, 'This app would open if it were actually installed.');
+                return;
+            }
+
+            // Simulate download
+            showDownloadModal(appName, () => {
+                // Mark as installed
+                const installedApps = JSON.parse(localStorage.getItem('installedApps') || '[]');
+                if (!installedApps.includes(appName)) {
+                    installedApps.push(appName);
+                    localStorage.setItem('installedApps', JSON.stringify(installedApps));
+                }
+
+                button.textContent = 'OPEN';
+                button.className = 'app-price installed';
+            });
+        }
+
+        function showDownloadModal(appName, onComplete) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+
+            modal.innerHTML = `
+                <div style="
+                    background: var(--bg-secondary);
+                    padding: 30px;
+                    border-radius: 15px;
+                    text-align: center;
+                    color: white;
+                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                    max-width: 300px;
+                    width: 90%;
+                ">
+                    <div style="font-size: 50px; margin-bottom: 15px;">📱</div>
+                    <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 600;">Installing ${appName}</h3>
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; margin: 20px 0;">
+                        <div id="progress" style="height: 100%; background: var(--accent-blue); border-radius: 3px; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <p id="status" style="margin: 0; font-size: 14px; opacity: 0.8;">Starting download...</p>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Simulate download progress
+            const progress = modal.querySelector('#progress');
+            const status = modal.querySelector('#status');
+            let currentProgress = 0;
+
+            const interval = setInterval(() => {
+                currentProgress += Math.random() * 25;
+                if (currentProgress >= 100) {
+                    currentProgress = 100;
+                    clearInterval(interval);
+                    
+                    progress.style.width = '100%';
+                    status.textContent = 'Installation complete!';
+                    
+                    setTimeout(() => {
+                        modal.remove();
+                        onComplete();
+                        showComingSoon(appName, `${appName} has been installed successfully!`, 'success');
+                    }, 1000);
+                } else {
+                    progress.style.width = currentProgress + '%';
+                    if (currentProgress < 30) {
+                        status.textContent = 'Downloading...';
+                    } else if (currentProgress < 80) {
+                        status.textContent = 'Installing...';
+                    } else {
+                        status.textContent = 'Finishing up...';
+                    }
+                }
+            }, 200);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    clearInterval(interval);
+                    modal.remove();
+                }
+            });
+        }
+
+        function showComingSoon(appName, message = 'This app is not available in the demo.', type = 'info') {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+
+            const bgColor = type === 'success' ? 'rgba(52, 199, 89, 0.2)' : 'rgba(40, 40, 40, 0.95)';
+            const borderColor = type === 'success' ? 'var(--success-green)' : 'rgba(255, 255, 255, 0.2)';
+
+            modal.innerHTML = `
+                <div style="
+                    background: ${bgColor};
+                    backdrop-filter: blur(20px);
+                    border: 1px solid ${borderColor};
+                    padding: 30px;
+                    border-radius: 15px;
+                    text-align: center;
+                    color: white;
+                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                    max-width: 300px;
+                    width: 90%;
+                ">
+                    <div style="font-size: 50px; margin-bottom: 15px;">${type === 'success' ? '✅' : '📱'}</div>
+                    <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 600;">${appName}</h3>
+                    <p style="margin: 0 0 20px 0; font-size: 14px; opacity: 0.8;">${message}</p>
+                    <button onclick="this.closest('div').parentElement.remove()" style="
+                        background: var(--accent-blue);
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: 500;
+                        cursor: pointer;
+                    ">OK</button>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        // Initialize the app store
+        let appStore;
+        document.addEventListener('DOMContentLoaded', () => {
+            appStore = new AppStore();
+        });
+    </script>
+</body>
+</html>
