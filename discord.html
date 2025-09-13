@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Discord Clone</title>
+<link rel="stylesheet" href="discord.css">
+</head>
+<body>
+<div class="sidebar">
+  <h2>Servers</h2>
+  <button id="createServerBtn">+ Create Server</button>
+  <ul>
+    <li data-channel="games"># Games</li>
+    <li data-channel="general"># General</li>
+    <li data-channel="music"># Music</li>
+  </ul>
+</div>
+<div class="chat">
+  <div class="header">
+    <h2 id="channelName"># Channel</h2>
+  </div>
+  <div id="messages" class="messages"></div>
+  <div class="input">
+    <input type="text" id="messageInput" placeholder="Type a message">
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+<script src="discord.js"></script>
+</body>
+</html>
