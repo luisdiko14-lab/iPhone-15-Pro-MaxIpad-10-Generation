@@ -79,12 +79,16 @@ this.airplaneToggle.classList.add('active');
 
 // Navigation functions
 function navigateTo(page, identifier) {
+  console.log('Navigating to:', page, 'with identifier:', identifier);
   // Add navigation animation
   const container = document.querySelector('.ios-container');
-  container.style.opacity = '0.8';
-  container.style.transform = 'scale(0.95)';
+  if (container) {
+    container.style.opacity = '0.8';
+    container.style.transform = 'scale(0.95)';
+  }
   
   const targetUrl = identifier ? `${page}?settings=${identifier}` : page;
+  console.log('Target URL:', targetUrl);
 
   setTimeout(() => {
     window.location.href = targetUrl;
