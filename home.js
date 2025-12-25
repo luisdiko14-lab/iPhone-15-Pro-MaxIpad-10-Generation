@@ -78,15 +78,17 @@ this.airplaneToggle.classList.add('active');
 }
 
 // Navigation functions
-function navigateTo(page) {
-// Add navigation animation
-const container = document.querySelector('.ios-container');
-container.style.opacity = '0.8';
-container.style.transform = 'scale(0.95)';
+function navigateTo(page, identifier) {
+  // Add navigation animation
+  const container = document.querySelector('.ios-container');
+  container.style.opacity = '0.8';
+  container.style.transform = 'scale(0.95)';
+  
+  const targetUrl = identifier ? `${page}?settings=${identifier}` : page;
 
-setTimeout(() => {
-window.location.href = page;
-}, 150);
+  setTimeout(() => {
+    window.location.href = targetUrl;
+  }, 150);
 }
 
 function toggleAirplane() {
