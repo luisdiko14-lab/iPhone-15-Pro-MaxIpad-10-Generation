@@ -33,6 +33,7 @@
             border-radius: 20px;
             padding: 24px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.5s ease;
         }
 
         h1 {
@@ -113,15 +114,51 @@
         .install-btn:active {
             opacity: 0.8;
         }
+
+        /* Progress Screen */
+        .progress-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background-color: #333;
+            border-radius: 3px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #fff;
+            transition: width 0.3s linear;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        .percent-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
-    <div class="installer-card">
+    <div class="installer-card" id="selectionCard">
         <h1>Select Installation Drive</h1>
         <p class="subtitle">Choose where you want to install the system</p>
         
         <div class="drive-list">
-            <div class="drive-item" onclick="selectDrive(this, 'A')">
+            <div class="drive-item" onclick="selectDrive(this, 'A', 'Main iPhone Drive')">
                 <span class="drive-icon">📱</span>
                 <div class="drive-info">
                     <div class="drive-name">A: Main iPhone Drive</div>
@@ -129,7 +166,7 @@
                 </div>
             </div>
 
-            <div class="drive-item" onclick="selectDrive(this, 'B')">
+            <div class="drive-item" onclick="selectDrive(this, 'B', '/USB Drive')">
                 <span class="drive-icon">💾</span>
                 <div class="drive-info">
                     <div class="drive-name">B: /USB Drive</div>
@@ -137,7 +174,7 @@
                 </div>
             </div>
 
-            <div class="drive-item" onclick="selectDrive(this, 'C')">
+            <div class="drive-item" onclick="selectDrive(this, 'C', '/Windows 11')">
                 <span class="drive-icon">🪟</span>
                 <div class="drive-info">
                     <div class="drive-name">C: /Windows 11</div>
@@ -149,23 +186,31 @@
         <button id="installBtn" class="install-btn" disabled onclick="startInstall()">Install System</button>
     </div>
 
+    <div class="installer-card progress-screen" id="progressCard">
+        <h1 id="progressTitle">Installing to Drive A:</h1>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="percent-text" id="percentText">0%</div>
+        <div class="status-text" id="statusText">Preparing installation...</div>
+    </div>
+
     <script>
         let selectedDriveLetter = null;
+        let selectedDriveName = null;
 
-        function selectDrive(element, letter) {
-            // Remove selection from others
+        function selectDrive(element, letter, name) {
             document.querySelectorAll('.drive-item').forEach(item => {
                 item.style.borderColor = 'var(--border)';
                 item.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
             });
 
-            // Select this one
             element.style.borderColor = 'var(--blue)';
             element.style.backgroundColor = 'rgba(10, 132, 255, 0.1)';
             
             selectedDriveLetter = letter;
+            selectedDriveName = name;
             
-            // Enable button if not Drive C (mocking low space logic)
             const installBtn = document.getElementById('installBtn');
             if (letter === 'C') {
                 installBtn.disabled = true;
@@ -178,13 +223,43 @@
 
         function startInstall() {
             if (!selectedDriveLetter) return;
-            const btn = document.getElementById('installBtn');
-            btn.disabled = true;
-            btn.textContent = 'Installing...';
             
-            setTimeout(() => {
-                window.location.href = 'setup.html';
-            }, 1500);
+            document.getElementById('selectionCard').style.display = 'none';
+            document.getElementById('progressCard').style.display = 'flex';
+            document.getElementById('progressTitle').textContent = 'Installing to ' + selectedDriveName;
+            
+            const progressBar = document.getElementById('progressBar');
+            const statusText = document.getElementById('statusText');
+            const percentText = document.getElementById('percentText');
+            
+            const steps = [
+                { percent: 20, text: 'Installing Updates...' },
+                { percent: 45, text: 'Installing Apps...' },
+                { percent: 70, text: 'Installing iOS...' },
+                { percent: 90, text: 'Installing System...' },
+                { percent: 100, text: 'Finalizing...' }
+            ];
+            
+            let currentStep = 0;
+            let currentPercent = 0;
+            
+            const interval = setInterval(() => {
+                currentPercent += 1;
+                progressBar.style.width = currentPercent + '%';
+                percentText.textContent = currentPercent + '%';
+                
+                if (currentStep < steps.length && currentPercent >= steps[currentStep].percent) {
+                    statusText.textContent = steps[currentStep].text;
+                    currentStep++;
+                }
+                
+                if (currentPercent >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        window.location.href = 'home.html';
+                    }, 1000);
+                }
+            }, 50);
         }
     </script>
 </body>
