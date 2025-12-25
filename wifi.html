@@ -155,11 +155,11 @@
 
                 <div class="network-row" onclick="connectToFreeNetwork('Free WiFi 39GHz')">
                     <div class="network-info">
-                        <div class="network-name">Free WiFi 39GHz</div>
+                        <div class="network-name">Free WiFi INF Ghz</div>
                     </div>
                     <div class="network-icons">
                         <span class="info-icon">🛈</span>
-                        <div class="signal-strength weak"></div>
+                        <div class="signal-strength Strong"></div>
                     </div>
                 </div>
 
@@ -181,7 +181,7 @@
                     </div>
                     <div class="network-icons">
                         <span class="lock-icon">🔒</span>
-                        <span class="info-icon">🛈</span>
+                        <span class="info-icon">ℹ️</span>
                         <div class="signal-strength medium"></div>
                     </div>
                 </div>
@@ -205,6 +205,30 @@
             </div>
 
             <!-- Network Settings -->
+            <div class="settings-group">
+                <div class="section-header">CREATE CUSTOM NETWORK</div>
+                <div class="setting-row">
+                    <div class="setting-label">Name</div>
+                    <input type="text" id="customNetworkName" placeholder="Network Name" style="background:transparent; border:none; color:white; text-align:right; flex:1; outline:none;">
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Security</div>
+                    <select id="customNetworkSecurity" style="background:transparent; border:none; color:#007aff; font-size:16px; outline:none; cursor:pointer;">
+                        <option value="Very Weak">Very Weak (No Password)</option>
+                        <option value="Weak">Weak</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Strong">Strong (Password)</option>
+                    </select>
+                </div>
+                <div class="setting-row" id="customPasswordRow" style="display:none;">
+                    <div class="setting-label">Password</div>
+                    <input type="password" id="customNetworkPassword" placeholder="Required" style="background:transparent; border:none; color:white; text-align:right; flex:1; outline:none;">
+                </div>
+                <div class="setting-row" style="justify-content:center; padding:12px;">
+                    <button onclick="createCustomNetwork()" style="background:#007aff; color:white; border:none; padding:8px 24px; border-radius:8px; font-weight:600; cursor:pointer; width:100%;">Connect</button>
+                </div>
+            </div>
+
             <div class="settings-group">
                 <div class="setting-row" onclick="showNetworkNotifications()">
                     <div class="setting-label">Ask to Join Networks</div>

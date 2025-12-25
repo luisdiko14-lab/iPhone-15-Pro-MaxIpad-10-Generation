@@ -12,7 +12,7 @@ class WiFiSettings {
         this.passwordModal = document.getElementById('passwordModal');
         this.passwordInput = document.getElementById('networkPassword');
         this.modalNetworkName = document.getElementById('modalNetworkName');
-        this.currentNetwork = 'Free WiFi';
+        this.currentNetwork = 'Replit WIFI 0.1GHz';
         this.selectedNetwork = '';
     }
 
@@ -23,6 +23,15 @@ class WiFiSettings {
                 this.closeModal();
             }
         });
+
+        // Security change listener
+        const securitySelect = document.getElementById('customNetworkSecurity');
+        const passwordRow = document.getElementById('customPasswordRow');
+        if (securitySelect && passwordRow) {
+            securitySelect.addEventListener('change', (e) => {
+                passwordRow.style.display = e.target.value === 'Strong' ? 'flex' : 'none';
+            });
+        }
 
         // Password input enter key
         this.passwordInput.addEventListener('keypress', (e) => {
@@ -158,6 +167,72 @@ class WiFiSettings {
 }
 
 // Global functions for onclick handlers
+function createCustomNetwork() {
+    const name = document.getElementById('customNetworkName').value.trim();
+    const security = document.getElementById('customNetworkSecurity').value;
+    const password = document.getElementById('customNetworkPassword').value;
+    const wifiSettings = window.wifiSettings;
+
+    if (!name) {
+        if (wifiSettings) wifiSettings.showNotification('Please enter a network name', 'warning');
+        return;
+    }
+
+    if (security === 'Strong' && !password) {
+        if (wifiSettings) wifiSettings.showNotification('Password required for Strong security', 'warning');
+        return;
+    }
+
+    // Simulate connecting
+    const connectingDiv = document.createElement('div');
+    connectingDiv.className = 'connecting-message';
+    connectingDiv.innerHTML = `
+        <div class="connecting-content">
+            <div class="spinner"></div>
+            <span>Connecting to ${name}...</span>
+            ${security === 'Strong' ? `<small style="display:block; font-size:10px; opacity:0.7;">Secure connection via replit.dev</small>` : ''}
+        </div>
+    `;
+    connectingDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: var(--bg-secondary);
+        padding: 20px;
+        border-radius: 10px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        text-align: center;
+    `;
+    
+    document.body.appendChild(connectingDiv);
+    
+    setTimeout(() => {
+        connectingDiv.remove();
+        updateCurrentNetwork(name);
+        if (wifiSettings) wifiSettings.showNotification(`Connected with ${security} security`, 'success');
+        
+        // Add to list if not exists
+        const availableNetworks = JSON.parse(localStorage.getItem('availableWiFiNetworks') || '[]');
+        if (!availableNetworks.some(n => n.name === name)) {
+            const newNetwork = {
+                name: name,
+                security: security,
+                strength: security === 'Strong' ? 'Full' : 'Medium',
+                password: password,
+                isCustom: true
+            };
+            availableNetworks.push(newNetwork);
+            localStorage.setItem('availableWiFiNetworks', JSON.stringify(availableNetworks));
+            if (wifiSettings) wifiSettings.addNetworkToList(newNetwork);
+        }
+    }, 2000);
+}
+
 function navigateBack() {
     const container = document.querySelector('.ios-container');
     if (container) {
