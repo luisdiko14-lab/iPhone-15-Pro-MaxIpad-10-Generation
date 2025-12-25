@@ -819,8 +819,17 @@
             showDownloadModal(appName, () => {
                 // Mark as installed
                 const installedApps = JSON.parse(localStorage.getItem('installedApps') || '[]');
-                if (!installedApps.includes(appName)) {
-                    installedApps.push(appName);
+                
+                // App data for files.html
+                const appInfo = {
+                    name: appName,
+                    ext: '.ipa',
+                    size: (Math.random() * 500 + 50).toFixed(1) + ' MB',
+                    type: 'App'
+                };
+
+                if (!installedApps.some(a => a.name === appName)) {
+                    installedApps.push(appInfo);
                     localStorage.setItem('installedApps', JSON.stringify(installedApps));
                 }
 
