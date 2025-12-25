@@ -44,26 +44,58 @@ function addMessage(channelId, text, author=currentUser) {
 }
 
 // Bot reply
-function getBotReply(userText) {
-  const replies = ["Hello!", "Interesting...", `You said: ${userText}`, "Let's chat more!"];
-  return replies[Math.floor(Math.random()*replies.length)];
+async function getBotReply(userText) {
+  const apiKey = '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';
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'mixtral-8x7b-32768',
+        messages: [{ role: 'user', content: userText }]
+      })
+    });
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error fetching bot reply:', error);
+    return "I'm having trouble connecting right now.";
+  }
 }
 
 // Send message flow
-function sendMessage() {
+async function sendMessage() {
   const text = input.value.trim();
   if(!text) return;
   addMessage(currentChannel, text, currentUser);
   input.value = '';
-  const botReply = getBotReply(text);
-  setTimeout(()=>addMessage(currentChannel, botReply, 'Bot'),500);
+  
+  // Show typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'message typing';
+  typingDiv.innerHTML = `<em>Bot is typing...</em>`;
+  messagesEl.appendChild(typingDiv);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  const botReply = await getBotReply(text);
+  
+  // Remove typing indicator
+  messagesEl.removeChild(typingDiv);
+  
+  addMessage(currentChannel, botReply, 'Bot');
 }
 
 // Auto bot message on page load
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   loadChannels();
   renderMessages(currentChannel);
-  if(confirmFlag === 'true') addMessage(currentChannel, getBotReply("User joined the chat"), 'Bot');
+  if(confirmFlag === 'true') {
+    const welcome = await getBotReply("The user has just joined the chat. Say hello!");
+    addMessage(currentChannel, welcome, 'Bot');
+  }
 });
 
 // Event listeners
