@@ -160,8 +160,10 @@ class WiFiSettings {
 // Global functions for onclick handlers
 function navigateBack() {
     const container = document.querySelector('.ios-container');
-    container.style.opacity = '0.8';
-    container.style.transform = 'translateX(20px)';
+    if (container) {
+        container.style.opacity = '0.8';
+        container.style.transform = 'translateX(20px)';
+    }
     setTimeout(() => {
         window.location.href = 'home.html';
     }, 150);
@@ -169,16 +171,17 @@ function navigateBack() {
 
 function toggleWiFi() {
     const toggle = document.getElementById('wifiToggle');
+    if (!toggle) return;
     const isActive = toggle.classList.contains('active');
     
     if (isActive) {
         toggle.classList.remove('active');
         localStorage.setItem('wifiEnabled', 'false');
-        document.querySelector('.wifi-settings').disableWiFiFeatures();
+        if (window.wifiSettings) window.wifiSettings.disableWiFiFeatures();
     } else {
         toggle.classList.add('active');
         localStorage.setItem('wifiEnabled', 'true');
-        document.querySelector('.wifi-settings').enableWiFiFeatures();
+        if (window.wifiSettings) window.wifiSettings.enableWiFiFeatures();
     }
     
     console.log(`Wi-Fi ${isActive ? 'disabled' : 'enabled'}`);
