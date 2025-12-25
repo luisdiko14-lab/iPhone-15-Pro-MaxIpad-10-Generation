@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Files</title>
+    <style>
+        :root {
+            --bg-primary: #000;
+            --bg-secondary: #1c1c1e;
+            --text-primary: #fff;
+            --text-secondary: #8e8e93;
+            --blue: #0a84ff;
+            --border: #38383a;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            z-index: 10;
+        }
+
+        h1 { font-size: 28px; margin: 0; }
+
+        .file-list {
+            padding: 16px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .file-icon {
+            font-size: 32px;
+            margin-right: 16px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .file-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .back-btn {
+            color: var(--blue);
+            text-decoration: none;
+            font-size: 17px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="home.html" class="back-btn">‹ Back</a>
+        <h1>Files</h1>
+        <div style="width: 50px;"></div>
+    </div>
+
+    <div class="file-list" id="fileList">
+        <!-- Files will be injected here -->
+    </div>
+
+    <script>
+        function loadFiles() {
+            const installedApps = JSON.parse(localStorage.getItem('installedApps') || '[]');
+            const fileList = document.getElementById('fileList');
+            
+            // Add system files
+            const systemFiles = [
+                { name: 'kernel.sys', ext: '.sys', size: '1.2 GB', type: 'System' },
+                { name: 'boot_loader.sys', ext: '.sys', size: '450 MB', type: 'System' },
+                { name: 'ios_recovery.dmg', ext: '.dmg', size: '4.5 GB', type: 'Disk Image' }
+            ];
+
+            const allFiles = [...systemFiles, ...installedApps];
+
+            if (allFiles.length === 0) {
+                fileList.innerHTML = '<div class="empty-state">No files found</div>';
+                return;
+            }
+
+            fileList.innerHTML = allFiles.map(file => {
+                let icon = '📄';
+                if (file.ext === '.ipa') icon = '📦';
+                if (file.ext === '.sys') icon = '⚙️';
+                if (file.ext === '.dmg') icon = '💿';
+
+                return `
+                    <div class="file-item">
+                        <div class="file-icon">${icon}</div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}${file.ext || ''}</div>
+                            <div class="file-meta">${file.type || 'File'} • ${file.size || 'Unknown size'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', loadFiles);
+    </script>
+</body>
+</html>
