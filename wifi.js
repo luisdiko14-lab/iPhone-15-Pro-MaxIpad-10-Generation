@@ -167,10 +167,22 @@ class WiFiSettings {
 }
 
 // Global functions for onclick handlers
-function createCustomNetwork() {
-    const name = document.getElementById('customNetworkName').value.trim();
-    const security = document.getElementById('customNetworkSecurity').value;
-    const password = document.getElementById('customNetworkPassword').value;
+window.handleSecurityChange = function(value) {
+    const passwordRow = document.getElementById('customPasswordRow');
+    if (passwordRow) {
+        passwordRow.style.display = value === 'Strong' ? 'flex' : 'none';
+    }
+}
+
+window.createCustomNetwork = function() {
+    const nameInput = document.getElementById('customNetworkName');
+    const securityInput = document.getElementById('customNetworkSecurity');
+    const passwordInput = document.getElementById('customNetworkPassword');
+    
+    const name = nameInput ? nameInput.value.trim() : '';
+    const security = securityInput ? securityInput.value : '';
+    const password = passwordInput ? passwordInput.value : '';
+    
     const wifiSettings = window.wifiSettings;
 
     if (!name) {
@@ -188,9 +200,10 @@ function createCustomNetwork() {
     connectingDiv.className = 'connecting-message';
     connectingDiv.innerHTML = `
         <div class="connecting-content">
-            <div class="spinner"></div>
-            <span>Connecting to ${name}...</span>
-            ${security === 'Strong' ? `<small style="display:block; font-size:10px; opacity:0.7;">Secure connection via replit.dev</small>` : ''}
+            <div class="spinner" style="border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;"></div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            <span style="margin-top:10px; font-weight:bold;">Connecting to ${name}...</span>
+            ${security === 'Strong' ? `<small style="display:block; font-size:10px; opacity:0.7; margin-top:5px;">Secure connection via replit.dev</small>` : ''}
         </div>
     `;
     connectingDiv.style.cssText = `
@@ -198,15 +211,18 @@ function createCustomNetwork() {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background-color: var(--bg-secondary);
-        padding: 20px;
-        border-radius: 10px;
-        z-index: 1000;
+        background-color: rgba(0,0,0,0.8);
+        padding: 30px;
+        border-radius: 16px;
+        z-index: 9999;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 12px;
         text-align: center;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        color: white;
+        backdrop-filter: blur(10px);
     `;
     
     document.body.appendChild(connectingDiv);

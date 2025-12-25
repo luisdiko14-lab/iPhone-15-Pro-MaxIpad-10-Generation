@@ -43,27 +43,27 @@
             </div>
 
             <!-- Custom Network Creator (Relocated to Top) -->
-            <div class="settings-group" style="border: 2px solid #007aff;">
+            <div class="settings-group" style="border: 2px solid #007aff; margin-bottom: 15px;">
                 <div class="section-header" style="color: #007aff; font-weight: bold;">CREATE CUSTOM NETWORK</div>
                 <div class="setting-row">
                     <div class="setting-label">Name</div>
-                    <input type="text" id="customNetworkName" placeholder="Network Name" style="background:transparent; border:none; color:white; text-align:right; flex:1; outline:none;">
+                    <input type="text" id="customNetworkName" placeholder="Network Name" style="background:transparent; border:none; color:white; text-align:right; flex:1; outline:none; font-size: 16px;">
                 </div>
                 <div class="setting-row">
                     <div class="setting-label">Security</div>
-                    <select id="customNetworkSecurity" style="background:transparent; border:none; color:#007aff; font-size:16px; outline:none; cursor:pointer;">
+                    <select id="customNetworkSecurity" onchange="handleSecurityChange(this.value)" style="background:transparent; border:none; color:#007aff; font-size:16px; outline:none; cursor:pointer;">
                         <option value="Very Weak">Very Weak (No Password)</option>
                         <option value="Weak">Weak</option>
                         <option value="Medium">Medium</option>
-                        <option value="Strong">Strong (Password)</option>
+                        <option value="Strong">Strong (Password + Domain)</option>
                     </select>
                 </div>
                 <div class="setting-row" id="customPasswordRow" style="display:none;">
                     <div class="setting-label">Password</div>
-                    <input type="password" id="customNetworkPassword" placeholder="Required" style="background:transparent; border:none; color:white; text-align:right; flex:1; outline:none;">
+                    <input type="password" id="customNetworkPassword" placeholder="Required" style="background:transparent; border:none; color:white; text-align:right; flex:1; outline:none; font-size: 16px;">
                 </div>
                 <div class="setting-row" style="justify-content:center; padding:12px;">
-                    <button onclick="createCustomNetwork()" style="background:#007aff; color:white; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; cursor:pointer; width:100%; font-size: 16px;">Connect Now</button>
+                    <button type="button" onclick="createCustomNetwork()" style="background:#007aff; color:white; border:none; padding:12px 24px; border-radius:8px; font-weight:bold; cursor:pointer; width:100%; font-size: 16px; -webkit-appearance: none;">Connect Now</button>
                 </div>
             </div>
 
