@@ -77,6 +77,15 @@ this.airplaneToggle.classList.add('active');
 }
 }
 
+// Custom link handler
+function handleCustomLink() {
+  const input = document.getElementById('customInput');
+  const val = input.value.trim();
+  if (val) {
+    navigateTo('wifi.html', val);
+  }
+}
+
 // Navigation functions
 function navigateTo(page, identifier) {
   console.log('Navigating to:', page, 'with identifier:', identifier);
