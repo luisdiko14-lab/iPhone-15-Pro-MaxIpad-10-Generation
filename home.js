@@ -81,6 +81,7 @@ this.airplaneToggle.classList.add('active');
 function handleCustomLink() {
   const input = document.getElementById('customInput');
   const val = input.value.trim();
+  console.log('Custom link value:', val);
   if (val) {
     navigateTo('wifi.html', val);
   }
@@ -96,7 +97,9 @@ function navigateTo(page, identifier) {
     container.style.transform = 'scale(0.95)';
   }
   
-  const targetUrl = identifier ? `${page}?settings=${identifier}` : page;
+  // Use absolute path for the custom link requirement
+  const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+  const targetUrl = identifier ? `${baseUrl}${page}?settings=${identifier}` : `${baseUrl}${page}`;
   console.log('Target URL:', targetUrl);
 
   setTimeout(() => {
