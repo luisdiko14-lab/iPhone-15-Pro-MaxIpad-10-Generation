@@ -306,16 +306,40 @@ body {
     font-size: 16px;
 }
 
-/* Signal Bars */
+/* SVG Signal Bars */
 .signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
     width: 20px;
     height: 14px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-image: url('https://img.icons8.com/ios-filled/50/ffffff/wifi.png');
-    display: inline-block;
-    vertical-align: middle;
+}
+
+.signal-bars div {
+    flex: 1;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 1px;
+    transition: background-color 0.2s ease;
+}
+
+.signal-bars div:nth-child(1) { height: 25%; }
+.signal-bars div:nth-child(2) { height: 50%; }
+.signal-bars div:nth-child(3) { height: 75%; }
+.signal-bars div:nth-child(4) { height: 100%; }
+
+.signal-bars.full div { background-color: white; }
+.signal-bars.strong div:nth-child(1),
+.signal-bars.strong div:nth-child(2),
+.signal-bars.strong div:nth-child(3) { background-color: white; }
+.signal-bars.medium div:nth-child(1),
+.signal-bars.medium div:nth-child(2) { background-color: white; }
+.signal-bars.weak div:nth-child(1) { background-color: white; }
+
+.connected .signal-bars div { background-color: var(--accent-blue); }
+
+/* Remove broken background image approach */
+.signal-bars {
+    background-image: none !important;
 }
 
 /* Remove CSS bars since we are using an image now */
