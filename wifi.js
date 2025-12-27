@@ -80,13 +80,21 @@ class WiFiSettings {
         
         const isHotspot = network.isPersonalHotspot;
         const hotspotIcon = isHotspot ? '<span class="hotspot-indicator">📱</span>' : '';
+        const strengthClass = (network.strength || 'full').toLowerCase();
         
         networkElement.innerHTML = `
             <div class="network-info">
                 <div class="network-name">${network.name} ${hotspotIcon}</div>
                 ${network.connected ? '<div class="network-status">Connected</div>' : ''}
             </div>
-            <div class="network-signal">${network.strength}</div>
+            <div class="network-icons">
+                <div class="signal-bars ${strengthClass}">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+            </div>
         `;
         
         // Add to the top if it's a hotspot, otherwise add normally
