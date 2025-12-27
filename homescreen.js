@@ -29,15 +29,16 @@ class HomeScreen {
     this.setupAppClick('vpn-app', 'index.html');
     this.setupAppClick('auth-app', 'auth.html');
     this.setupAppClick('wallet-app', 'wallet.html');
+    this.setupAppClick('messages-app', 'discord_2.html');
     
     // Dock apps
     this.setupAppClick('dock-phone', null, 'Phone');
     this.setupAppClick('dock-safari', null, 'Safari');
-    this.setupAppClick('dock-messages', null, 'Messages');
+    this.setupAppClick('dock-messages', 'discord_2.html');
     this.setupAppClick('dock-music', null, 'Music');
     
     // Other apps - show coming soon
-    const comingSoonApps = ['phone-app', 'messages-app', 'camera-app', 'photos-app', 
+    const comingSoonApps = ['phone-app', 'camera-app', 'photos-app', 
                            'safari-app', 'mail-app', 'music-app', 'notes-app', 
                            'calculator-app', 'weather-app', 'clock-app', 'maps-app',
                            'facetime-app', 'health-app', 'find-my-app'];
