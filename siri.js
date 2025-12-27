@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const userQuestion = document.getElementById("userQuestion");
     const siriStatus = document.getElementById("siri-status");
 
-    const GROQ_API_KEY = "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";
+    const GROQ_API_KEY = "Siri not on github pages!";
     const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
     askBtn.addEventListener("click", async () => {
