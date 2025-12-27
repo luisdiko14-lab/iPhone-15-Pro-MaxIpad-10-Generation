@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN Configuration</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="time">14:30</div>
+            <div class="status-indicators">
+                <span class="carrier">Thu 14 Aug</span>
+                <div class="right-indicators">
+                    <span class="signal">📶</span>
+                    <span class="wifi">📶</span>
+                    <span class="battery">26% 🔋</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <button class="header-btn back-btn" id="backBtn" onclick="navigateBack()">
+                <span class="back-arrow">‹</span>
+                <span>VPN & Device Management</span>
+            </button>
+            <h1 class="header-title">VPN</h1>
+            <button class="header-btn done-btn" id="doneBtn">Done</button>
+        </div>
+
+        <!-- VPN Configuration Form -->
+        <div class="vpn-form">
+            <!-- Type Section -->
+            <div class="form-section">
+                <div class="form-row">
+                    <label class="form-label">Type</label>
+                    <div class="form-value">
+                        <select id="vpnType" class="select-input">
+                            <option value="IKEv2">IKEv2</option>
+                            <option value="L2TP">L2TP</option>
+                            <option value="IPSec">IPSec</option>
+                        </select>
+                        <svg class="chevron-icon" width="8" height="14" viewBox="0 0 8 14" fill="none">
+                            <path d="M1 1L7 7L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Basic Configuration -->
+            <div class="form-section">
+                <div class="form-row">
+                    <label class="form-label">Description</label>
+                    <input type="text" id="description" class="text-input" placeholder="Free VPN" value="Free VPN">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Server</label>
+                    <input type="text" id="server" class="text-input" placeholder="free.luis.con" value="free.luis.con">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Remote ID</label>
+                    <input type="text" id="remoteId" class="text-input" placeholder="14.382.9174" value="14.382.9174">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Local ID</label>
+                    <input type="text" id="localId" class="text-input" placeholder="12.4822.982" value="12.4822.982">
+                </div>
+            </div>
+
+            <!-- Authentication Section -->
+            <div class="form-section">
+                <div class="section-header">Authentication</div>
+                <div class="form-row">
+                    <label class="form-label">User Authentication</label>
+                    <div class="form-value">
+                        <span>Username</span>
+                        <svg class="chevron-icon" width="8" height="14" viewBox="0 0 8 14" fill="none">
+                            <path d="M1 1L7 7L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="username" class="text-input" placeholder="free.Luis.vpn.com" value="free.Luis.vpn.com">
+                </div>
+                <div class="form-row">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" class="text-input" placeholder="Password">
+                </div>
+            </div>
+
+            <!-- Proxy Section -->
+            <div class="form-section">
+                <div class="section-header">Proxy</div>
+                <div class="proxy-toggles">
+                    <button class="proxy-btn active" data-proxy="off">Off</button>
+                    <button class="proxy-btn" data-proxy="manual">Manual</button>
+                    <button class="proxy-btn" data-proxy="auto">Auto</button>
+                </div>
+                <div class="form-row proxy-url-row" style="display: none;">
+                    <label class="form-label">URL</label>
+                    <input type="url" id="proxyUrl" class="text-input" placeholder="free.luis.vpn/proxy/auto?code0/callback">
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div class="success-message" id="successMessage" style="display: none;">
+            <div class="success-content">
+                <svg class="success-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <span>VPN Configuration Saved</span>
+            </div>
+        </div>
+
+        <!-- Home Indicator -->
+        <div class="home-indicator"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
