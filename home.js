@@ -97,9 +97,8 @@ function navigateTo(page, identifier) {
     container.style.transform = 'scale(0.95)';
   }
   
-  // Use absolute path for the custom link requirement
-  const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-  const targetUrl = identifier ? `${baseUrl}${page}?settings=${identifier}` : `${baseUrl}${page}`;
+  // Update: use relative path to ensure ?settings= is appended correctly
+  const targetUrl = identifier ? `${page}?settings=${identifier}` : page;
   console.log('Target URL:', targetUrl);
 
   setTimeout(() => {
