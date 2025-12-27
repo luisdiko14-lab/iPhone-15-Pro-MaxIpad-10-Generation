@@ -88,12 +88,7 @@ class WiFiSettings {
                 ${network.connected ? '<div class="network-status">Connected</div>' : ''}
             </div>
             <div class="network-icons">
-                <div class="signal-bars ${strengthClass}">
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                </div>
+                <div class="signal-bars ${strengthClass}"></div>
             </div>
         `;
         
