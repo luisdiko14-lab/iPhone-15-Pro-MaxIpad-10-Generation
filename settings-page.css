@@ -310,11 +310,12 @@ body {
 .signal-bars {
     width: 20px;
     height: 14px;
-    background-image: url('attached_assets/stock_images/ios_wifi_signal_stre_085a529d.jpg');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    filter: invert(1); /* Invert if the image is black to make it white for dark mode */
+    background-image: url('https://img.icons8.com/ios-filled/50/ffffff/wifi.png');
+    display: inline-block;
+    vertical-align: middle;
 }
 
 /* Remove CSS bars since we are using an image now */
