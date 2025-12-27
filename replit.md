@@ -1,4 +1,5 @@
-# iOS Settings App Replica with Complete Home System
+## Integration Notes
+- Discord integration (connector:ccfg_discord_72DFF975D4C5460D83A3A5FD12) was dismissed by the user. If functional Discord API access is needed in the future, credentials should be requested and stored as secrets.
 
 ## Overview
 
