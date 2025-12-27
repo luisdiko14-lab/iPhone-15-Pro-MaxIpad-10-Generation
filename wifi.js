@@ -29,7 +29,8 @@ class WiFiSettings {
         const passwordRow = document.getElementById('customPasswordRow');
         if (securitySelect && passwordRow) {
             securitySelect.addEventListener('change', (e) => {
-                passwordRow.style.display = e.target.value === 'Strong' ? 'flex' : 'none';
+                const showPassword = e.target.value === 'Weak' || e.target.value === 'Medium' || e.target.value === 'Strong';
+                passwordRow.style.display = showPassword ? 'flex' : 'none';
             });
         }
 
@@ -170,7 +171,8 @@ class WiFiSettings {
 window.handleSecurityChange = function(value) {
     const passwordRow = document.getElementById('customPasswordRow');
     if (passwordRow) {
-        passwordRow.style.display = value === 'Strong' ? 'flex' : 'none';
+        const showPassword = value === 'Weak' || value === 'Medium' || value === 'Strong';
+        passwordRow.style.display = showPassword ? 'flex' : 'none';
     }
 }
 
@@ -203,7 +205,8 @@ window.createCustomNetwork = function() {
             <div class="spinner" style="border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;"></div>
             <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
             <span style="margin-top:10px; font-weight:bold;">Connecting to ${name}...</span>
-            ${security === 'Strong' ? `<small style="display:block; font-size:10px; opacity:0.7; margin-top:5px;">Secure connection via replit.dev</small>` : ''}
+            ${security === 'Strong' ? `<small style="display:block; font-size:12px; opacity:0.9; margin-top:5px; color:#30d158;">Securely connected via replit.dev</small>` : ''}
+            ${password ? `<small style="display:block; font-size:10px; opacity:0.7; margin-top:2px;">Password: ${password}</small>` : ''}
         </div>
     `;
     connectingDiv.style.cssText = `
@@ -211,7 +214,7 @@ window.createCustomNetwork = function() {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background-color: rgba(0,0,0,0.8);
+        background-color: rgba(0,0,0,0.85);
         padding: 30px;
         border-radius: 16px;
         z-index: 9999;
@@ -220,9 +223,10 @@ window.createCustomNetwork = function() {
         align-items: center;
         gap: 12px;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         color: white;
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(15px);
+        min-width: 250px;
     `;
     
     document.body.appendChild(connectingDiv);
@@ -230,7 +234,7 @@ window.createCustomNetwork = function() {
     setTimeout(() => {
         connectingDiv.remove();
         updateCurrentNetwork(name);
-        if (wifiSettings) wifiSettings.showNotification(`Connected with ${security} security`, 'success');
+        if (wifiSettings) wifiSettings.showNotification(`Connected to ${name} (${security})`, 'success');
         
         // Add to list if not exists
         const availableNetworks = JSON.parse(localStorage.getItem('availableWiFiNetworks') || '[]');
@@ -238,7 +242,7 @@ window.createCustomNetwork = function() {
             const newNetwork = {
                 name: name,
                 security: security,
-                strength: security === 'Strong' ? 'Full' : 'Medium',
+                strength: 'Full',
                 password: password,
                 isCustom: true
             };
