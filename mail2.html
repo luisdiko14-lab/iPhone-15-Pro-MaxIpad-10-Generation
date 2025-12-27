@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FutureMail UI Concept</title>
+    <link rel="stylesheet" href="mail2.css">
+</head>
+<body>
+
+    <div class="device-frame">
+        <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="camera-notch"></div>
+            <span class="battery">100%</span>
+        </div>
+
+        <div class="app-container">
+            <header>
+                <h1>Inbox</h1>
+                <button class="icon-btn">Filter</button>
+            </header>
+            
+            <div class="mail-list">
+                <div class="mail-item">
+                    <div class="avatar blue"></div>
+                    <div class="mail-content">
+                        <h3>Team Project</h3>
+                        <p>Meeting updates for the Q4 review...</p>
+                    </div>
+                    <span class="date">10:00 AM</span>
+                </div>
+
+                <div class="mail-item">
+                    <div class="avatar green"></div>
+                    <div class="mail-content">
+                        <h3>System Alert</h3>
+                        <p>Your weekly summary is ready to view.</p>
+                    </div>
+                    <span class="date">Yesterday</span>
+                </div>
+
+                <div class="mail-item">
+                    <div class="avatar purple"></div>
+                    <div class="mail-content">
+                        <h3>Design Weekly</h3>
+                        <p>Top 10 trends for 2035 interfaces.</p>
+                    </div>
+                    <span class="date">Friday</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="auth-overlay" class="overlay">
+            <div class="modal-card">
+                <div class="lock-icon">🔒</div>
+                <h2>Authentication Required</h2>
+                <p>Please verify your identity to access secure messages.</p>
+                
+                <div class="input-group">
+                    <button id="demo-login-btn" class="primary-btn">Simulate Biometric Scan</button>
+                    <button class="secondary-btn">Use Passcode</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="notification" class="notification hidden">
+            <p>✅ Access Granted</p>
+        </div>
+    </div>
+
+    <script src="mail2.js"></script>
+</body>
+</html>
