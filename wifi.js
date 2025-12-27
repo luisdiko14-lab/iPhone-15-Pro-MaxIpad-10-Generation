@@ -233,7 +233,7 @@ window.createCustomNetwork = function() {
     
     setTimeout(() => {
         connectingDiv.remove();
-        updateCurrentNetwork(name);
+        updateCurrentNetwork(name, security);
         if (wifiSettings) wifiSettings.showNotification(`Connected to ${name} (${security})`, 'success');
         
         // Add to list if not exists
@@ -321,8 +321,9 @@ function connectToFreeNetwork(networkName) {
     connectingDiv.className = 'connecting-message';
     connectingDiv.innerHTML = `
         <div class="connecting-content">
-            <div class="spinner"></div>
-            <span>Connecting to ${networkName}...</span>
+            <div class="spinner" style="border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;"></div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            <span style="margin-top:10px; font-weight:bold;">Connecting to ${networkName}...</span>
         </div>
     `;
     connectingDiv.style.cssText = `
@@ -330,21 +331,27 @@ function connectToFreeNetwork(networkName) {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background-color: var(--bg-secondary);
-        padding: 20px;
-        border-radius: 10px;
-        z-index: 1000;
+        background-color: rgba(0,0,0,0.85);
+        padding: 30px;
+        border-radius: 16px;
+        z-index: 9999;
         display: flex;
+        flex-direction: column;
         align-items: center;
         gap: 12px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        color: white;
+        backdrop-filter: blur(15px);
+        min-width: 250px;
     `;
     
     document.body.appendChild(connectingDiv);
     
     setTimeout(() => {
         connectingDiv.remove();
-        updateCurrentNetwork(networkName);
-        wifiSettings.showNotification(`Connected to ${networkName}`, 'success');
+        updateCurrentNetwork(networkName, 'Very Weak');
+        if (wifiSettings) wifiSettings.showNotification(`Connected to ${networkName}`, 'success');
         console.log(`Connected to ${networkName}`);
     }, 1500);
 }
@@ -364,7 +371,7 @@ function connectWithPassword() {
     const wifiSettings = window.wifiSettings;
     
     if (!password.trim()) {
-        wifiSettings.showNotification('Please enter a password', 'warning');
+        if (wifiSettings) wifiSettings.showNotification('Please enter a password', 'warning');
         return;
     }
     
@@ -372,7 +379,7 @@ function connectWithPassword() {
     if (wifiSettings.selectedNetwork && wifiSettings.selectedNetwork.isPersonalHotspot) {
         const correctPassword = wifiSettings.selectedNetwork.password;
         if (password !== correctPassword) {
-            wifiSettings.showNotification('Incorrect password for Personal Hotspot', 'error');
+            if (wifiSettings) wifiSettings.showNotification('Incorrect password for Personal Hotspot', 'error');
             return;
         }
     }
@@ -380,9 +387,15 @@ function connectWithPassword() {
     // Special handling for NoPasswordLoL123 network
     if (networkName === 'NoPasswordLoL123') {
         if (password !== 'NoPasswordLoL123') {
-            wifiSettings.showNotification('Incorrect password for NoPasswordLoL123', 'error');
+            if (wifiSettings) wifiSettings.showNotification('Incorrect password for NoPasswordLoL123', 'error');
             return;
         }
+    }
+    
+    // Determine security based on network name or properties
+    let security = 'Medium';
+    if (wifiSettings.selectedNetwork && wifiSettings.selectedNetwork.security) {
+        security = wifiSettings.selectedNetwork.security;
     }
     
     // Simulate connection
@@ -393,8 +406,9 @@ function connectWithPassword() {
     connectingDiv.className = 'connecting-message';
     connectingDiv.innerHTML = `
         <div class="connecting-content">
-            <div class="spinner"></div>
-            <span>Connecting to ${networkName}...</span>
+            <div class="spinner" style="border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;"></div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            <span style="margin-top:10px; font-weight:bold;">Connecting to ${networkName}...</span>
         </div>
     `;
     connectingDiv.style.cssText = `
@@ -402,33 +416,58 @@ function connectWithPassword() {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background-color: var(--bg-secondary);
-        padding: 20px;
-        border-radius: 10px;
-        z-index: 1000;
+        background-color: rgba(0,0,0,0.85);
+        padding: 30px;
+        border-radius: 16px;
+        z-index: 9999;
         display: flex;
+        flex-direction: column;
         align-items: center;
         gap: 12px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        color: white;
+        backdrop-filter: blur(15px);
+        min-width: 250px;
     `;
     
     document.body.appendChild(connectingDiv);
     
     setTimeout(() => {
         connectingDiv.remove();
-        updateCurrentNetwork(networkName);
+        updateCurrentNetwork(networkName, security);
+        if (wifiSettings) wifiSettings.showNotification(`Connected to ${networkName}`, 'success');
         console.log(`Connected to ${networkName}`);
     }, 2000);
 }
 
-function updateCurrentNetwork(networkName) {
+function updateCurrentNetwork(networkName, security = '') {
     // Update the connected network display
     const currentNetworkRow = document.querySelector('.current-network .network-row');
     if (currentNetworkRow) {
         currentNetworkRow.querySelector('.network-name').textContent = `✓ ${networkName}`;
+        
+        const statusElement = currentNetworkRow.querySelector('.network-status');
+        if (statusElement) {
+            if (security === 'Strong') {
+                statusElement.textContent = 'Secure (replit.dev)';
+                statusElement.style.color = '#30d158';
+            } else if (security === 'Medium') {
+                statusElement.textContent = 'WPA2 Security';
+                statusElement.style.color = 'var(--text-secondary)';
+            } else if (security === 'Weak') {
+                statusElement.textContent = 'Weak Security';
+                statusElement.style.color = '#ff9500';
+            } else {
+                statusElement.textContent = 'No Security';
+                statusElement.style.color = '#ff3b30';
+            }
+        }
     }
     
     // Update home page WiFi status
     localStorage.setItem('currentWiFi', networkName);
+    localStorage.setItem('currentWiFiSecurity', security);
 }
 
 function togglePasswordVisibility() {
