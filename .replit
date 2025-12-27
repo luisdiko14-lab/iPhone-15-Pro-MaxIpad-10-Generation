@@ -16,25 +16,31 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "VPN Config Server"
+args = "Full Stack Discord App"
 
 [[workflows.workflow]]
-name = "VPN Config Server"
+name = "Full Stack Discord App"
 author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python -m http.server 5000 --directory ."
+args = "bash -c \"python server.py & python -m http.server 5000 --directory .\""
 waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 5001
+externalPort = 3001
+
 [userenv]
 
 [userenv.shared]
 GROQ_API_KEY = "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"
+DISCORD_CLIENT_ID = "1454564220413808731"
+DISCORD_CLIENT_SECRET = "35mSY5_459fS72yENH2zT80q_2WghvMk"
