@@ -306,13 +306,14 @@ body {
     font-size: 16px;
 }
 
-/* SVG Signal Bars */
+/* Signal Bars */
 .signal-bars {
     display: flex;
     align-items: flex-end;
-    gap: 2px;
-    width: 20px;
-    height: 14px;
+    gap: 1.5px;
+    width: 17px;
+    height: 11px;
+    margin-bottom: 2px;
 }
 
 .signal-bars div {
@@ -322,7 +323,7 @@ body {
     transition: background-color 0.2s ease;
 }
 
-.signal-bars div:nth-child(1) { height: 25%; }
+.signal-bars div:nth-child(1) { height: 30%; }
 .signal-bars div:nth-child(2) { height: 50%; }
 .signal-bars div:nth-child(3) { height: 75%; }
 .signal-bars div:nth-child(4) { height: 100%; }
@@ -335,23 +336,38 @@ body {
 .signal-bars.medium div:nth-child(2) { background-color: white; }
 .signal-bars.weak div:nth-child(1) { background-color: white; }
 
-.connected .signal-bars div { background-color: var(--accent-blue); }
+.connected .signal-bars div { background-color: white; }
 
-/* Remove broken background image approach */
+/* WiFi Indicator */
+.wifi-indicator {
+    width: 18px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: white;
+}
+
+.wifi-indicator::before {
+    content: "📶";
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* Fix the alignment in network rows */
+.network-icons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Hide the old broken elements shown in the screenshot */
 .signal-bars {
     background-image: none !important;
 }
-
-/* Remove CSS bars since we are using an image now */
-.signal-bars .bar { display: none; }
-
-.signal-bars.full { opacity: 1; }
-.signal-bars.strong { opacity: 0.8; }
-.signal-bars.medium { opacity: 0.6; }
-.signal-bars.weak { opacity: 0.4; }
-
-.connected .signal-bars { 
-    filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(190deg) brightness(100%) contrast(105%); /* Blue filter for connected state */
+.signal-bars .bar {
+    display: none !important;
 }
 
 /* Remove old signal-strength styles */
