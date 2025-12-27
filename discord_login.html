@@ -92,15 +92,7 @@
 
     <script>
         document.getElementById('loginBtn').addEventListener('click', () => {
-            // Simulated OAuth2 redirect
-            const clientId = 'YOUR_DISCORD_CLIENT_ID'; // Placeholder
-            const redirectUri = encodeURIComponent(window.location.origin + '/discord_2.html');
-            const scope = 'identify email guilds connections';
-            
-            // In a real app, this would redirect to Discord
-            // For this demo, we'll simulate the successful return
-            alert('Redirecting to Discord OAuth2... (Simulated)');
-            window.location.href = 'discord_2.html?code=simulated_auth_code';
+            window.location.href = '/login';
         });
     </script>
 </body>

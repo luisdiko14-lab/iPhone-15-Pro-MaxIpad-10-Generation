@@ -1,0 +1,62 @@
+from flask import Flask, request, redirect, jsonify, session
+import requests
+import os
+import urllib.parse
+from flask_cors import CORS
+
+app = Flask(__name__)
+app.secret_key = os.urandom(24)
+CORS(app)
+
+CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID')
+CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
+# Use the public domain provided by Replit
+DOMAIN = os.environ.get('REPL_PUB_DOMAIN', 'localhost:5000')
+REDIRECT_URI = f'https://{DOMAIN}/callback'
+
+@app.route('/login')
+def login():
+    params = {
+        'client_id': CLIENT_ID,
+        'redirect_uri': REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'identify email guilds connections'
+    }
+    discord_auth_url = f"https://discord.com/api/oauth2/authorize?{urllib.parse.urlencode(params)}"
+    return redirect(discord_auth_url)
+
+@app.route('/callback')
+def callback():
+    code = request.args.get('code')
+    data = {
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET,
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': REDIRECT_URI
+    }
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    r = requests.post('https://discord.com/api/v10/oauth2/token', data=data, headers=headers)
+    r.raise_for_status()
+    tokens = r.json()
+    
+    # Store tokens or redirect with them (simplified for demo)
+    return redirect(f'/discord_2.html?access_token={tokens["access_token"]}')
+
+@app.route('/api/user')
+def get_user():
+    access_token = request.args.get('access_token')
+    headers = {'Authorization': f'Bearer {access_token}'}
+    
+    user_r = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
+    guilds_r = requests.get('https://discord.com/api/v10/users/@me/guilds', headers=headers)
+    connections_r = requests.get('https://discord.com/api/v10/users/@me/connections', headers=headers)
+    
+    return jsonify({
+        'user': user_r.json(),
+        'guilds': guilds_r.json(),
+        'connections': connections_r.json()
+    })
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)
