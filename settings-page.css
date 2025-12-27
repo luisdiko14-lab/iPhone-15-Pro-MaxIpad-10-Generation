@@ -308,33 +308,26 @@ body {
 
 /* Signal Bars */
 .signal-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
     width: 20px;
     height: 14px;
+    background-image: url('attached_assets/stock_images/ios_wifi_signal_stre_085a529d.jpg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: invert(1); /* Invert if the image is black to make it white for dark mode */
 }
 
-.signal-bars .bar {
-    flex: 1;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 1px;
+/* Remove CSS bars since we are using an image now */
+.signal-bars .bar { display: none; }
+
+.signal-bars.full { opacity: 1; }
+.signal-bars.strong { opacity: 0.8; }
+.signal-bars.medium { opacity: 0.6; }
+.signal-bars.weak { opacity: 0.4; }
+
+.connected .signal-bars { 
+    filter: invert(48%) sepia(79%) saturate(2476%) hue-rotate(190deg) brightness(100%) contrast(105%); /* Blue filter for connected state */
 }
-
-.signal-bars .bar:nth-child(1) { height: 25%; }
-.signal-bars .bar:nth-child(2) { height: 50%; }
-.signal-bars .bar:nth-child(3) { height: 75%; }
-.signal-bars .bar:nth-child(4) { height: 100%; }
-
-.signal-bars.full .bar { background-color: var(--text-primary); }
-.signal-bars.strong .bar:nth-child(1),
-.signal-bars.strong .bar:nth-child(2),
-.signal-bars.strong .bar:nth-child(3) { background-color: var(--text-primary); }
-.signal-bars.medium .bar:nth-child(1),
-.signal-bars.medium .bar:nth-child(2) { background-color: var(--text-primary); }
-.signal-bars.weak .bar:nth-child(1) { background-color: var(--text-primary); }
-
-.connected .signal-bars .bar { background-color: var(--accent-blue); }
 
 /* Remove old signal-strength styles */
 .signal-strength { display: none !important; }
