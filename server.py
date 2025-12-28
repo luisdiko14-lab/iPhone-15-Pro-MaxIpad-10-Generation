@@ -37,10 +37,12 @@ def callback():
     }
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     r = requests.post('https://discord.com/api/v10/oauth2/token', data=data, headers=headers)
-    r.raise_for_status()
-    tokens = r.json()
     
-    # Store tokens or redirect with them (simplified for demo)
+    if not r.ok:
+        print(f"Token Error: {r.status_code} - {r.text}")
+        return f"Error exchanging code for token: {r.text}", 400
+        
+    tokens = r.json()
     return redirect(f'/discord_2.html?access_token={tokens["access_token"]}')
 
 @app.route('/api/user')
