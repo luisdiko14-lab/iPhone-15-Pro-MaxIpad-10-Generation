@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Configuration
+DOMAIN="bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev"
+CALLBACK_URL="https://$DOMAIN/api/callback"
+
+echo "------------------------------------------------"
+echo "Discord OAuth2 Configuration Script"
+echo "------------------------------------------------"
+echo ""
+echo "Please ensure the following is set in your Discord Developer Portal:"
+echo ""
+echo "1. Redirect URI:"
+echo "   $CALLBACK_URL"
+echo ""
+echo "2. Scopes required:"
+echo "   identify, guilds, email, connections"
+echo ""
+echo "3. Environment Secrets (in Replit Secrets tab):"
+echo "   DISCORD_CLIENT_SECRET: [Your Client Secret from Discord]"
+echo ""
+echo "------------------------------------------------"
+echo "Current Server Status:"
+pgrep -f "python server.py" > /dev/null && echo "✅ Server is running on port 5000" || echo "❌ Server is NOT running"
+echo "------------------------------------------------"
+echo "Verification Link (Test your callback):"
+echo "https://$DOMAIN/login"
+echo "------------------------------------------------"
