@@ -8,9 +8,12 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 CORS(app)
 
+# Discord Application Credentials
 CLIENT_ID = '1454564220413808731'
 CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
-DOMAIN = os.environ.get('REPL_PUB_DOMAIN', 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev')
+
+# Using the provided public domain
+DOMAIN = 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev'
 REDIRECT_URI = f'https://{DOMAIN}/api/callback'
 
 @app.route('/login')
@@ -28,7 +31,10 @@ def login():
 def callback():
     print("Callback reached!")
     code = request.args.get('code')
-    print(f"Code: {code}")
+    
+    if not code:
+        return "Missing authorization code", 400
+        
     data = {
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
@@ -37,31 +43,42 @@ def callback():
         'redirect_uri': REDIRECT_URI
     }
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    r = requests.post('https://discord.com/api/v10/oauth2/token', data=data, headers=headers)
     
-    if not r.ok:
-        print(f"Token Error: {r.status_code} - {r.text}")
-        return f"Error exchanging code for token: {r.text}", 400
-        
-    tokens = r.json()
-    print("Token exchange successful")
-    # Redirect to the main frontend port (5000) for the profile page
-    return redirect(f'https://{DOMAIN}/discord_2.html?access_token={tokens["access_token"]}')
+    try:
+        r = requests.post('https://discord.com/api/v10/oauth2/token', data=data, headers=headers)
+        if not r.ok:
+            print(f"Token Error: {r.status_code} - {r.text}")
+            return f"Error exchanging code for token: {r.text}", 400
+            
+        tokens = r.json()
+        print("Token exchange successful")
+        # Redirect to the main frontend with the access token
+        return redirect(f'https://{DOMAIN}/discord_2.html?access_token={tokens["access_token"]}')
+    except Exception as e:
+        print(f"Exception during token exchange: {e}")
+        return f"Internal Server Error: {e}", 500
 
 @app.route('/api/user')
 def get_user():
     access_token = request.args.get('access_token')
+    if not access_token:
+        return "Missing access token", 401
+        
     headers = {'Authorization': f'Bearer {access_token}'}
     
-    user_r = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
-    guilds_r = requests.get('https://discord.com/api/v10/users/@me/guilds', headers=headers)
-    connections_r = requests.get('https://discord.com/api/v10/users/@me/connections', headers=headers)
-    
-    return jsonify({
-        'user': user_r.json(),
-        'guilds': guilds_r.json(),
-        'connections': connections_r.json()
-    })
+    try:
+        user_r = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
+        guilds_r = requests.get('https://discord.com/api/v10/users/@me/guilds', headers=headers)
+        connections_r = requests.get('https://discord.com/api/v10/users/@me/connections', headers=headers)
+        
+        return jsonify({
+            'user': user_r.json(),
+            'guilds': guilds_r.json(),
+            'connections': connections_r.json()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+    # Listen on port 5000 to catch the incoming traffic from the public URL
+    app.run(host='0.0.0.0', port=5000)
