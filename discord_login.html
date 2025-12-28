@@ -92,8 +92,10 @@
 
     <script>
         document.getElementById('loginBtn').addEventListener('click', () => {
-            // Direct redirect to Discord OAuth URL as requested
-            window.location.href = 'https://discord.com/oauth2/authorize?client_id=1454564220413808731&response_type=code&redirect_uri=https%3A%2F%2Fbae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev%2Fapi%2Fcallback&scope=identify+connections+email+guilds';
+            // Direct redirect to Discord OAuth URL with hardcoded URL to ensure it works
+            const oauthUrl = 'https://discord.com/oauth2/authorize?client_id=1454564220413808731&response_type=code&redirect_uri=https%3A%2F%2Fbae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev%2Fapi%2Fcallback&scope=identify+connections+email+guilds';
+            console.log('Redirecting to:', oauthUrl);
+            window.location.href = oauthUrl;
         });
     </script>
 </body>
