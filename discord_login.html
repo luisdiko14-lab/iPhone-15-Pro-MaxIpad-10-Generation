@@ -92,7 +92,8 @@
 
     <script>
         document.getElementById('loginBtn').addEventListener('click', () => {
-            window.location.href = '/login';
+            // Point to the Flask server on port 5001
+            window.location.href = window.location.protocol + '//' + window.location.hostname + ':5001/login';
         });
     </script>
 </body>

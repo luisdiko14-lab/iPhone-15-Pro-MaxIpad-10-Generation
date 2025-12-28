@@ -188,7 +188,9 @@
             }
 
             try {
-                const response = await fetch(`/api/user?access_token=${accessToken}`);
+                // Use absolute URL to the Flask backend on port 5001
+                const backendUrl = window.location.protocol + '//' + window.location.hostname + ':5001';
+                const response = await fetch(`${backendUrl}/api/user?access_token=${accessToken}`);
                 const data = await response.json();
                 
                 const user = data.user;
