@@ -1,10 +1,10 @@
-from flask import Flask, request, redirect, jsonify, session
+from flask import Flask, request, redirect, jsonify, session, send_from_directory
 import requests
 import os
 import urllib.parse
 from flask_cors import CORS
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='.')
 app.secret_key = os.urandom(24)
 CORS(app)
 
@@ -15,6 +15,14 @@ CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
 # Using the provided public domain
 DOMAIN = 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev'
 REDIRECT_URI = f'https://{DOMAIN}/api/callback'
+
+@app.route('/')
+def index():
+    return send_from_directory('.', 'setup.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory('.', path)
 
 @app.route('/login')
 def login():
@@ -29,10 +37,11 @@ def login():
 
 @app.route('/api/callback')
 def callback():
-    print("Callback reached!")
+    print(">>> OAuth Callback Triggered")
     code = request.args.get('code')
     
     if not code:
+        print("!!! Error: Missing authorization code")
         return "Missing authorization code", 400
         
     data = {
@@ -45,24 +54,30 @@ def callback():
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     try:
+        print(">>> Exchanging code for token...")
         r = requests.post('https://discord.com/api/v10/oauth2/token', data=data, headers=headers)
         if not r.ok:
-            print(f"Token Error: {r.status_code} - {r.text}")
+            print(f"!!! Token Error: {r.status_code} - {r.text}")
             return f"Error exchanging code for token: {r.text}", 400
             
         tokens = r.json()
-        print("Token exchange successful")
-        # Redirect to the main frontend with the access token
-        return redirect(f'https://{DOMAIN}/discord_2.html?access_token={tokens["access_token"]}')
+        access_token = tokens.get("access_token")
+        print(">>> Token exchange successful!")
+        
+        # Immediate redirect to discord_2.html with the token
+        target_url = f'https://{DOMAIN}/discord_2.html?access_token={access_token}'
+        print(f">>> Redirecting user to: {target_url}")
+        return redirect(target_url)
+        
     except Exception as e:
-        print(f"Exception during token exchange: {e}")
+        print(f"!!! Exception during token exchange: {e}")
         return f"Internal Server Error: {e}", 500
 
 @app.route('/api/user')
 def get_user():
     access_token = request.args.get('access_token')
     if not access_token:
-        return "Missing access token", 401
+        return jsonify({'error': 'Missing access token'}), 401
         
     headers = {'Authorization': f'Bearer {access_token}'}
     
@@ -80,5 +95,5 @@ def get_user():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Listen on port 5000 to catch the incoming traffic from the public URL
+    # Unified server on port 5000
     app.run(host='0.0.0.0', port=5000)
