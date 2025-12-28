@@ -19,7 +19,7 @@ def login():
         'client_id': CLIENT_ID,
         'redirect_uri': REDIRECT_URI,
         'response_type': 'code',
-        'scope': 'identify email guilds connections'
+        'scope': 'identify guilds email connections'
     }
     discord_auth_url = f"https://discord.com/api/oauth2/authorize?{urllib.parse.urlencode(params)}"
     return redirect(discord_auth_url)
