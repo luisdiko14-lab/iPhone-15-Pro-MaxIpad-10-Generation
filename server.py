@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 CORS(app)
 
-CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID')
+CLIENT_ID = '1454564220413808731'
 CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
 # Specific redirect URL provided by the user
 REDIRECT_URI = 'https://bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev/api/callback'
