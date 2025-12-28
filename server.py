@@ -10,9 +10,8 @@ CORS(app)
 
 CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
-# Use the public domain provided by Replit
-DOMAIN = os.environ.get('REPL_PUB_DOMAIN', 'localhost:5000')
-REDIRECT_URI = f'https://{DOMAIN}/callback'
+# Specific redirect URL provided by the user
+REDIRECT_URI = 'https://bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev/api/callback'
 
 @app.route('/login')
 def login():
@@ -25,7 +24,7 @@ def login():
     discord_auth_url = f"https://discord.com/api/oauth2/authorize?{urllib.parse.urlencode(params)}"
     return redirect(discord_auth_url)
 
-@app.route('/callback')
+@app.route('/api/callback')
 def callback():
     code = request.args.get('code')
     data = {
