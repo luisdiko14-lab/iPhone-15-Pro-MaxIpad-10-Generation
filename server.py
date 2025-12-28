@@ -10,8 +10,8 @@ CORS(app)
 
 CLIENT_ID = '1454564220413808731'
 CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
-# Specific redirect URL provided by the user
-REDIRECT_URI = 'https://bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev/api/callback'
+DOMAIN = os.environ.get('REPL_PUB_DOMAIN', 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev')
+REDIRECT_URI = f'https://{DOMAIN}/api/callback'
 
 @app.route('/login')
 def login():
@@ -26,7 +26,9 @@ def login():
 
 @app.route('/api/callback')
 def callback():
+    print("Callback reached!")
     code = request.args.get('code')
+    print(f"Code: {code}")
     data = {
         'client_id': CLIENT_ID,
         'client_secret': CLIENT_SECRET,
@@ -42,7 +44,9 @@ def callback():
         return f"Error exchanging code for token: {r.text}", 400
         
     tokens = r.json()
-    return redirect(f'/discord_2.html?access_token={tokens["access_token"]}')
+    print("Token exchange successful")
+    # Redirect to the main frontend port (5000) for the profile page
+    return redirect(f'https://{DOMAIN}/discord_2.html?access_token={tokens["access_token"]}')
 
 @app.route('/api/user')
 def get_user():
