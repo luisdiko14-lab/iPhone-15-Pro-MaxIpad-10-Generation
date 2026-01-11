@@ -1,3 +1,2 @@
-suggestions = { 
-s
-debugger.dapLaunchMessage = {  }}
+[agent]
+expertMode = true
