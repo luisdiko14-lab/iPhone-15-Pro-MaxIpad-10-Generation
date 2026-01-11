@@ -95,6 +95,6 @@ def get_user():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Try port 5000 first, if fails, it might be the system itself
-    # Replit environment sometimes has port 5000 occupied by the platform's preview
+    # Using the standard entry point for Replit deployments
+    # This matches the run command we want the platform to use
     app.run(host='0.0.0.0', port=5000)
