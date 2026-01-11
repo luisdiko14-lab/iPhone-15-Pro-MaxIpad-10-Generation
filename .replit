@@ -1,4 +1,8 @@
 modules = ["nodejs-20", "python-3.11"]
+
+[deployment]
+run = ["python", "server.py"]
+
 [agent]
 expertMode = true
 
@@ -35,8 +39,3 @@ localPort = 5000
 externalPort = 80
 
 [userenv]
-
-[userenv.shared]
-GROQ_API_KEY = "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"
-DISCORD_CLIENT_ID = "1454564220413808731"
-DISCORD_CLIENT_SECRET = "35mSY5_459fS72yENH2zT80q_2WghvMk"
