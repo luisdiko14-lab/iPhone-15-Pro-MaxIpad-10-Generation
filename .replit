@@ -5,6 +5,17 @@ expertMode = true
 [workflows]
 runButton = "Project"
 
+[deployment]
+run = "python main.py & npm start & wait"
+build = "pip install . && npm install"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+
+
+
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
@@ -25,7 +36,3 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
-
-[[ports]]
-localPort = 5000
-externalPort = 80
