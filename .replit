@@ -1,10 +1,6 @@
-modules = ["nodejs-20", "python-3.11"]
+modules = ["python-3.11"]
 [agent]
 expertMode = true
-
-[nix]
-channel = "stable-25_05"
-packages = ["ren-find", "sish", "uwhoisd"]
 
 [workflows]
 runButton = "Project"
@@ -22,21 +18,17 @@ args = "Full Stack Discord App"
 name = "Full Stack Discord App"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python server.py"
 waitForPort = 5000
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
 
-[userenv]
-
-[userenv.shared]
-GROQ_API_KEY = "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"
-DISCORD_CLIENT_ID = "1454564220413808731"
-DISCORD_CLIENT_SECRET = "35mSY5_459fS72yENH2zT80q_2WghvMk"
+[nix]
+channel = "stable-25_05"
