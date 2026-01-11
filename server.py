@@ -9,11 +9,11 @@ app.secret_key = os.urandom(24)
 CORS(app)
 
 # Discord Application Credentials
-CLIENT_ID = '1454564220413808731'
+CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '1454564220413808731')
 CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
 
-# Using the provided public domain
-DOMAIN = 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev'
+# Dynamic domain detection for both dev and published environments
+DOMAIN = os.environ.get('REPLIT_DOMAINS', os.environ.get('REPLIT_DEV_DOMAIN', 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev')).split(',')[0]
 REDIRECT_URI = f'https://{DOMAIN}/api/callback'
 
 @app.route('/')
@@ -37,7 +37,7 @@ def login():
 
 @app.route('/api/callback')
 def callback():
-    print(">>> OAuth Callback Triggered")
+    print(f">>> OAuth Callback Triggered for domain: {DOMAIN}")
     code = request.args.get('code')
     
     if not code:
@@ -95,5 +95,6 @@ def get_user():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Unified server on port 5000
+    # Try port 5000 first, if fails, it might be the system itself
+    # Replit environment sometimes has port 5000 occupied by the platform's preview
     app.run(host='0.0.0.0', port=5000)
