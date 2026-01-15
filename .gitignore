@@ -18,6 +18,7 @@ lib64/
 parts/
 sbin/
 var/
+installer.html
 develop-eggs/
 .installed.cfg
 *.egg-info/
