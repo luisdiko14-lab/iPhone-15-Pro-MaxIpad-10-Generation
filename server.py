@@ -9,10 +9,11 @@ app.secret_key = os.urandom(24)
 CORS(app)
 
 # Discord Application Credentials
+# Using the fallback IDs provided in the previous turn if environment variables are missing
 CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '1454564220413808731')
-CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')
+CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', '35mSY5_459fS72yENH2zT80q_2WghvMk')
 
-# Dynamic domain detection for both dev and published environments
+# Dynamic domain detection
 DOMAIN = os.environ.get('REPLIT_DOMAINS', os.environ.get('REPLIT_DEV_DOMAIN', 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev')).split(',')[0]
 REDIRECT_URI = f'https://{DOMAIN}/api/callback'
 
@@ -41,11 +42,8 @@ def login():
 
 @app.route('/api/callback')
 def callback():
-    print(f">>> OAuth Callback Triggered for domain: {DOMAIN}")
     code = request.args.get('code')
-    
     if not code:
-        print("!!! Error: Missing authorization code")
         return "Missing authorization code", 400
         
     data = {
@@ -58,23 +56,15 @@ def callback():
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     
     try:
-        print(">>> Exchanging code for token...")
         r = requests.post('https://discord.com/api/v10/oauth2/token', data=data, headers=headers)
         if not r.ok:
-            print(f"!!! Token Error: {r.status_code} - {r.text}")
             return f"Error exchanging code for token: {r.text}", 400
             
         tokens = r.json()
         access_token = tokens.get("access_token")
-        print(">>> Token exchange successful!")
-        
-        # Immediate redirect to discord_2.html with the token
-        target_url = f'https://{DOMAIN}/discord_2.html?access_token={access_token}'
-        print(f">>> Redirecting user to: {target_url}")
-        return redirect(target_url)
+        return redirect(f'https://{DOMAIN}/discord_2.html?access_token={access_token}')
         
     except Exception as e:
-        print(f"!!! Exception during token exchange: {e}")
         return f"Internal Server Error: {e}", 500
 
 @app.route('/api/user')
@@ -84,7 +74,6 @@ def get_user():
         return jsonify({'error': 'Missing access token'}), 401
         
     headers = {'Authorization': f'Bearer {access_token}'}
-    
     try:
         user_r = requests.get('https://discord.com/api/v10/users/@me', headers=headers)
         guilds_r = requests.get('https://discord.com/api/v10/users/@me/guilds', headers=headers)
@@ -99,6 +88,4 @@ def get_user():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Using the standard entry point for Replit deployments
-    # This matches the run command we want the platform to use
     app.run(host='0.0.0.0', port=5000)
