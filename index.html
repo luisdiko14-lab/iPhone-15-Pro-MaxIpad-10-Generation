@@ -16,18 +16,18 @@
             </header>
 
             <div class="device-selection">
-                <div class="device-card active" onclick="selectDevice('ios')">
+                <div class="device-card active" id="iosCard" onclick="selectDevice('ios')">
                     <div class="device-icon">📱</div>
                     <h3>iOS 17</h3>
                     <p>Replica iPhone Experience</p>
                     <div class="badge">Recommended</div>
                 </div>
 
-                <div class="device-card disabled">
+                <div class="device-card" id="winCard" onclick="selectDevice('windows')">
                     <div class="device-icon">🪟</div>
                     <h3>Windows 10</h3>
-                    <p>Coming Soon...</p>
-                    <div class="badge soon">Locked</div>
+                    <p>Professional Edition</p>
+                    <div class="badge">Available</div>
                 </div>
             </div>
 
