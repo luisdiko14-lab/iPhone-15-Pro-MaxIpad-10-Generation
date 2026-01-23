@@ -19,7 +19,7 @@ REDIRECT_URI = f'https://{DOMAIN}/api/callback'
 
 @app.route('/')
 def index():
-    return send_from_directory('.', 'setup.html')
+    return send_from_directory('.', 'index.html')
 
 @app.route('/.well-known/discord')
 def discord_verification():
