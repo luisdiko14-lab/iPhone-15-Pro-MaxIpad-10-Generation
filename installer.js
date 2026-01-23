@@ -33,7 +33,7 @@ function startInstallation() {
         } else {
             clearInterval(interval);
             setTimeout(() => {
-                window.location.href = 'homescreen.html';
+                window.location.href = 'setup.html';
             }, 800);
         }
     }, 1200);
