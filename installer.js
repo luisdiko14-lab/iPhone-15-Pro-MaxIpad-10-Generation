@@ -1,8 +1,9 @@
 let selectedDevice = 'ios';
 
 function selectDevice(device) {
-    if (device === 'windows') return;
     selectedDevice = device;
+    document.getElementById('iosCard').classList.toggle('active', device === 'ios');
+    document.getElementById('winCard').classList.toggle('active', device === 'windows');
 }
 
 function startInstallation() {
@@ -16,9 +17,9 @@ function startInstallation() {
 
     const steps = [
         { progress: 10, text: "Allocating storage space..." },
-        { progress: 30, text: "Fetching system image from VMware cloud..." },
-        { progress: 50, text: "Extracting iOS 17 kernel..." },
-        { progress: 75, text: "Setting up virtual hardware profiles..." },
+        { progress: 30, text: `Fetching ${selectedDevice === 'ios' ? 'iOS 17' : 'Windows 10'} image...` },
+        { progress: 50, text: "Extracting system files..." },
+        { progress: 75, text: "Configuring virtual hardware..." },
         { progress: 90, text: "Finalizing installation..." },
         { progress: 100, text: "Done!" }
     ];
@@ -33,7 +34,11 @@ function startInstallation() {
         } else {
             clearInterval(interval);
             setTimeout(() => {
-                window.location.href = 'setup.html';
+                if (selectedDevice === 'ios') {
+                    window.location.href = 'setup.html';
+                } else {
+                    window.location.href = 'win_installer.html';
+                }
             }, 800);
         }
     }, 1200);

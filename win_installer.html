@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 10 Setup</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0078d7;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+        }
+        h1 { font-weight: 300; font-size: 32px; margin-bottom: 20px; }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .status { font-size: 18px; margin-bottom: 10px; }
+        .percentage { font-size: 48px; font-weight: 300; }
+        .footer { position: absolute; bottom: 40px; font-size: 14px; opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>Installing Windows 10</h1>
+        <div class="status" id="status">Getting files ready for installation</div>
+        <div class="percentage" id="percent">0%</div>
+    </div>
+    <div class="footer">Your PC will restart several times. This might take a while.</div>
+
+    <script>
+        let progress = 0;
+        const statusEl = document.getElementById('status');
+        const percentEl = document.getElementById('percent');
+        
+        const phases = [
+            "Copying Windows files",
+            "Getting files ready for installation",
+            "Installing features",
+            "Installing updates",
+            "Finishing up"
+        ];
+
+        const interval = setInterval(() => {
+            progress += Math.floor(Math.random() * 3) + 1;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                setTimeout(() => {
+                    window.location.href = 'windows10.html';
+                }, 1000);
+            }
+            percentEl.innerText = progress + '%';
+            
+            if (progress < 20) statusEl.innerText = phases[0];
+            else if (progress < 70) statusEl.innerText = phases[1];
+            else if (progress < 85) statusEl.innerText = phases[2];
+            else if (progress < 95) statusEl.innerText = phases[3];
+            else statusEl.innerText = phases[4];
+            
+        }, 150);
+    </script>
+</body>
+</html>
