@@ -1,31 +1,55 @@
 const updateBtn = document.getElementById('update-btn');
 const progressBar = document.getElementById('progress-bar');
 const statusText = document.getElementById('status-text');
+const progressSection = document.getElementById('progress-section');
+const bootScreen = document.getElementById('boot-screen');
+const bootBar = document.getElementById('boot-bar');
 
 updateBtn.addEventListener('click', () => {
-    updateBtn.disabled = true;
-    statusText.innerText = "Downloading update...";
+    updateBtn.style.display = 'none';
+    progressSection.style.display = 'block';
+    
     let progress = 0;
-
     const interval = setInterval(() => {
-        // Increase progress randomly between 5% and 14%
-        progress += Math.floor(Math.random() * 10) + 5;
-        if(progress > 100) progress = 100;
+        progress += Math.floor(Math.random() * 5) + 2;
+        if (progress > 100) progress = 100;
 
-        // Update progress bar and status
         progressBar.style.width = progress + "%";
-        statusText.innerText = `Downloading update... ${progress}%`;
+        
+        if (progress < 40) {
+            statusText.innerText = "Downloading... " + progress + "%";
+        } else if (progress < 80) {
+            statusText.innerText = "Preparing Update... " + (progress - 40) * 2.5 + "%";
+        } else if (progress < 100) {
+            statusText.innerText = "Verifying Update...";
+        }
 
-        if(progress >= 100){
+        if (progress >= 100) {
             clearInterval(interval);
-            statusText.innerText = "iOS 2.0 Installed ✅";
-            updateBtn.innerText = "Update Completed";
-            updateBtn.style.background = "#4caf50";
-
-            // Redirect to Home Screen after 1 second
+            statusText.innerText = "Restarting...";
+            
             setTimeout(() => {
-                window.location.href = "https://322a44cb-3336-4f7a-9384-2fd6c6824466-00-2ypwmzwt52p8b.worf.replit.dev/homescreen.html";
+                startBootSequence();
+            }, 1500);
+        }
+    }, 200);
+});
+
+function startBootSequence() {
+    bootScreen.style.display = 'flex';
+    let bootProgress = 0;
+    
+    const bootInterval = setInterval(() => {
+        bootProgress += Math.floor(Math.random() * 3) + 1;
+        if (bootProgress > 100) bootProgress = 100;
+        
+        bootBar.style.width = bootProgress + "%";
+        
+        if (bootProgress >= 100) {
+            clearInterval(bootInterval);
+            setTimeout(() => {
+                window.location.href = "homescreen.html";
             }, 1000);
         }
-    }, 500);
-});
+    }, 100);
+}
