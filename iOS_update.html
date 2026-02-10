@@ -1,26 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>iOS Update</title>
-<link rel="stylesheet" href="iOS_update.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software Update</title>
+    <link rel="stylesheet" href="iOS_update.css">
 </head>
 <body>
-<div class="update-container">
-    <h1>iOS Update</h1>
-    <p>Current Version: 11.8</p>
-    <p>New Version: 18.</p>
-    <p class="update-desc">This update includes performance improvements, new features, and bug fixes.</p>
+    <div class="update-container">
+        <a href="general.html" class="back-btn">‹ General</a>
+        <h1>iOS 18.0</h1>
+        <p class="version-info">Apple Inc. - 4.2 GB</p>
 
-    <div class="progress-container">
-        <div id="progress-bar" class="progress-bar"></div>
+        <div class="release-notes">
+            <h2>About this update</h2>
+            <p>iOS 18 brings a complete overhaul to your iPhone experience with new customization options, redesigned apps, and advanced intelligence features.</p>
+            <ul>
+                <li><strong>Home Screen:</strong> Arrange apps and widgets in any open space.</li>
+                <li><strong>Control Center:</strong> Redesigned with new groups of controls and third-party app integration.</li>
+                <li><strong>Photos:</strong> The biggest-ever redesign with a new unified view and automated collections.</li>
+                <li><strong>Messages:</strong> All-new text effects, scheduled messages, and satellite connectivity.</li>
+            </ul>
+            <p>For information on the security content of Apple software updates, please visit: https://support.apple.com/kb/HT201222</p>
+        </div>
+
+        <div id="progress-section" class="progress-section" style="display: none;">
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <p id="status-text">Preparing update...</p>
+        </div>
+
+        <button id="update-btn">Download and Install</button>
     </div>
 
-    <button id="update-btn">Download & Install</button>
-    <p id="status-text"></p>
-</div>
+    <!-- Simulated Restart Screen -->
+    <div id="boot-screen">
+        <div class="apple-logo"></div>
+        <div class="boot-progress">
+            <div id="boot-bar" class="boot-bar"></div>
+        </div>
+    </div>
 
-<script src="iOS_update.js"></script>
+    <script src="iOS_update.js"></script>
 </body>
 </html>
