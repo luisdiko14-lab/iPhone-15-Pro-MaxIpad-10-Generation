@@ -24,12 +24,12 @@ class HomeScreen {
 
   wireApps() {
     // Main app navigation
-    this.setupAppClick('settings-app', 'home.html');
-    this.setupAppClick('app-store-app', 'app-store.html');
-    this.setupAppClick('vpn-app', 'index.html');
-    this.setupAppClick('auth-app', 'auth.html');
-    this.setupAppClick('wallet-app', 'wallet.html');
-    this.setupAppClick('messages-app', 'discord_2.html');
+    this.setupAppClick('settings-app', 'home.html?=redirected_from=homescreen.html');
+    this.setupAppClick('app-store-app', 'app-store.html?=redirected_from=homescreen.html');
+    this.setupAppClick('vpn-app', 'index.html?=redirected_from=homescreen.html');
+    this.setupAppClick('auth-app', 'auth.html?=redirected_from=homescreen.html');
+    this.setupAppClick('wallet-app', 'wallet.html?=redirected_from=homescreen.html');
+    this.setupAppClick('messages-app', 'discord_2.html?=redirected_from=homescreen.html');
     
     // Dock apps
     this.setupAppClick('dock-phone', null, 'Phone');

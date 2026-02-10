@@ -37,7 +37,7 @@ function startInstallation() {
                 if (selectedDevice === 'ios') {
                     window.location.href = 'setup.html';
                 } else {
-                    window.location.href = 'win_installer.html';
+                    window.location.href = 'setup_1.html';
                 }
             }, 800);
         }
