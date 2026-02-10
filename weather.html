@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather</title>
+    <style>
+        body {
+            margin: 0;
+            background: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
+            color: #fff;
+            font-family: -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            padding-top: 80px;
+        }
+        .city { font-size: 34px; font-weight: 400; margin-bottom: 8px; }
+        .temp { font-size: 96px; font-weight: 200; margin-left: 20px; }
+        .condition { font-size: 20px; font-weight: 500; margin-bottom: 40px; }
+        .forecast {
+            width: 90%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .forecast-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <a href="homescreen.html" class="back-btn">‹ Home</a>
+    <div class="city">Cupertino</div>
+    <div class="temp">72°</div>
+    <div class="condition">Mostly Sunny</div>
+    
+    <div class="forecast">
+        <div class="forecast-row"><span>Today</span><span>☀️</span><span>H:75° L:62°</span></div>
+        <div class="forecast-row"><span>Tuesday</span><span>⛅</span><span>H:73° L:60°</span></div>
+        <div class="forecast-row"><span>Wednesday</span><span>🌦️</span><span>H:68° L:58°</span></div>
+    </div>
+</body>
+</html>
