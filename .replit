@@ -1,24 +1,9 @@
-modules = ["python-3.11"]
+modules = ["python-3.11", "nodejs-24", "angular-node-24", "typescript-language-server", "pyright", "nodejs-20", "nodejs-23"]
 [agent]
 expertMode = true
 
 [workflows]
-runButton = "Project"
-
-[deployment]
-run = "python main.py & npm start & wait"
-build = "pip install . && npm install"
-
-[[ports]]
-localPort = 5000
-externalPort = 80
-
-[nix]
-packages = ["killall"]
-channel = "stable-25_05"
-
-
-
+runButton = "Install Packages & Run Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -40,3 +25,27 @@ outputType = "webview"
 task = "shell.exec"
 args = "python server.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Install Packages & Run Project"
+mode = "sequential"
+author = 44439860
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Project"
+
+[deployment]
+run = "python main.py & npm start & wait"
+build = "pip install . && npm install"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[nix]
+packages = ["killall"]
+channel = "stable-25_05"

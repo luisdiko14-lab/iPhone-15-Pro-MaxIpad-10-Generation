@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 10 Setup</title>
+    <link rel="stylesheet" href="win1_.css">
+</head>
+<body>
+    <div class="container">
+        <div class="screen" id="boot-screen">
+            <div class="restart-animation">
+                <div class="windows-logo-large">
+                    <div class="windows-squares">
+                        <div class="square"></div>
+                        <div class="square"></div>
+                        <div class="square"></div>
+                        <div class="square"></div>
+                    </div>
+                </div>
+                <div class="loading-circle"></div>
+                <p>Getting ready...</p>
+            </div>
+        </div>
+
+        <div class="screen" id="setup-screen">
+            <div class="setup-container">
+                <div class="windows-logo">
+                    <div class="windows-squares">
+                        <div class="square"></div>
+                        <div class="square"></div>
+                        <div class="square"></div>
+                        <div class="square"></div>
+                    </div>
+                </div>
+
+                <div class="setup-step active" id="step-wifi">
+                    <h2>Let's connect you to a network</h2>
+                    <p>Connect to the internet to get the latest features and security updates.</p>
+                    <div class="wifi-list">
+                        <div class="wifi-item" onclick="selectWifi('Home Network')">
+                            <span class="wifi-icon">📶</span>
+                            <span class="wifi-name">Home Network</span>
+                            <span class="wifi-security">🔒</span>
+                        </div>
+                        <div class="wifi-item" onclick="selectWifi('Office WiFi')">
+                            <span class="wifi-icon">📶</span>
+                            <span class="wifi-name">Office WiFi</span>
+                            <span class="wifi-security">🔒</span>
+                        </div>
+                        <div class="wifi-item" onclick="selectWifi('Guest Network')">
+                            <span class="wifi-icon">📶</span>
+                            <span class="wifi-name">Guest Network</span>
+                            <span class="wifi-security"></span>
+                        </div>
+                        <div class="wifi-item" onclick="selectWifi('Neighbor\'s WiFi')">
+                            <span class="wifi-icon">📶</span>
+                            <span class="wifi-name">Neighbor's WiFi</span>
+                            <span class="wifi-security">🔒</span>
+                        </div>
+                    </div>
+                    <button class="btn-secondary" onclick="skipWifi()">I don't have internet</button>
+                </div>
+
+                <div class="setup-step" id="step-wifi-password">
+                    <h2>Enter network password</h2>
+                    <p>Network: <span id="wifi-network-name"></span></p>
+                    <input type="password" id="wifi-password-input" class="setup-input" placeholder="Network password">
+                    <button class="btn-primary" onclick="connectWifi()">Connect</button>
+                    <button class="btn-secondary" onclick="backToWifiList()">Back</button>
+                </div>
+
+                <div class="setup-step" id="step-account-type">
+                    <h2>How would you like to set up?</h2>
+                    <div class="account-options">
+                        <div class="account-option" onclick="chooseMicrosoftAccount()">
+                            <div class="account-icon">👤</div>
+                            <div class="account-info">
+                                <h3>Sign in with Microsoft</h3>
+                                <p>Use your Microsoft account to access your files, settings, and apps across devices.</p>
+                            </div>
+                        </div>
+                        <div class="account-option" onclick="chooseLocalAccount()">
+                            <div class="account-icon">💻</div>
+                            <div class="account-info">
+                                <h3>Offline account</h3>
+                                <p>Create a local account for this PC only.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setup-step" id="step-microsoft-account">
+                    <h2>Sign in with Microsoft</h2>
+                    <p>Enter your email to sign in.</p>
+                    <input type="email" id="microsoft-email" class="setup-input" placeholder="Email address">
+                    <button class="btn-primary" onclick="handleMicrosoftAccountNext()">Next</button>
+                    <p class="account-link">No account? <a href="#" onclick="createMicrosoftAccount()">Create one!</a></p>
+                    <button class="btn-secondary" onclick="backToAccountType()">Back</button>
+                </div>
+
+                <div class="setup-step" id="step-microsoft-password">
+                    <h2>Enter password</h2>
+                    <p id="microsoft-email-display"></p>
+                    <input type="password" id="microsoft-password-input" class="setup-input" placeholder="Password">
+                    <button class="btn-primary" onclick="handleMicrosoftPasswordNext()">Sign in</button>
+                    <button class="btn-secondary" onclick="backToMicrosoftEmail()">Back</button>
+                </div>
+
+                <div class="setup-step" id="step-account">
+                    <h2>Who's going to use this PC?</h2>
+                    <input type="text" id="username-input" class="setup-input" placeholder="Enter your name">
+                    <button class="btn-primary" onclick="handleLocalAccountNext()">Next</button>
+                    <button class="btn-secondary" onclick="backToAccountType()">Back</button>
+                </div>
+
+                <div class="setup-step" id="step-password">
+                    <h2>Create a super memorable password</h2>
+                    <input type="password" id="password-input" class="setup-input" placeholder="Enter password">
+                    <input type="password" id="password-confirm" class="setup-input" placeholder="Confirm password">
+                    <button class="btn-primary" onclick="handleLocalPasswordNext()">Next</button>
+                </div>
+
+                <div class="setup-step" id="step-privacy">
+                    <h2>Choose privacy settings for your device</h2>
+                    <p>Microsoft puts you in control of your privacy. Choose your settings.</p>
+                    <div class="privacy-options">
+                        <div class="privacy-item">
+                            <span>Location</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="privacy-location" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="privacy-item">
+                            <span>Diagnostics</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="privacy-diagnostics" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="privacy-item">
+                            <span>Tailored experiences</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="privacy-tailored">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="handlePrivacyNext()">Accept</button>
+                </div>
+
+                <div class="setup-step" id="step-finalizing">
+                    <h2>Setting things up for you</h2>
+                    <p class="install-message" id="finalize-message">Getting your PC ready...</p>
+                    <div class="loading-container">
+                        <div class="loading-dots">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                    </div>
+                    <p class="setup-hint">This might take a few minutes</p>
+                    <p class="setup-hint">Don't turn off your PC</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userData = {
+            username: '',
+            password: '',
+            email: '',
+            accountType: 'local',
+            wifiNetwork: ''
+        };
+
+        const previousData = localStorage.getItem('windowsSetupData');
+        if (previousData) {
+            const parsed = JSON.parse(previousData);
+            userData = { ...userData, ...parsed };
+        }
+
+        window.onload = function() {
+            document.getElementById('boot-screen').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('boot-screen').classList.remove('active');
+                document.getElementById('setup-screen').classList.add('active');
+            }, 2000);
+        };
+
+        function selectWifi(networkName) {
+            userData.wifiNetwork = networkName;
+            document.getElementById('wifi-network-name').textContent = networkName;
+
+            if (networkName === 'Guest Network') {
+                goToAccountType();
+            } else {
+                document.getElementById('step-wifi').classList.remove('active');
+                document.getElementById('step-wifi-password').classList.add('active');
+            }
+        }
+
+        function connectWifi() {
+            const password = document.getElementById('wifi-password-input').value;
+            if (!password) {
+                alert('Please enter the network password');
+                return;
+            }
+            document.getElementById('step-wifi-password').classList.remove('active');
+            goToAccountType();
+        }
+
+        function skipWifi() {
+            userData.wifiNetwork = 'offline';
+            document.getElementById('step-wifi').classList.remove('active');
+            goToAccountType();
+        }
+
+        function backToWifiList() {
+            document.getElementById('step-wifi-password').classList.remove('active');
+            document.getElementById('step-wifi').classList.add('active');
+        }
+
+        function goToAccountType() {
+            document.getElementById('step-wifi').classList.remove('active');
+            document.getElementById('step-wifi-password').classList.remove('active');
+            document.getElementById('step-account-type').classList.add('active');
+        }
+
+        function chooseMicrosoftAccount() {
+            userData.accountType = 'microsoft';
+            document.getElementById('step-account-type').classList.remove('active');
+            document.getElementById('step-microsoft-account').classList.add('active');
+        }
+
+        function chooseLocalAccount() {
+            userData.accountType = 'local';
+            document.getElementById('step-account-type').classList.remove('active');
+            document.getElementById('step-account').classList.add('active');
+        }
+
+        function backToAccountType() {
+            document.querySelectorAll('.setup-step').forEach(step => step.classList.remove('active'));
+            document.getElementById('step-account-type').classList.add('active');
+        }
+
+        function handleMicrosoftAccountNext() {
+            const email = document.getElementById('microsoft-email').value.trim();
+            if (!email) {
+                alert('Please enter your email');
+                return;
+            }
+            userData.email = email;
+            userData.username = email.split('@')[0];
+            document.getElementById('microsoft-email-display').textContent = email;
+            document.getElementById('step-microsoft-account').classList.remove('active');
+            document.getElementById('step-microsoft-password').classList.add('active');
+        }
+
+        function backToMicrosoftEmail() {
+            document.getElementById('step-microsoft-password').classList.remove('active');
+            document.getElementById('step-microsoft-account').classList.add('active');
+        }
+
+        function handleMicrosoftPasswordNext() {
+            const password = document.getElementById('microsoft-password-input').value;
+            if (!password) {
+                alert('Please enter your password');
+                return;
+            }
+            userData.password = password;
+            document.getElementById('step-microsoft-password').classList.remove('active');
+            document.getElementById('step-privacy').classList.add('active');
+        }
+
+        function handleLocalAccountNext() {
+            const username = document.getElementById('username-input').value.trim();
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+            userData.username = username;
+            document.getElementById('step-account').classList.remove('active');
+            document.getElementById('step-password').classList.add('active');
+        }
+
+        function handleLocalPasswordNext() {
+            const password = document.getElementById('password-input').value;
+            const confirm = document.getElementById('password-confirm').value;
+            if (!password) {
+                alert('Please enter a password');
+                return;
+            }
+            if (password !== confirm) {
+                alert('Passwords do not match');
+                return;
+            }
+            userData.password = password;
+            document.getElementById('step-password').classList.remove('active');
+            document.getElementById('step-privacy').classList.add('active');
+        }
+
+        function handlePrivacyNext() {
+            userData.privacyLocation = document.getElementById('privacy-location').checked;
+            userData.privacyDiagnostics = document.getElementById('privacy-diagnostics').checked;
+            userData.privacyTailored = document.getElementById('privacy-tailored').checked;
+
+            document.getElementById('step-privacy').classList.remove('active');
+            document.getElementById('step-finalizing').classList.add('active');
+
+            startFinalization();
+        }
+
+        function startFinalization() {
+            const messages = [
+                'Getting your PC ready...',
+                'This might take a few minutes...',
+                'Installing apps...',
+                'Applying your settings...',
+                'Almost there...',
+                'Let\'s get started!'
+            ];
+
+            let messageIndex = 0;
+            const messageElement = document.getElementById('finalize-message');
+
+            const interval = setInterval(() => {
+                messageIndex++;
+                if (messageIndex >= messages.length) {
+                    clearInterval(interval);
+                    localStorage.setItem('windowsUserData', JSON.stringify(userData));
+                    setTimeout(() => {
+                        window.location.href = 'windows10.html';
+                    }, 1500);
+                    return;
+                }
+                messageElement.textContent = messages[messageIndex];
+            }, 2000);
+        }
+
+        function createMicrosoftAccount() {
+            alert('Create account feature - redirects to Microsoft account creation page');
+        }
+    </script>
+</body>
+</html>
