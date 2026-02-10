@@ -62,7 +62,10 @@
     </style>
 </head>
 <body>
-    <a href="homescreen.html" class="back-btn">‹ Back</a>
+    <script>
+        const callback = Math.random().toString(36).substring(2, 10);
+        document.write(`<a href="homescreen.html?redirect_from=music&callback=${callback}" class="back-btn">‹ Back</a>`);
+    </script>
     <div class="header">Now Playing</div>
     <div class="now-playing">
         <div class="album-art">🎵</div>

@@ -22,16 +22,20 @@ class HomeScreen {
     });
   }
 
+  generateCallback() {
+    return Math.random().toString(36).substring(2, 10);
+  }
+
   wireApps() {
     // Main app navigation
-    this.setupAppClick('settings-app', 'home.html?=redirected_from=homescreen.html');
-    this.setupAppClick('app-store-app', 'app-store.html?=redirected_from=homescreen.html');
-    this.setupAppClick('vpn-app', 'index.html?=redirected_from=homescreen.html');
-    this.setupAppClick('auth-app', 'auth.html?=redirected_from=homescreen.html');
-    this.setupAppClick('wallet-app', 'wallet.html?=redirected_from=homescreen.html');
-    this.setupAppClick('messages-app', 'discord_2.html?=redirected_from=homescreen.html');
-    this.setupAppClick('music-app', 'music.html');
-    this.setupAppClick('weather-app', 'weather.html');
+    this.setupAppClick('settings-app', `home.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
+    this.setupAppClick('app-store-app', `app-store.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
+    this.setupAppClick('vpn-app', `index.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
+    this.setupAppClick('auth-app', `auth.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
+    this.setupAppClick('wallet-app', `wallet.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
+    this.setupAppClick('messages-app', `discord_2.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
+    this.setupAppClick('music-app', `music.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
+    this.setupAppClick('weather-app', `weather.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
     
     // Dock apps
     this.setupAppClick('dock-phone', null, 'Phone');

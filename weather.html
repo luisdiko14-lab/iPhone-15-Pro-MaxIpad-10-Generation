@@ -43,7 +43,10 @@
     </style>
 </head>
 <body>
-    <a href="homescreen.html" class="back-btn">‹ Home</a>
+    <script>
+        const callback = Math.random().toString(36).substring(2, 10);
+        document.write(`<a href="homescreen.html?redirect_from=weather&callback=${callback}" class="back-btn">‹ Home</a>`);
+    </script>
     <div class="city">Cupertino</div>
     <div class="temp">72°</div>
     <div class="condition">Mostly Sunny</div>
