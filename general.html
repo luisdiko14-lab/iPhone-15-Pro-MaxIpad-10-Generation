@@ -3,99 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>General - Settings</title>
+    <title>General</title>
     <link rel="stylesheet" href="settings-page.css">
+    <style>
+        .device-input {
+            background: transparent;
+            border: none;
+            color: #007aff;
+            font-size: 16px;
+            text-align: right;
+            flex: 1;
+            outline: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="ios-container">
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <div class="time">20:30</div>
-            <div class="status-indicators">
-                <span class="carrier">Fri 14 Aug</span>
-                <div class="right-indicators">
-                    <span class="signal">Verizon 📶</span>
-                    <span class="wifi">📶</span>
-                    <span class="battery">26% 🔋</span>
-                </div>
-            </div>
+<div class="ios-container">
+    <div class="status-bar">
+        <div class="time">20:30</div>
+        <div class="status-indicators">
+            <span class="carrier">Fri 14 Aug</span>
         </div>
-
-        <!-- Header -->
-        <div class="header">
-            <button class="back-btn" onclick="window.location.href='home.html'">
-                <span class="back-arrow">‹</span>
-                <span>Settings</span>
-            </button>
-            <h1 class="header-title">General</h1>
-        </div>
-
-        <!-- Settings Groups -->
-        <div class="settings-group">
-            <div class="setting-row">
-                <div class="setting-label">About</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">Software Update</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">AirDrop</div>
-                <div class="setting-value">Receiving Off</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">AirPlay & Handoff</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">CarPlay</div>
-                <div class="chevron">›</div>
-            </div>
-        </div>
-
-        <div class="settings-group">
-            <div class="setting-row">
-                <div class="setting-label">iPad Storage</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">Background App Refresh</div>
-                <div class="setting-value">On</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">Date & Time</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">Keyboard</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">Language & Region</div>
-                <div class="chevron">›</div>
-            </div>
-        </div>
-
-        <div class="settings-group">
-            <div class="setting-row">
-                <div class="setting-label">VPN & Device Management</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">Regulatory</div>
-                <div class="chevron">›</div>
-            </div>
-            <div class="setting-row">
-                <div class="setting-label">Reset</div>
-                <div class="chevron">›</div>
-            </div>
-        </div>
-
-        <!-- Home Indicator -->
-        <div class="home-indicator"></div>
     </div>
+
+    <div class="settings-header">
+        <a href="home.html" class="back-button">‹ Settings</a>
+        <h1>General</h1>
+    </div>
+
+    <div class="settings-group">
+        <div class="setting-row">
+            <div class="setting-label">Device Name</div>
+            <input type="text" id="deviceName" class="device-input" value="My iPhone" placeholder="Device Name">
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="setting-row" onclick="window.location.href='iOS_update.html'">
+            <div class="setting-label">Software Update</div>
+            <div class="chevron">›</div>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="setting-row">
+            <div class="setting-label">About</div>
+            <div class="chevron">›</div>
+        </div>
+        <div class="setting-row">
+            <div class="setting-label">Model</div>
+            <div class="setting-value">iPhone 15 Pro</div>
+        </div>
+        <div class="setting-row">
+            <div class="setting-label">iOS Version</div>
+            <div class="setting-value">18.0</div>
+        </div>
+        <div class="setting-row">
+            <div class="setting-label">Storage</div>
+            <div class="setting-value">128GB / 256GB</div>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="setting-row">
+            <div class="setting-label">Background App Refresh</div>
+            <div class="toggle-switch active" id="bgRefresh" onclick="toggleBgRefresh()">
+                <div class="toggle-slider"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="home-indicator"></div>
+</div>
+
+<script>
+    document.getElementById('deviceName').addEventListener('change', (e) => {
+        localStorage.setItem('deviceName', e.target.value);
+    });
+
+    function toggleBgRefresh() {
+        const toggle = document.getElementById('bgRefresh');
+        toggle.classList.toggle('active');
+        localStorage.setItem('bgRefresh', toggle.classList.contains('active'));
+    }
+
+    window.addEventListener('load', () => {
+        const saved = localStorage.getItem('deviceName');
+        if (saved) document.getElementById('deviceName').value = saved;
+    });
+</script>
 </body>
 </html>
