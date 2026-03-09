@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iOS Dark Home Screen</title>
+    <title>iOS Home Screen</title>
     <link rel="stylesheet" href="homescreen.css">
 </head>
 <body>
@@ -175,6 +175,18 @@
             </div>
         </div>
     </div>
+
+    <!-- App Switcher Overlay -->
+    <div class="app-switcher" id="appSwitcher">
+        <div class="app-switcher-header">
+            <h3>Recently Used</h3>
+        </div>
+        <div class="recent-apps" id="recentApps"></div>
+        <div class="app-switcher-hint">Swipe up to close</div>
+    </div>
+
+    <!-- Home Indicator Swipe Area -->
+    <div class="home-indicator-area" id="homeIndicatorArea"></div>
 
     <script src="homescreen.js"></script>
 </body>

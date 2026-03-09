@@ -11,7 +11,7 @@ CORS(app)
 # Discord Application Credentials
 # Using the fallback IDs provided in the previous turn if environment variables are missing
 CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '1454564220413808731')
-CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', '35mSY5_459fS72yENH2zT80q_2WghvMk')
+CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', 'txGVewYTcPDr1KbTFmu3L5HUeYoZQEcW')
 
 # Dynamic domain detection
 DOMAIN = os.environ.get('REPLIT_DOMAINS', os.environ.get('REPLIT_DEV_DOMAIN', 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev')).split(',')[0]
@@ -35,7 +35,7 @@ def login():
         'client_id': CLIENT_ID,
         'redirect_uri': REDIRECT_URI,
         'response_type': 'code',
-        'scope': 'identify guilds email connections'
+        'scope': 'identify guilds email connections guilds.member.read'
     }
     discord_auth_url = f"https://discord.com/api/oauth2/authorize?{urllib.parse.urlencode(params)}"
     return redirect(discord_auth_url)

@@ -65,6 +65,18 @@ body::before {
     max-width: 400px;
     margin: 60px auto 120px;
     padding: 20px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Dock Styles */
@@ -82,6 +94,19 @@ body::before {
     padding: 15px 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
 }
 
 .app {
@@ -113,6 +138,7 @@ body::before {
     margin-bottom: 8px;
     position: relative;
     overflow: hidden;
+    transition: all 0.2s ease;
 }
 
 .app-icon::before {
@@ -132,4 +158,140 @@ body::before {
     text-align: center;
     font-weight: 400;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* App Switcher Styles */
+.app-switcher {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 999;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 100px 20px 80px;
+    opacity: 0;
+    animation: slideUpIn 0.3s ease-out forwards;
+    overflow-y: auto;
+}
+
+.app-switcher.active {
+    display: flex;
+}
+
+@keyframes slideUpIn {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUpOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+}
+
+.app-switcher.closing {
+    animation: slideUpOut 0.3s ease-out forwards;
+}
+
+.app-switcher-header {
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.app-switcher-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+}
+
+.recent-apps {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 360px;
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.recent-app-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.recent-app-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.recent-app-card:active {
+    transform: scale(0.95);
+}
+
+.recent-app-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+.recent-app-name {
+    font-size: 13px;
+    color: white;
+    text-align: center;
+    font-weight: 500;
+}
+
+.app-switcher-hint {
+    position: absolute;
+    bottom: 20px;
+    font-size: 13px;
+    color: #8e8e93;
+    text-align: center;
+}
+
+/* Home Indicator Area for swipe detection */
+.home-indicator-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    z-index: 50;
+    cursor: pointer;
+}
+
+/* Smooth transitions */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+input, button, textarea {
+    -webkit-user-select: text;
+    user-select: text;
 }

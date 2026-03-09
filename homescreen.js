@@ -4,11 +4,17 @@ class HomeScreen {
     this.initializeElements();
     this.setupEventListeners();
     this.startClock();
+    this.recentApps = JSON.parse(localStorage.getItem('recentApps')) || [];
+    this.touchStartY = 0;
+    this.isAppSwitcherOpen = false;
   }
 
   initializeElements() {
     this.timeElement = document.getElementById("time");
     this.apps = document.querySelectorAll('.app');
+    this.appSwitcher = document.getElementById('appSwitcher');
+    this.recentAppsContainer = document.getElementById('recentApps');
+    this.homeIndicatorArea = document.getElementById('homeIndicatorArea');
   }
 
   setupEventListeners() {
@@ -20,28 +26,104 @@ class HomeScreen {
       app.addEventListener('touchstart', this.addTouchFeedback, {passive: true});
       app.addEventListener('touchend', this.removeTouchFeedback, {passive: true});
     });
+
+    // Swipe detection
+    this.setupSwipeDetection();
+  }
+
+  setupSwipeDetection() {
+    document.addEventListener('touchstart', (e) => {
+      this.touchStartY = e.touches[0].clientY;
+    }, {passive: true});
+
+    document.addEventListener('touchmove', (e) => {
+      if (!this.isAppSwitcherOpen && e.touches[0].clientY > window.innerHeight - 100) {
+        const diff = this.touchStartY - e.touches[0].clientY;
+        if (diff > 50) {
+          this.openAppSwitcher();
+        }
+      }
+    }, {passive: true});
+
+    document.addEventListener('touchend', (e) => {
+      if (this.isAppSwitcherOpen) {
+        const diff = this.touchStartY - e.changedTouches[0].clientY;
+        if (diff < -50) {
+          this.closeAppSwitcher();
+        }
+      }
+    }, {passive: true});
+
+    // Home indicator click
+    this.homeIndicatorArea.addEventListener('click', () => {
+      if (!this.isAppSwitcherOpen) {
+        this.openAppSwitcher();
+      }
+    });
+  }
+
+  openAppSwitcher() {
+    this.isAppSwitcherOpen = true;
+    this.appSwitcher.classList.add('active');
+    this.updateRecentApps();
+  }
+
+  closeAppSwitcher() {
+    this.appSwitcher.classList.add('closing');
+    setTimeout(() => {
+      this.appSwitcher.classList.remove('active', 'closing');
+      this.isAppSwitcherOpen = false;
+    }, 300);
+  }
+
+  updateRecentApps() {
+    this.recentAppsContainer.innerHTML = '';
+    const uniqueApps = [...new Map(this.recentApps.map(app => [app.id, app])).values()];
+    const recentAppsToShow = uniqueApps.slice(0, 4);
+
+    recentAppsToShow.forEach(app => {
+      const card = document.createElement('div');
+      card.className = 'recent-app-card';
+      card.innerHTML = `
+        <div class="recent-app-icon">${app.icon}</div>
+        <div class="recent-app-name">${app.name}</div>
+      `;
+      card.addEventListener('click', () => {
+        if (app.url) {
+          this.navigateToApp(app.url);
+        }
+      });
+      this.recentAppsContainer.appendChild(card);
+    });
   }
 
   generateCallback() {
     return Math.random().toString(36).substring(2, 10);
   }
 
+  addToRecentApps(appId, appName, icon, url) {
+    const app = { id: appId, name: appName, icon, url };
+    this.recentApps = this.recentApps.filter(a => a.id !== appId);
+    this.recentApps.unshift(app);
+    localStorage.setItem('recentApps', JSON.stringify(this.recentApps));
+  }
+
   wireApps() {
     // Main app navigation
-    this.setupAppClick('settings-app', `home.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
-    this.setupAppClick('app-store-app', `app-store.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
-    this.setupAppClick('vpn-app', `index.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
-    this.setupAppClick('auth-app', `auth.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
-    this.setupAppClick('wallet-app', `wallet.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
-    this.setupAppClick('messages-app', `discord_2.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
-    this.setupAppClick('music-app', `music.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
-    this.setupAppClick('weather-app', `weather.html?redirect_from=homescreen&callback=${this.generateCallback()}`);
+    this.setupAppClick('settings-app', `home.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Settings', '⚙️');
+    this.setupAppClick('app-store-app', `app-store.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'App Store', '🏪');
+    this.setupAppClick('vpn-app', `index.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'VPN', '🛡️');
+    this.setupAppClick('auth-app', `auth.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Sign In', '🔐');
+    this.setupAppClick('wallet-app', `wallet.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Wallet', '💳');
+    this.setupAppClick('messages-app', `discord_2.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Messages', '💬');
+    this.setupAppClick('music-app', `music.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Music', '🎵');
+    this.setupAppClick('weather-app', `weather.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Weather', '⛅');
     
     // Dock apps
-    this.setupAppClick('dock-phone', null, 'Phone');
-    this.setupAppClick('dock-safari', null, 'Safari');
-    this.setupAppClick('dock-messages', 'discord_2.html');
-    this.setupAppClick('dock-music', 'music.html');
+    this.setupAppClick('dock-phone', null, 'Phone', '📞');
+    this.setupAppClick('dock-safari', null, 'Safari', '🌐');
+    this.setupAppClick('dock-messages', 'discord_2.html', 'Messages', '💬');
+    this.setupAppClick('dock-music', 'music.html', 'Music', '🎵');
     
     // Other apps - show coming soon
     const comingSoonApps = ['phone-app', 'camera-app', 'photos-app', 
@@ -53,16 +135,18 @@ class HomeScreen {
       const appElement = document.getElementById(appId);
       if (appElement) {
         const appName = appElement.querySelector('span')?.textContent || 'App';
-        this.setupAppClick(appId, null, appName);
+        const appIcon = appElement.querySelector('.app-icon')?.textContent || '📱';
+        this.setupAppClick(appId, null, appName, appIcon);
       }
     });
   }
   
-  setupAppClick(appId, url, appName) {
+  setupAppClick(appId, url, appName, appIcon) {
     const element = document.getElementById(appId);
     if (!element) return;
     
     element.addEventListener('click', () => {
+      this.addToRecentApps(appId, appName, appIcon, url);
       if (url) {
         this.navigateToApp(url);
       } else if (appName) {
@@ -84,6 +168,7 @@ class HomeScreen {
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      animation: fadeIn 0.2s ease-out;
     `;
     
     modal.innerHTML = `
@@ -96,6 +181,7 @@ class HomeScreen {
         color: white;
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         max-width: 300px;
+        animation: scaleIn 0.2s ease-out;
       ">
         <div style="font-size: 50px; margin-bottom: 15px;">📱</div>
         <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 600;">${appName}</h3>
@@ -109,7 +195,8 @@ class HomeScreen {
           font-size: 16px;
           font-weight: 500;
           cursor: pointer;
-        ">OK</button>
+          transition: opacity 0.2s;
+        " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">OK</button>
       </div>
     `;
     

@@ -3,7 +3,7 @@ modules = ["python-3.11", "nodejs-24", "angular-node-24", "typescript-language-s
 expertMode = true
 
 [workflows]
-runButton = "Install Packages & Run Project"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
