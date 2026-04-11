@@ -8,14 +8,25 @@
 </head>
 <body>
     <div class="siri-container">
+
         <button class="back-btn" onclick="window.location.href='homescreen.html'">← Back</button>
+
         <div class="siri-circle">
             🎤
         </div>
+
         <p id="siri-status">Hi, I'm Siri. What can I help you with?</p>
 
+        <!-- MODEL SWITCH BUTTONS -->
+        <div class="model-buttons">
+            <button onclick="setModel('groq')">Use Groq</button>
+            <button onclick="setModel('gemini')">Use Gemini Flash Lite</button>
+        </div>
+
         <input type="text" id="userQuestion" placeholder="Type your question...">
+
         <button id="askBtn">Ask Siri</button>
+
     </div>
 
     <script src="siri.js"></script>

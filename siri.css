@@ -71,8 +71,54 @@ input[type="text"] {
     background-color: #0088cc;
 }
 
+/* AI model buttons */
+
+.model-buttons {
+    margin-top: 12px;
+}
+
+.model-buttons button {
+    padding: 8px 14px;
+    margin: 4px;
+    border-radius: 16px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: white;
+    transition: 0.2s;
+}
+
+/* Groq button */
+
+.model-buttons button:nth-child(1) {
+    background: #00aaff;
+}
+
+.model-buttons button:nth-child(1):hover {
+    background: #0088cc;
+}
+
+/* Gemini button */
+
+.model-buttons button:nth-child(2) {
+    background: linear-gradient(135deg, #6a00ff, #ff00cc);
+}
+
+.model-buttons button:nth-child(2):hover {
+    opacity: 0.85;
+}
+
 @keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.05); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
+    0% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.05); 
+        opacity: 0.8; 
+    }
+    100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
 }

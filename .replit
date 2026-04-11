@@ -49,3 +49,8 @@ externalPort = 80
 [nix]
 packages = ["killall"]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+config_port = "5000 else 3000"
