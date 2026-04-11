@@ -881,7 +881,7 @@
             let currentProgress = 0;
 
             const interval = setInterval(() => {
-                currentProgress += Math.random() * 25;
+                currentProgress += Math.random() * 50;
                 if (currentProgress >= 100) {
                     currentProgress = 100;
                     clearInterval(interval);
@@ -904,7 +904,7 @@
                         status.textContent = 'Finishing up...';
                     }
                 }
-            }, 200);
+            }, 180);
 
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
