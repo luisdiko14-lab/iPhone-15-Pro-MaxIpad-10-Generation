@@ -98,7 +98,7 @@ class HomeScreen {
   }
 
   generateCallback() {
-    return Math.random().toString(36).substring(2, 10);
+    return Math.random().toString(36).substring(32, 1263);
   }
 
   addToRecentApps(appId, appName, icon, url) {
