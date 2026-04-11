@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Call Simulator</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: black;
+    color: white;
+    overflow: hidden;
+}
+
+.screen {
+    display: none;
+    height: 100vh;
+    width: 100vw;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.active { display: flex; }
+
+/* DISPLAY */
+.number-display {
+    font-size: 30px;
+    min-height: 40px;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+/* KEYPAD */
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.key {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #1c1c1e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.key:active { transform: scale(0.95); }
+
+.btn {
+    margin-top: 15px;
+    padding: 12px 25px;
+    border-radius: 30px;
+    border: none;
+    background: #34c759;
+    color: white;
+    font-size: 18px;
+}
+
+/* CONTACTS */
+.contacts {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.contact {
+    padding: 8px 12px;
+    margin: 5px;
+    background: #2c2c2e;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+/* CALL SCREEN */
+.status { color: #aaa; margin-top: 10px; }
+
+.controls {
+    position: absolute;
+    bottom: 60px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.control {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #2c2c2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.red { background: #ff3b30; }
+.yellow { background: #ffcc00; color: black; }
+.activeBtn { outline: 3px solid white; }
+
+</style>
+</head>
+
+<body>
+
+<!-- DIAL SCREEN -->
+<div class="screen active" id="dialScreen">
+
+    <div class="contacts">
+        <div class="contact" onclick="setNumber('123456789')">Mom</div>
+        <div class="contact" onclick="setNumber('987654321')">Dad</div>
+        <div class="contact" onclick="setNumber('555123456')">Friend</div>
+    </div>
+
+    <div class="number-display" id="display"></div>
+
+    <div class="keypad">
+        <div class="key" onclick="press('1')">1</div>
+        <div class="key" onclick="press('2')">2</div>
+        <div class="key" onclick="press('3')">3</div>
+        <div class="key" onclick="press('4')">4</div>
+        <div class="key" onclick="press('5')">5</div>
+        <div class="key" onclick="press('6')">6</div>
+        <div class="key" onclick="press('7')">7</div>
+        <div class="key" onclick="press('8')">8</div>
+        <div class="key" onclick="press('9')">9</div>
+        <div class="key" onclick="press('*')">*</div>
+        <div class="key" onclick="press('0')">0</div>
+        <div class="key" onclick="press('#')">#</div>
+    </div>
+
+    <button class="btn" onclick="startCall()">Call</button>
+</div>
+
+<!-- CALL SCREEN -->
+<div class="screen" id="callScreen">
+    <div style="text-align:center;">
+        <div style="font-size:28px" id="callingNumber"></div>
+        <div class="status" id="status">Dialing...</div>
+    </div>
+
+    <div class="controls">
+        <div class="control" onclick="toggleSpeaker()" id="speakerBtn">Speaker</div>
+        <div class="control" onclick="toggleMute()" id="muteBtn">Mute</div>
+        <div class="control yellow" onclick="toggleHold()" id="holdBtn">Hold</div>
+        <div class="control red" onclick="endCall()">End</div>
+    </div>
+</div>
+
+<!-- AUDIO -->
+<audio id="holdAudio" loop preload="auto">
+<source src="https://cdn.discordapp.com/attachments/1438179520518815865/1488744408311402686/AOL_Dial_Up_Internet_Connection_Sound_Youve_Got_Mail_America_Online_90s.mp3">
+</audio>
+
+<script>
+let number = "";
+let calling = false;
+let hold = false;
+
+const display = document.getElementById("display");
+const audio = document.getElementById("holdAudio");
+
+function press(digit) {
+    if (calling) return;
+    number += digit;
+    display.innerText = number;
+}
+
+function setNumber(num) {
+    if (calling) return;
+    number = num;
+    display.innerText = number;
+}
+
+function startCall() {
+    if (!number) return alert("Enter a number!");
+
+    calling = true;
+
+    document.getElementById("dialScreen").classList.remove("active");
+    document.getElementById("callScreen").classList.add("active");
+
+    document.getElementById("callingNumber").innerText = number;
+    document.getElementById("status").innerText = "Calling...";
+
+    setTimeout(() => {
+        document.getElementById("status").innerText = "Connected";
+    }, 2000);
+}
+
+function endCall() {
+    calling = false;
+    hold = false;
+
+    audio.pause();
+    audio.currentTime = 0;
+
+    number = "";
+    display.innerText = "";
+
+    document.getElementById("dialScreen").classList.add("active");
+    document.getElementById("callScreen").classList.remove("active");
+
+    document.getElementById("status").innerText = "Dialing...";
+}
+
+function toggleHold() {
+    if (!calling) return;
+
+    hold = !hold;
+    document.getElementById("holdBtn").classList.toggle("activeBtn");
+
+    if (hold) {
+        document.getElementById("status").innerText = "On Hold";
+
+        audio.pause();
+        audio.currentTime = 0;
+
+        // FIX: user gesture-safe play
+        audio.play().catch(() => {});
+    } else {
+        document.getElementById("status").innerText = "Connected";
+        audio.pause();
+        audio.currentTime = 0;
+    }
+}
+
+function toggleMute() {
+    document.getElementById("muteBtn").classList.toggle("activeBtn");
+}
+
+function toggleSpeaker() {
+    document.getElementById("speakerBtn").classList.toggle("activeBtn");
+}
+</script>
+
+</body>
+</html>
