@@ -1,50 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iPhone Setup</title>
-    <style>
-        :root {
-            --bg-primary: #000;
-            --text-primary: #fff;
-            --blue: #0a84ff;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPhone Setup</title>
 
-        body {
-            margin: 0;
-            font-family: -apple-system, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: black;
+    color: white;
+    overflow: hidden;
+}
 
-        .setup-card {
-            text-align: center;
-            padding: 40px;
-        }
+/* STATUS BAR */
+.status {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    padding: 8px 14px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    opacity: 0.9;
+}
 
-        h1 { font-size: 32px; margin-bottom: 20px; }
-        p { color: #8e8e93; margin-bottom: 40px; }
+/* SIGNAL ANIMATION */
+.signal::before {
+    content: "▂▄▆█";
+    animation: signal 1.2s infinite alternate;
+}
+@keyframes signal {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+}
 
-        .btn {
-            background-color: var(--blue);
-            color: white;
-            padding: 16px 32px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 600;
-        }
-    </style>
+/* ISLAND */
+.island {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 30px;
+    background: #111;
+    border-radius: 20px;
+}
+
+/* SCREEN */
+.screen {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+}
+
+/* HELLO MULTI LANGUAGE */
+.hello {
+    font-size: 34px;
+    animation: fade 1.5s infinite alternate;
+}
+@keyframes fade {
+    from { opacity: 0.3; }
+    to { opacity: 1; }
+}
+
+/* BUTTON */
+.btn {
+    margin-top: 20px;
+    background: #0a84ff;
+    padding: 14px 26px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+/* LOADING BAR */
+.loader {
+    width: 220px;
+    height: 6px;
+    background: #222;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+.loader div {
+    height: 100%;
+    width: 0%;
+    background: #0a84ff;
+    animation: load 2.5s forwards;
+}
+@keyframes load {
+    to { width: 100%; }
+}
+
+/* DOTS */
+.dots::after {
+    content: "";
+    animation: dots 1.2s infinite;
+}
+@keyframes dots {
+    0% { content: ""; }
+    33% { content: "."; }
+    66% { content: ".."; }
+    100% { content: "..."; }
+}
+
+/* WIFI ITEMS */
+.wifi {
+    background: #111;
+    padding: 12px;
+    margin: 6px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+</style>
 </head>
+
 <body>
-    <div class="setup-card">
-        <h1>Welcome to iPhone</h1>
-        <p>Your new iPhone is ready to be configured.</p>
-        <a href="installer.html" class="btn">Get Started</a>
-    </div>
+
+<div class="status">
+    <div class="signal">Verizon LTE</div>
+    <div>100%</div>
+</div>
+
+<div class="island"></div>
+
+<!-- HELLO MULTI LANGUAGE SCREEN -->
+<div id="hello" class="screen">
+    <div class="hello" id="helloText">Hello</div>
+    <div class="btn" onclick="startSetup()">Swipe Up</div>
+</div>
+
+<!-- WIFI -->
+<div id="wifi" class="screen" style="display:none">
+    <h2>Choose Wi-Fi</h2>
+    <div class="wifi" onclick="step('sim')">Home WiFi</div>
+    <div class="wifi" onclick="step('sim')">School WiFi</div>
+</div>
+
+<!-- SIM -->
+<div id="sim" class="screen" style="display:none">
+    <h2>No SIM</h2>
+    <p>Searching network<span class="dots"></span></p>
+    <div class="loader"><div></div></div>
+</div>
+
+<!-- VERIZON LTE -->
+<div id="lte" class="screen" style="display:none">
+    <h2>Activating Verizon LTE</h2>
+    <p>Connecting<span class="dots"></span></p>
+    <div class="loader"><div></div></div>
+</div>
+
+<!-- PIN -->
+<div id="pin" class="screen" style="display:none">
+    <h2>Create Passcode</h2>
+    <input type="password" placeholder="6-digit PIN" style="padding:12px;border-radius:10px;border:none;">
+    <div class="btn" onclick="step('final')">Continue</div>
+</div>
+
+<!-- FINAL -->
+<div id="final" class="screen" style="display:none">
+    <h2>Setting up iPhone<span class="dots"></span></h2>
+    <div class="loader"><div></div></div>
+</div>
+
+<script>
+const helloWords = [
+"Hello","Hola","Bonjour","Hallo","Ciao","Olá","Привет","你好","こんにちは","안녕하세요"
+];
+
+let i = 0;
+setInterval(()=>{
+    document.getElementById("helloText").innerText = helloWords[i];
+    i = (i+1) % helloWords.length;
+}, 900);
+
+function startSetup(){
+    document.getElementById("hello").style.display="none";
+    document.getElementById("wifi").style.display="flex";
+}
+
+function step(id){
+    document.querySelectorAll(".screen").forEach(s=>s.style.display="none");
+    document.getElementById(id).style.display="flex";
+
+    if(id === "sim"){
+        setTimeout(()=> step("lte"), 2500);
+    }
+    if(id === "lte"){
+        setTimeout(()=> step("pin"), 3000);
+    }
+}
+</script>
+
 </body>
 </html>
