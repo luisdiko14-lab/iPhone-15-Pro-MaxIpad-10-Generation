@@ -98,8 +98,12 @@ class HomeScreen {
   }
 
   generateCallback() {
-    return Math.random().toString(36).substring(32, 1263);
+  let str = '';
+  while (str.length < 126) {
+    str += Math.random().toString(36).slice(2);
   }
+  return str.slice(0, 126);
+}
 
   addToRecentApps(appId, appName, icon, url) {
     const app = { id: appId, name: appName, icon, url };
