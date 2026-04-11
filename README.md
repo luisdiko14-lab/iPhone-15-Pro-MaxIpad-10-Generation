@@ -58,3 +58,6 @@ Preferred communication style: Simple, everyday language.
 
 ### Node.js Dependencies (package.json)
 - discord.js, dotenv, give, terminal - These appear to be for a separate Discord bot feature, not the main iOS simulator
+
+## Siri Issue.
+- Siri keeps saying **i dont understand**. why? becuase on **vercel&github pages** siri doesnt work and i didnt add the **api key** here. but.. on the replit version it should be there.
