@@ -11,7 +11,7 @@ updateBtn.addEventListener('click', () => {
     
     let progress = 0;
     const interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 5) + 2;
+        progress += Math.floor(Math.random() * 2) + 2;
         if (progress > 100) progress = 100;
 
         progressBar.style.width = progress + "%";
@@ -30,9 +30,9 @@ updateBtn.addEventListener('click', () => {
             
             setTimeout(() => {
                 startBootSequence();
-            }, 1500);
+            }, 2500);
         }
-    }, 200);
+    }, 2500);
 });
 
 function startBootSequence() {
