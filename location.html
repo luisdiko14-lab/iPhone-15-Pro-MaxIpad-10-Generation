@@ -3,28 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Enable Location</title>
+<title>Location Access</title>
 
 <style>
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Arial;
-    background: #000;
-    color: #fff;
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    background: radial-gradient(circle at top, #1c1c1e, #000);
+    overflow: hidden;
 }
 
+/* Liquid glass container */
 .container {
+    width: 320px;
+    padding: 25px;
+    border-radius: 28px;
+    backdrop-filter: blur(25px) saturate(180%);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 
+        0 10px 40px rgba(0,0,0,0.6),
+        inset 0 0 20px rgba(255,255,255,0.05);
     text-align: center;
-    max-width: 300px;
+    color: white;
+}
+
+/* glowing orb background */
+body::before {
+    content: "";
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: #0a84ff;
+    filter: blur(120px);
+    opacity: 0.5;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .icon {
-    font-size: 60px;
-    margin-bottom: 20px;
+    font-size: 65px;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 0 10px rgba(10,132,255,0.7));
 }
 
 h1 {
@@ -33,35 +62,65 @@ h1 {
 }
 
 p {
-    color: #aaa;
     font-size: 14px;
-    margin-bottom: 30px;
+    color: #ccc;
+    margin-bottom: 25px;
 }
 
+/* glass buttons */
 button {
     width: 100%;
     padding: 14px;
-    border-radius: 12px;
+    border-radius: 18px;
     border: none;
     font-size: 16px;
     margin-bottom: 10px;
     cursor: pointer;
+    backdrop-filter: blur(15px);
+    transition: 0.25s;
 }
 
+/* primary glass */
 .primary {
-    background: #0a84ff;
+    background: rgba(10,132,255,0.25);
     color: white;
+    border: 1px solid rgba(10,132,255,0.5);
 }
 
+.primary:hover {
+    background: rgba(10,132,255,0.4);
+}
+
+/* secondary glass */
 .secondary {
-    background: #1c1c1e;
+    background: rgba(255,255,255,0.08);
     color: #0a84ff;
 }
 
+.secondary:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+button:active {
+    transform: scale(0.96);
+}
+
 .result {
-    margin-top: 20px;
+    margin-top: 15px;
     font-size: 14px;
-    color: #0f0;
+    min-height: 20px;
+    transition: 0.3s;
+}
+
+.loading {
+    color: #0a84ff;
+    animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+    0% {opacity: 0.4;}
+    50% {opacity: 1;}
+    100% {opacity: 0.4;}
 }
 </style>
 </head>
@@ -70,8 +129,8 @@ button {
 
 <div class="container">
     <div class="icon">📍</div>
-    <h1>Enable Location Services</h1>
-    <p>Allow this app to access your location to show where you are.</p>
+    <h1>Allow Location Access</h1>
+    <p>Your location will be used to personalize your experience.</p>
 
     <button class="primary" onclick="getLocation()">Allow While Using App</button>
     <button class="secondary" onclick="deny()">Don't Allow</button>
@@ -80,7 +139,7 @@ button {
 </div>
 
 <script>
-function getLocation() {
+async function getLocation() {
     const result = document.getElementById("result");
 
     if (!navigator.geolocation) {
@@ -88,29 +147,58 @@ function getLocation() {
         return;
     }
 
-    result.innerText = "Requesting location...";
+    result.className = "result loading";
+    result.innerText = "Getting your location...";
 
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
 
-            result.innerHTML = `
-                ✅ Location Found<br>
-                Latitude: ${lat.toFixed(6)}<br>
-                Longitude: ${lon.toFixed(6)}
-window.location.href = `setup.html?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`;
-            `;
-        },
-        (error) => {
-            result.innerText = "❌ Permission denied or unavailable.";
-            window.location.href = `setup.html?lat=LocationDenied`;
+        try {
+            // Reverse geocoding (city + country)
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await res.json();
+
+            const city = data.address.city || data.address.town || data.address.village || "Unknown";
+            const country = data.address.country || "";
+
+            result.className = "result";
+            result.innerHTML = `✅ ${city}, ${country}`;
+
+            setTimeout(() => {
+                window.location.href =
+                    `setup.html?lat=${lat}&lng=${lng}&city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}`;
+            }, 1200);
+
+        } catch (e) {
+            result.className = "result";
+            result.innerText = "Location found, but failed to fetch place.";
+
+            setTimeout(() => {
+                window.location.href = `setup.html?lat=${lat}&lng=${lng}`;
+            }, 1000);
         }
-    );
+
+    }, (err) => {
+        result.className = "result";
+        result.innerText = "❌ Permission denied";
+
+        setTimeout(() => {
+            window.location.href = "setup.html?error=denied";
+        }, 1000);
+    }, {
+        enableHighAccuracy: true,
+        timeout: 10000
+    });
 }
 
 function deny() {
-    document.getElementById("result").innerText = "Location access denied.";
+    const result = document.getElementById("result");
+    result.innerText = "Location access denied.";
+
+    setTimeout(() => {
+        window.location.href = "setup.html?error=denied";
+    }, 800);
 }
 </script>
 
