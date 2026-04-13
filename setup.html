@@ -1,202 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>iPhone Setup</title>
-
 <style>
+:root {
+  --bg: #000;
+  --card: #101010;
+  --card-border: #252525;
+  --text: #f8f8f8;
+  --muted: #a6a6a6;
+  --accent: #0a84ff;
+  --accent-2: #5ac8fa;
+  --success: #34c759;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    background: black;
-    color: white;
-    overflow: hidden;
+  margin: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(900px 600px at 70% -10%, #1f293f 0%, transparent 55%),
+    radial-gradient(700px 500px at -10% 120%, #0f3b66 0%, transparent 50%),
+    var(--bg);
+  overflow: hidden;
 }
 
-/* STATUS BAR */
 .status {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    padding: 8px 14px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    opacity: 0.9;
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  z-index: 30;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
-/* SIGNAL ANIMATION */
 .signal::before {
-    content: "▂▄▆█";
-    animation: signal 1.2s infinite alternate;
+  content: "▂▄▆█";
+  letter-spacing: 2px;
+  margin-right: 6px;
+  animation: signal 1.4s infinite alternate;
 }
+
 @keyframes signal {
-    from { opacity: 0.4; }
-    to { opacity: 1; }
+  from {
+    opacity: 0.45;
+    transform: translateY(1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* ISLAND */
 .island {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 30px;
-    background: #111;
-    border-radius: 20px;
+  position: fixed;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 122px;
+  height: 31px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #181818, #0d0d0d);
+  border: 1px solid #171717;
+  z-index: 31;
 }
 
-/* SCREEN */
+main {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 72px 18px 28px;
+}
+
+.shell {
+  width: min(460px, 96vw);
+  border-radius: 28px;
+  border: 1px solid var(--card-border);
+  background: rgba(12, 12, 12, 0.78);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.progress {
+  height: 4px;
+  background: #1a1a1a;
+}
+
+.progress > div {
+  height: 100%;
+  width: 20%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 350ms ease;
+}
+
 .screen {
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    text-align: center;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 580px;
+  padding: 30px 24px 40px;
+  gap: 14px;
 }
 
-/* HELLO MULTI LANGUAGE */
-.hello {
-    font-size: 34px;
-    animation: fade 1.5s infinite alternate;
-}
-@keyframes fade {
-    from { opacity: 0.3; }
-    to { opacity: 1; }
+.screen.active {
+  display: flex;
 }
 
-/* BUTTON */
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 8vw, 3.1rem);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: clamp(1.4rem, 5vw, 1.8rem);
+  letter-spacing: -0.01em;
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.hello-word {
+  font-size: clamp(2.1rem, 10vw, 3.5rem);
+  font-weight: 600;
+  animation: pulse 1.5s infinite alternate;
+  min-height: 1.2em;
+}
+
+@keyframes pulse {
+  from { opacity: 0.46; }
+  to { opacity: 1; }
+}
+
+.subtitle {
+  max-width: 28ch;
+  color: #d9d9d9;
+}
+
 .btn {
-    margin-top: 20px;
-    background: #0a84ff;
-    padding: 14px 26px;
-    border-radius: 12px;
-    cursor: pointer;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1a94ff, #0a84ff);
+  color: #fff;
+  padding: 13px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.2s ease;
 }
 
-/* LOADING BAR */
-.loader {
-    width: 220px;
-    height: 6px;
-    background: #222;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-top: 20px;
-}
-.loader div {
-    height: 100%;
-    width: 0%;
-    background: #0a84ff;
-    animation: load 2.5s forwards;
-}
-@keyframes load {
-    to { width: 100%; }
+.btn:hover {
+  filter: brightness(1.1);
 }
 
-/* DOTS */
-.dots::after {
-    content: "";
-    animation: dots 1.2s infinite;
-}
-@keyframes dots {
-    0% { content: ""; }
-    33% { content: "."; }
-    66% { content: ".."; }
-    100% { content: "..."; }
+.btn:active {
+  transform: scale(0.98);
 }
 
-/* WIFI ITEMS */
+.network-list {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 .wifi {
-    background: #111;
-    padding: 12px;
-    margin: 6px;
-    border-radius: 10px;
-    cursor: pointer;
+  width: 100%;
+  border: 1px solid #2b2b2b;
+  border-radius: 14px;
+  background: #111;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  cursor: pointer;
+  font-size: 0.97rem;
+}
+
+.wifi small {
+  color: var(--muted);
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #2f2f2f;
+  color: #cfcfcf;
+  font-size: 0.75rem;
+}
+
+input[type="password"] {
+  width: 100%;
+  border: 1px solid #2f2f2f;
+  background: #0d0d0d;
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px 13px;
+  font-size: 1rem;
+}
+
+input[type="password"]:focus {
+  outline: 2px solid rgba(10, 132, 255, 0.5);
+  outline-offset: 1px;
+}
+
+.loader {
+  width: min(260px, 82%);
+  height: 7px;
+  background: #212121;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.loader > div {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+  animation: load 2.6s forwards;
+}
+
+@keyframes load {
+  to { width: 100%; }
+}
+
+.dots::after {
+  content: "";
+  animation: dots 1.2s infinite;
+}
+
+@keyframes dots {
+  0% { content: ""; }
+  33% { content: "."; }
+  66% { content: ".."; }
+  100% { content: "..."; }
+}
+
+.footer-note {
+  margin-top: auto;
+  color: #7f7f7f;
+  font-size: 0.78rem;
 }
 </style>
 </head>
-
 <body>
-
-<div class="status">
+  <div class="status">
     <div class="signal">Verizon LTE</div>
-    <div>100%</div>
-</div>
+    <div id="clock">9:41</div>
+  </div>
+  <div class="island" aria-hidden="true"></div>
 
-<div class="island"></div>
+  <main>
+    <section class="shell" aria-live="polite">
+      <div class="progress"><div id="progressFill"></div></div>
 
-<!-- HELLO MULTI LANGUAGE SCREEN -->
-<div id="hello" class="screen">
-    <div class="hello" id="helloText">Hello</div>
-    <div class="btn" onclick="startSetup()">Swipe Up</div>
-</div>
+      <div id="hello" class="screen active" data-step="1">
+        <h1 class="hello-word" id="helloText">Hello</h1>
+        <p class="subtitle">Swipe up to begin setting up your iPhone experience.</p>
+        <button class="btn" onclick="goTo('wifi')">Start Setup</button>
+      </div>
 
-<!-- WIFI -->
-<div id="wifi" class="screen" style="display:none">
-    <h2>Choose Wi-Fi</h2>
-    <div class="wifi" onclick="step('sim')">Home WiFi</div>
-    <div class="wifi" onclick="step('sim')">School WiFi</div>
-</div>
+      <div id="wifi" class="screen" data-step="2">
+        <h2>Choose a Wi‑Fi Network</h2>
+        <p>Connect to continue activation and data restore.</p>
+        <div class="network-list">
+          <button class="wifi" onclick="goTo('sim')">
+            <span>Home Wi‑Fi <small>Strong signal</small></span>
+            <span class="badge">Secured</span>
+          </button>
+          <button class="wifi" onclick="goTo('sim')">
+            <span>School Wi‑Fi <small>Medium signal</small></span>
+            <span class="badge">Secured</span>
+          </button>
+          <button class="wifi" onclick="goTo('sim')">
+            <span>Public Wi‑Fi <small>Weak signal</small></span>
+            <span class="badge">Open</span>
+          </button>
+        </div>
+      </div>
 
-<!-- SIM -->
-<div id="sim" class="screen" style="display:none">
-    <h2>No SIM</h2>
-    <p>Searching network<span class="dots"></span></p>
-    <div class="loader"><div></div></div>
-</div>
+      <div id="sim" class="screen" data-step="3">
+        <h2>Checking Cellular Setup</h2>
+        <p>Searching for network<span class="dots"></span></p>
+        <div class="loader"><div></div></div>
+      </div>
 
-<!-- VERIZON LTE -->
-<div id="lte" class="screen" style="display:none">
-    <h2>Activating Verizon LTE</h2>
-    <p>Connecting<span class="dots"></span></p>
-    <div class="loader"><div></div></div>
-</div>
+      <div id="lte" class="screen" data-step="4">
+        <h2>Activating Verizon LTE</h2>
+        <p>This may take a moment<span class="dots"></span></p>
+        <div class="loader"><div></div></div>
+      </div>
 
-<!-- PIN -->
-<div id="pin" class="screen" style="display:none">
-    <h2>Create Passcode</h2>
-    <input type="password" placeholder="6-digit PIN" style="padding:12px;border-radius:10px;border:none;">
-    <div class="btn" onclick="step('final')">Continue</div>
-</div>
+      <div id="pin" class="screen" data-step="5">
+        <h2>Create a Passcode</h2>
+        <p>Use at least 6 digits to keep your device secure.</p>
+        <input id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="6-digit passcode" />
+        <button class="btn" onclick="continueFromPin()">Continue</button>
+      </div>
 
-<!-- FINAL -->
-<div id="final" class="screen" style="display:none">
-    <h2>Setting up iPhone<span class="dots"></span></h2>
-    <div class="loader"><div></div></div>
-    <a href="installer.html" class="btn">Next</a>
-</div>
+      <div id="final" class="screen" data-step="6">
+        <h2>Setting Up iPhone<span class="dots"></span></h2>
+        <p>Applying your preferences and preparing apps.</p>
+        <div class="loader"><div></div></div>
+        <a href="installer.html" class="btn" style="text-decoration:none">Continue</a>
+        <p class="footer-note">Estimated time remaining: less than 1 minute.</p>
+      </div>
+    </section>
+  </main>
 
 <script>
 const helloWords = [
-"Hello","Hola","Bonjour","Hallo","Ciao","Olá","Привет","你好","こんにちは","안녕하세요"
+  "Hello", "Hola", "Bonjour", "Hallo", "Ciao", "Olá", "Привет", "你好", "こんにちは", "안녕하세요"
 ];
 
-let i = 0;
-setInterval(()=>{
-    document.getElementById("helloText").innerText = helloWords[i];
-    i = (i+1) % helloWords.length;
+const stepOrder = ["hello", "wifi", "sim", "lte", "pin", "final"];
+let helloIndex = 0;
+
+setInterval(() => {
+  const helloText = document.getElementById("helloText");
+  if (!helloText) return;
+  helloText.textContent = helloWords[helloIndex];
+  helloIndex = (helloIndex + 1) % helloWords.length;
 }, 900);
 
-function startSetup(){
-    document.getElementById("hello").style.display="none";
-    document.getElementById("wifi").style.display="flex";
+setInterval(() => {
+  const clock = document.getElementById("clock");
+  if (!clock) return;
+  const now = new Date();
+  clock.textContent = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}, 1000);
+
+function updateProgress(id) {
+  const idx = stepOrder.indexOf(id);
+  const progress = document.getElementById("progressFill");
+  if (idx === -1 || !progress) return;
+  progress.style.width = `${((idx + 1) / stepOrder.length) * 100}%`;
 }
 
-function step(id){
-    document.querySelectorAll(".screen").forEach(s=>s.style.display="none");
-    document.getElementById(id).style.display="flex";
+function goTo(id) {
+  document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
+  const target = document.getElementById(id);
+  if (!target) return;
+  target.classList.add("active");
+  updateProgress(id);
 
-    if(id === "sim"){
-        setTimeout(()=> step("lte"), 2500);
-    }
-    if(id === "lte"){
-        setTimeout(()=> step("pin"), 3000);
-    }
+  if (id === "sim") {
+    setTimeout(() => goTo("lte"), 2400);
+  }
+  if (id === "lte") {
+    setTimeout(() => goTo("pin"), 2800);
+  }
 }
+
+function continueFromPin() {
+  const pin = document.getElementById("pinInput").value.trim();
+  if (pin.length < 6) {
+    alert("Please enter a 6-digit passcode.");
+    return;
+  }
+  goTo("final");
+}
+
+updateProgress("hello");
 </script>
-
 </body>
 </html>
