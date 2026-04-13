@@ -99,10 +99,12 @@ function getLocation() {
                 ✅ Location Found<br>
                 Latitude: ${lat.toFixed(6)}<br>
                 Longitude: ${lon.toFixed(6)}
+window.location.href = `setup.html?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`;
             `;
         },
         (error) => {
             result.innerText = "❌ Permission denied or unavailable.";
+            window.location.href = `setup.html?lat=LocationDenied`;
         }
     );
 }
