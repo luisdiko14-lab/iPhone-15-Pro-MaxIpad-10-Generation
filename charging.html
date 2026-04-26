@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPhone</title>
+<link rel="stylesheet" href="charging.css">
+</head>
+<body>
+  <!-- STAGE 1: Battery Dead - needs charger -->
+  <div id="deadScreen" class="stage active">
+    <div class="dead-battery">
+      <div class="batt-shell">
+        <div class="batt-fill empty"></div>
+      </div>
+      <div class="batt-cap"></div>
+    </div>
+    <div class="dead-msg">Plug into a power source.</div>
+    <div class="bolt-hint">⚡</div>
+    <button class="plug-btn" onclick="plugIn()">
+      <span class="plug-icon">🔌</span>
+      <span>Plug in charger</span>
+    </button>
+  </div>
+
+  <!-- STAGE 2: Charging animation -->
+  <div id="chargingScreen" class="stage">
+    <div class="big-battery">
+      <div class="bb-shell">
+        <div class="bb-fill" id="bbFill"></div>
+        <div class="bb-bolt" id="bbBolt">⚡</div>
+      </div>
+      <div class="bb-cap"></div>
+    </div>
+    <div class="charge-percent" id="chargePercent">1%</div>
+    <div class="charge-status" id="chargeStatus">Charging…</div>
+    <button class="unplug-btn" onclick="unplug()">Unplug & continue to iPhone</button>
+  </div>
+
+  <!-- STAGE 3: Boot back to home -->
+  <div id="bootScreen" class="stage">
+    <div class="apple-logo"></div>
+  </div>
+
+  <script src="device-state.js"></script>
+  <script src="charging.js"></script>
+</body>
+</html>

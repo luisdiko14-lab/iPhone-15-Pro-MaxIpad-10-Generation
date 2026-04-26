@@ -284,6 +284,188 @@ body::before {
     cursor: pointer;
 }
 
+/* ===== Control Center ===== */
+.cc-handle {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 40%;
+    height: 44px;
+    z-index: 200;
+    cursor: pointer;
+}
+
+.control-center {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 20, 25, 0.55);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 30px;
+    transform: translateY(-100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow-y: auto;
+}
+
+.control-center.open { transform: translateY(0); }
+
+.cc-grab {
+    width: 44px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 3px;
+    margin-bottom: 14px;
+    cursor: pointer;
+}
+
+.cc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+    max-width: 380px;
+}
+
+.cc-tile {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 14px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.cc-conn {
+    grid-column: span 2;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.cc-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.10);
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.12s ease;
+}
+
+.cc-pill:active { transform: scale(0.93); }
+.cc-pill .cc-pill-icon { font-size: 22px; }
+.cc-pill .cc-pill-label { display: none; }
+
+.cc-pill.on {
+    background: linear-gradient(135deg, #007aff, #339cff);
+}
+
+.cc-pill[data-toggle="charger"].on {
+    background: linear-gradient(135deg, #30d158, #5be584);
+}
+
+.cc-battery-card {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cc-batt-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cc-batt-icon { font-size: 30px; }
+.cc-batt-pct {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+.cc-batt-state { font-size: 12px; color: rgba(255, 255, 255, 0.7); }
+
+.cc-batt-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.cc-batt-fill {
+    height: 100%;
+    background: #fff;
+    border-radius: 4px;
+    transition: width 0.4s ease, background 0.3s ease;
+}
+
+.cc-charge-btn {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.12s ease;
+}
+.cc-charge-btn:hover { background: rgba(255, 255, 255, 0.26); }
+.cc-charge-btn:active { transform: scale(0.97); }
+
+.cc-slider-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.cc-slider-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.85);
+}
+.cc-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 14px;
+    outline: none;
+    cursor: pointer;
+}
+.cc-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    cursor: pointer;
+}
+.cc-slider::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    background: #fff;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    cursor: pointer;
+}
+
+.cc-hint {
+    margin-top: 18px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
 /* Smooth transitions */
 * {
     -webkit-tap-highlight-color: transparent;

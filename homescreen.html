@@ -185,9 +185,61 @@
         <div class="app-switcher-hint">Swipe up to close</div>
     </div>
 
+    <!-- Control Center handle (swipe-down zone in top-right) -->
+    <div class="cc-handle" id="ccHandle" title="Control Center"></div>
+
+    <!-- Control Center Overlay -->
+    <div class="control-center" id="controlCenter">
+        <div class="cc-grab"></div>
+        <div class="cc-grid">
+            <div class="cc-tile cc-conn">
+                <div class="cc-pill" id="ccAirplane" data-toggle="airplane">
+                    <span class="cc-pill-icon">✈️</span>
+                    <span class="cc-pill-label">Airplane</span>
+                </div>
+                <div class="cc-pill" id="ccWifi" data-toggle="wifi">
+                    <span class="cc-pill-icon">📶</span>
+                    <span class="cc-pill-label">Wi‑Fi</span>
+                </div>
+                <div class="cc-pill" id="ccBluetooth" data-toggle="bluetooth">
+                    <span class="cc-pill-icon">🅱️</span>
+                    <span class="cc-pill-label">Bluetooth</span>
+                </div>
+                <div class="cc-pill" id="ccCharger" data-toggle="charger">
+                    <span class="cc-pill-icon">🔌</span>
+                    <span class="cc-pill-label">Charger</span>
+                </div>
+            </div>
+
+            <div class="cc-tile cc-battery-card">
+                <div class="cc-batt-row">
+                    <span class="cc-batt-icon" id="ccBattIcon">🔋</span>
+                    <div class="cc-batt-text">
+                        <div class="cc-batt-pct" id="ccBattPct">--%</div>
+                        <div class="cc-batt-state" id="ccBattState">On Battery</div>
+                    </div>
+                </div>
+                <div class="cc-batt-bar"><div class="cc-batt-fill" id="ccBattFill"></div></div>
+                <button class="cc-charge-btn" id="ccChargeBtn">Plug in charger</button>
+            </div>
+
+            <div class="cc-tile cc-slider-card">
+                <div class="cc-slider-label"><span>☀️</span><span>Brightness</span></div>
+                <input type="range" min="10" max="100" value="75" class="cc-slider" id="ccBrightness">
+            </div>
+
+            <div class="cc-tile cc-slider-card">
+                <div class="cc-slider-label"><span>🔊</span><span>Volume</span></div>
+                <input type="range" min="0" max="100" value="50" class="cc-slider" id="ccVolume">
+            </div>
+        </div>
+        <div class="cc-hint">Tap outside to close</div>
+    </div>
+
     <!-- Home Indicator Swipe Area -->
     <div class="home-indicator-area" id="homeIndicatorArea"></div>
 
+    <script src="device-state.js"></script>
     <script src="homescreen.js"></script>
 </body>
 </html>

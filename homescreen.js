@@ -4,6 +4,7 @@ class HomeScreen {
     this.initializeElements();
     this.setupEventListeners();
     this.startClock();
+    this.setupControlCenter();
     this.recentApps = JSON.parse(localStorage.getItem('recentApps')) || [];
     this.touchStartY = 0;
     this.isAppSwitcherOpen = false;
@@ -129,12 +130,17 @@ class HomeScreen {
     this.setupAppClick('dock-messages', 'discord_2.html', 'Messages', '💬');
     this.setupAppClick('dock-music', 'music.html', 'Music', '🎵');
     
-    // Other apps - show coming soon
-    const comingSoonApps = ['phone-app', 'camera-app', 'photos-app', 
-                           'safari-app', 'mail-app', 'notes-app', 
-                           'calculator-app', 'clock-app', 'maps-app',
-                           'facetime-app', 'health-app', 'find-my-app'];
-    
+    // Working demo apps
+    this.setupAppClick('phone-app', `call.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Phone', '📞');
+    this.setupAppClick('camera-app', `camera.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Camera', '📷');
+    this.setupAppClick('mail-app', `mail.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Mail', '✉️');
+    this.setupAppClick('notes-app', `notes.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Notes', '📝');
+    this.setupAppClick('calculator-app', `calculator.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Calculator', '🧮');
+    this.setupAppClick('facetime-app', `call.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'FaceTime', '📹');
+
+    // Apps still showing "coming soon"
+    const comingSoonApps = ['photos-app', 'safari-app', 'clock-app', 'maps-app', 'health-app', 'find-my-app'];
+
     comingSoonApps.forEach(appId => {
       const appElement = document.getElementById(appId);
       if (appElement) {
@@ -236,17 +242,126 @@ class HomeScreen {
   }
 
   startClock() {
-    if (!this.timeElement) return;
-    
+    // Time + battery now handled by device-state.js (shared across all pages)
+    // This is kept as a no-op fallback in case device-state.js fails to load.
+    if (!this.timeElement || window.iOSDevice) return;
     const tick = () => {
       const now = new Date();
-      const hours = String(now.getHours()).padStart(2, "0");
-      const minutes = String(now.getMinutes()).padStart(2, "0");
-      this.timeElement.textContent = `${hours}:${minutes}`;
+      this.timeElement.textContent = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
     };
-    
-    tick(); // Update immediately
-    setInterval(tick, 1000); // Update every second
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  setupControlCenter() {
+    const cc = document.getElementById('controlCenter');
+    const handle = document.getElementById('ccHandle');
+    if (!cc || !handle) return;
+
+    const open = () => { cc.classList.add('open'); this.refreshControlCenter(); };
+    const close = () => cc.classList.remove('open');
+
+    handle.addEventListener('click', open);
+
+    // Tap outside (on the dark backdrop area) closes
+    cc.addEventListener('click', (e) => {
+      if (e.target === cc || e.target.classList.contains('cc-grab')) close();
+    });
+
+    // Swipe-down from very top opens; swipe-up while open closes
+    let startY = null;
+    document.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: true });
+    document.addEventListener('touchmove', (e) => {
+      if (startY === null) return;
+      const dy = e.touches[0].clientY - startY;
+      if (!cc.classList.contains('open') && startY < 50 && dy > 60) open();
+      if (cc.classList.contains('open') && dy < -60) close();
+    }, { passive: true });
+
+    // Pill toggles
+    cc.querySelectorAll('.cc-pill').forEach(pill => {
+      pill.addEventListener('click', () => this.handlePillToggle(pill));
+    });
+
+    // Sliders
+    const bright = document.getElementById('ccBrightness');
+    const vol = document.getElementById('ccVolume');
+    if (bright) {
+      const st = window.iOSDevice ? window.iOSDevice.getState() : { brightness: 0.75 };
+      bright.value = Math.round((st.brightness || 0.75) * 100);
+      this.applyBrightness(bright.value);
+      bright.addEventListener('input', (e) => {
+        if (window.iOSDevice) window.iOSDevice.setBrightness(e.target.value / 100);
+        this.applyBrightness(e.target.value);
+      });
+    }
+    if (vol) {
+      const st = window.iOSDevice ? window.iOSDevice.getState() : { volume: 0.5 };
+      vol.value = Math.round((st.volume || 0.5) * 100);
+      vol.addEventListener('input', (e) => {
+        if (window.iOSDevice) window.iOSDevice.setVolume(e.target.value / 100);
+      });
+    }
+
+    // Big charger button
+    const ccBtn = document.getElementById('ccChargeBtn');
+    if (ccBtn) ccBtn.addEventListener('click', () => this.toggleCharger());
+
+    this.refreshControlCenter();
+    setInterval(() => {
+      if (cc.classList.contains('open')) this.refreshControlCenter();
+    }, 1000);
+  }
+
+  applyBrightness(v) {
+    const overlay = document.getElementById('brightnessOverlay') || (() => {
+      const o = document.createElement('div');
+      o.id = 'brightnessOverlay';
+      o.style.cssText = 'position:fixed;inset:0;background:#000;pointer-events:none;z-index:998;transition:opacity .2s;';
+      document.body.appendChild(o);
+      return o;
+    })();
+    overlay.style.opacity = String(Math.max(0, (100 - Number(v)) / 180));
+  }
+
+  handlePillToggle(pill) {
+    const kind = pill.dataset.toggle;
+    const state = window.iOSDevice ? window.iOSDevice.getState() : {};
+    pill.classList.toggle('on');
+    if (kind === 'airplane' && window.iOSDevice) window.iOSDevice.setAirplane(pill.classList.contains('on'));
+    if (kind === 'wifi' && window.iOSDevice) window.iOSDevice.setWifi(pill.classList.contains('on'));
+    if (kind === 'bluetooth' && window.iOSDevice) window.iOSDevice.setBluetooth(pill.classList.contains('on'));
+    if (kind === 'charger') this.toggleCharger();
+  }
+
+  toggleCharger() {
+    if (!window.iOSDevice) return;
+    const st = window.iOSDevice.getState();
+    window.iOSDevice.setCharging(!st.charging);
+    this.refreshControlCenter();
+  }
+
+  refreshControlCenter() {
+    if (!window.iOSDevice) return;
+    const st = window.iOSDevice.getState();
+    const set = (id, prop, val) => { const el = document.getElementById(id); if (el) el[prop] = val; };
+    const lvl = Math.round(st.battery);
+    set('ccBattPct', 'textContent', lvl + '%');
+    set('ccBattState', 'textContent', st.charging ? 'Charging' : (lvl <= 20 ? 'Low Power Warning' : 'On Battery'));
+    set('ccBattIcon', 'textContent', st.charging ? '⚡' : (lvl <= 10 ? '🪫' : '🔋'));
+    const fill = document.getElementById('ccBattFill');
+    if (fill) {
+      fill.style.width = Math.max(2, lvl) + '%';
+      fill.style.background = st.charging ? '#30d158' : (lvl <= 20 ? '#ff3b30' : '#ffffff');
+    }
+    const btn = document.getElementById('ccChargeBtn');
+    if (btn) btn.textContent = st.charging ? 'Unplug charger' : 'Plug in charger';
+
+    const map = { ccAirplane: st.airplaneMode, ccWifi: st.wifiOn, ccBluetooth: st.bluetoothOn, ccCharger: st.charging };
+    Object.entries(map).forEach(([id, on]) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('on', !!on);
+    });
   }
 }
 
