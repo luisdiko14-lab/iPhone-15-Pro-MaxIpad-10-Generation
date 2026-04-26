@@ -3,245 +3,732 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Call Simulator</title>
-
+<title>Phone</title>
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    background: black;
-    color: white;
-    overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  background: #000;
+  color: #fff;
+  min-height: 100vh;
+  -webkit-user-select: none;
+  user-select: none;
+  overflow-x: hidden;
 }
 
-.screen {
-    display: none;
-    height: 100vh;
-    width: 100vw;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  height: 36px;
+  background: #000;
+}
+.status-bar .right-indicators { display: flex; gap: 6px; align-items: center; font-size: 11px; }
+
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 90px;
+  min-height: 100vh;
 }
 
-.active { display: flex; }
+/* ===== Tabs ===== */
+.tab-screen { display: none; padding: 12px 16px 30px; }
+.tab-screen.active { display: block; }
 
-/* DISPLAY */
-.number-display {
-    font-size: 30px;
-    min-height: 40px;
-    letter-spacing: 2px;
-    margin-bottom: 10px;
+.screen-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 4px 4px 14px;
+  letter-spacing: -0.5px;
 }
 
-/* KEYPAD */
+/* ===== Recent calls list ===== */
+.search-input {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 15px;
+  outline: none;
+  margin-bottom: 12px;
+}
+.search-input::placeholder { color: rgba(255,255,255,0.4); }
+
+.list-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  cursor: pointer;
+  gap: 14px;
+}
+.list-row:active { background: rgba(255,255,255,0.04); }
+
+.avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 600; font-size: 16px; flex-shrink: 0;
+}
+
+.row-info { flex: 1; min-width: 0; }
+.row-name { font-size: 17px; font-weight: 500; }
+.row-name.missed { color: #ff453a; }
+.row-meta { font-size: 13px; color: #8e8e93; margin-top: 2px; display: flex; gap: 6px; align-items: center; }
+.row-meta .arrow {
+  display: inline-block; width: 12px; text-align: center;
+}
+.arrow.in { color: #34c759; }
+.arrow.out { color: #8e8e93; }
+.arrow.miss { color: #ff453a; }
+.row-time {
+  font-size: 14px; color: #8e8e93; margin-left: auto; flex-shrink: 0;
+}
+.info-dot {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(0,122,255,0.18); color: #0a84ff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600;
+  margin-left: 12px;
+}
+
+.empty-state { color: #8e8e93; padding: 40px 20px; text-align: center; font-size: 14px; }
+
+/* ===== Keypad ===== */
+.keypad-screen { display: flex; flex-direction: column; align-items: center; padding-top: 30px; }
+
+.dial-display {
+  font-size: 38px;
+  font-weight: 300;
+  letter-spacing: 1.5px;
+  min-height: 50px;
+  margin-bottom: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
 .keypad {
-    display: grid;
-    grid-template-columns: repeat(3, 80px);
-    gap: 15px;
-    margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  gap: 14px;
+  margin-bottom: 24px;
 }
 
 .key {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #1c1c1e;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    cursor: pointer;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: #1c1c1e;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.key:active { background: #2c2c2e; transform: scale(0.96); }
+.key .num { font-size: 30px; font-weight: 400; line-height: 1; }
+.key .letters {
+  font-size: 9px; letter-spacing: 1.2px; color: #8e8e93;
+  margin-top: 3px; text-transform: uppercase;
 }
 
-.key:active { transform: scale(0.95); }
+.call-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 60px; margin-top: 10px;
+}
+.call-btn-big {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  background: #34c759;
+  color: #fff;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(52,199,89,0.45);
+  transition: transform 0.12s ease;
+}
+.call-btn-big:hover { background: #2eb350; }
+.call-btn-big:active { transform: scale(0.94); }
+.call-btn-big:disabled { background: #38383a; box-shadow: none; cursor: not-allowed; }
 
-.btn {
-    margin-top: 15px;
-    padding: 12px 25px;
-    border-radius: 30px;
-    border: none;
-    background: #34c759;
-    color: white;
-    font-size: 18px;
+.delete-btn {
+  background: transparent; border: none; color: #fff;
+  font-size: 24px; cursor: pointer; opacity: 0;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.2s ease;
+}
+.delete-btn.show { opacity: 1; }
+
+/* ===== Active call screen ===== */
+.call-screen {
+  display: none; position: fixed; inset: 0;
+  background: linear-gradient(180deg, #2c2c2e 0%, #000 100%);
+  z-index: 1000;
+  flex-direction: column; align-items: center;
+  padding: 80px 30px 40px;
+  text-align: center;
+}
+.call-screen.active { display: flex; }
+
+.caller-avatar {
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; font-weight: 600; color: #fff;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
 }
 
-/* CONTACTS */
-.contacts {
-    margin-bottom: 20px;
-    text-align: center;
+.caller-name { font-size: 32px; font-weight: 400; margin-bottom: 6px; }
+.caller-number { font-size: 18px; color: #c7c7cc; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.call-status { font-size: 17px; color: #8e8e93; min-height: 22px; }
+.call-timer { font-variant-numeric: tabular-nums; }
+
+.call-controls {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 30px;
 }
-
-.contact {
-    padding: 8px 12px;
-    margin: 5px;
-    background: #2c2c2e;
-    border-radius: 10px;
-    cursor: pointer;
+.cc-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer;
 }
-
-/* CALL SCREEN */
-.status { color: #aaa; margin-top: 10px; }
-
-.controls {
-    position: absolute;
-    bottom: 60px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
+.cc-btn .ic {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  transition: background 0.15s ease;
 }
+.cc-btn:hover .ic { background: rgba(255,255,255,0.28); }
+.cc-btn.active .ic { background: #fff; color: #000; }
+.cc-btn .lbl { font-size: 12px; color: #fff; }
 
-.control {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #2c2c2e;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    cursor: pointer;
+.end-btn {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: #fff; border: none;
+  font-size: 30px; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255,59,48,0.5);
+  transition: transform 0.1s ease;
 }
+.end-btn:active { transform: scale(0.94); }
 
-.red { background: #ff3b30; }
-.yellow { background: #ffcc00; color: black; }
-.activeBtn { outline: 3px solid white; }
+/* ===== Bottom tab bar ===== */
+.tab-bar {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: rgba(28,28,30,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  padding: 8px 0 14px;
+  z-index: 50;
+}
+.tab-bar-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer;
+  color: #8e8e93;
+  font-size: 10px;
+  padding: 4px;
+}
+.tab-bar-item .icon { font-size: 22px; }
+.tab-bar-item.active { color: #0a84ff; }
+.tab-bar-item:active { transform: scale(0.95); }
 
+/* ===== Header inside Recents ===== */
+.segmented {
+  display: flex;
+  background: rgba(255,255,255,0.08);
+  border-radius: 9px;
+  padding: 2px;
+  margin-bottom: 12px;
+}
+.segmented button {
+  flex: 1; background: transparent; border: none;
+  padding: 7px; color: #fff; font-size: 13px; font-weight: 500;
+  border-radius: 7px; cursor: pointer;
+}
+.segmented button.active { background: #636366; }
+
+.back-btn-top {
+  position: absolute; top: 50px; left: 14px;
+  background: transparent; border: none; color: #0a84ff;
+  font-size: 17px; cursor: pointer; z-index: 5;
+}
 </style>
 </head>
 
 <body>
+  <div class="status-bar">
+    <div class="time">12:00</div>
+    <div class="status-indicators">
+      <span class="carrier">Thu 14 Aug</span>
+      <div class="right-indicators">
+        <span class="signal">📶</span>
+        <span class="wifi">📶</span>
+        <span class="battery">87% 🔋</span>
+      </div>
+    </div>
+  </div>
 
-<!-- DIAL SCREEN -->
-<div class="screen active" id="dialScreen">
+  <button class="back-btn-top" onclick="window.location.href='homescreen.html'">‹ Home</button>
 
-    <div class="contacts">
-        <div class="contact" onclick="setNumber('123456789')">Mom</div>
-        <div class="contact" onclick="setNumber('987654321')">Dad</div>
-        <div class="contact" onclick="setNumber('555123456')">Friend</div>
+  <div class="app-shell">
+    <!-- Favorites -->
+    <div class="tab-screen" id="screen-favorites">
+      <h1 class="screen-title">Favorites</h1>
+      <div id="favoritesList"></div>
     </div>
 
-    <div class="number-display" id="display"></div>
-
-    <div class="keypad">
-        <div class="key" onclick="press('1')">1</div>
-        <div class="key" onclick="press('2')">2</div>
-        <div class="key" onclick="press('3')">3</div>
-        <div class="key" onclick="press('4')">4</div>
-        <div class="key" onclick="press('5')">5</div>
-        <div class="key" onclick="press('6')">6</div>
-        <div class="key" onclick="press('7')">7</div>
-        <div class="key" onclick="press('8')">8</div>
-        <div class="key" onclick="press('9')">9</div>
-        <div class="key" onclick="press('*')">*</div>
-        <div class="key" onclick="press('0')">0</div>
-        <div class="key" onclick="press('#')">#</div>
+    <!-- Recents -->
+    <div class="tab-screen" id="screen-recents">
+      <h1 class="screen-title">Recents</h1>
+      <div class="segmented">
+        <button class="active" data-filter="all" onclick="setRecentFilter('all', this)">All</button>
+        <button data-filter="missed" onclick="setRecentFilter('missed', this)">Missed</button>
+      </div>
+      <div id="recentsList"></div>
     </div>
 
-    <button class="btn" onclick="startCall()">Call</button>
-</div>
-
-<!-- CALL SCREEN -->
-<div class="screen" id="callScreen">
-    <div style="text-align:center;">
-        <div style="font-size:28px" id="callingNumber"></div>
-        <div class="status" id="status">Dialing...</div>
+    <!-- Contacts -->
+    <div class="tab-screen" id="screen-contacts">
+      <h1 class="screen-title">Contacts</h1>
+      <input type="text" class="search-input" id="contactSearch" placeholder="Search" oninput="renderContacts()">
+      <div id="contactsList"></div>
     </div>
 
-    <div class="controls">
-        <div class="control" onclick="toggleSpeaker()" id="speakerBtn">Speaker</div>
-        <div class="control" onclick="toggleMute()" id="muteBtn">Mute</div>
-        <div class="control yellow" onclick="toggleHold()" id="holdBtn">Hold</div>
-        <div class="control red" onclick="endCall()">End</div>
+    <!-- Keypad -->
+    <div class="tab-screen active" id="screen-keypad">
+      <div class="keypad-screen">
+        <div class="dial-display" id="dialDisplay"></div>
+        <div class="keypad" id="keypad"></div>
+        <div class="call-row">
+          <div style="width:40px"></div>
+          <button class="call-btn-big" id="callBtn" onclick="startCall()" disabled>📞</button>
+          <button class="delete-btn" id="deleteBtn" onclick="deleteDigit()">⌫</button>
+        </div>
+      </div>
     </div>
-</div>
 
-<!-- AUDIO -->
-<audio id="holdAudio" loop preload="auto">
-<source src="https://cdn.discordapp.com/attachments/1438179520518815865/1488744408311402686/AOL_Dial_Up_Internet_Connection_Sound_Youve_Got_Mail_America_Online_90s.mp3">
-</audio>
+    <!-- Voicemail -->
+    <div class="tab-screen" id="screen-voicemail">
+      <h1 class="screen-title">Voicemail</h1>
+      <div id="voicemailList"></div>
+    </div>
+  </div>
 
-<script>
-let number = "";
-let calling = false;
-let hold = false;
+  <!-- Bottom tab bar -->
+  <div class="tab-bar">
+    <div class="tab-bar-item" data-tab="favorites" onclick="switchTab('favorites', this)">
+      <span class="icon">⭐</span><span>Favorites</span>
+    </div>
+    <div class="tab-bar-item" data-tab="recents" onclick="switchTab('recents', this)">
+      <span class="icon">🕐</span><span>Recents</span>
+    </div>
+    <div class="tab-bar-item" data-tab="contacts" onclick="switchTab('contacts', this)">
+      <span class="icon">👥</span><span>Contacts</span>
+    </div>
+    <div class="tab-bar-item active" data-tab="keypad" onclick="switchTab('keypad', this)">
+      <span class="icon">🔢</span><span>Keypad</span>
+    </div>
+    <div class="tab-bar-item" data-tab="voicemail" onclick="switchTab('voicemail', this)">
+      <span class="icon">▶️</span><span>Voicemail</span>
+    </div>
+  </div>
 
-const display = document.getElementById("display");
-const audio = document.getElementById("holdAudio");
+  <!-- Active call full-screen overlay -->
+  <div class="call-screen" id="callScreen">
+    <div class="caller-avatar" id="callerAvatar">A</div>
+    <div class="caller-name" id="callerName">Unknown</div>
+    <div class="caller-number" id="callerNumber"></div>
+    <div class="call-status" id="callStatus">Calling…</div>
 
-function press(digit) {
-    if (calling) return;
-    number += digit;
-    display.innerText = number;
-}
+    <div class="call-controls">
+      <div class="cc-btn" id="muteBtn" onclick="toggleMute()">
+        <div class="ic">🔇</div><div class="lbl">mute</div>
+      </div>
+      <div class="cc-btn" id="keypadBtn" onclick="toggleKeypadOnCall()">
+        <div class="ic">🔢</div><div class="lbl">keypad</div>
+      </div>
+      <div class="cc-btn" id="speakerBtn" onclick="toggleSpeaker()">
+        <div class="ic">🔊</div><div class="lbl">speaker</div>
+      </div>
+      <div class="cc-btn" id="addBtn">
+        <div class="ic">➕</div><div class="lbl">add call</div>
+      </div>
+      <div class="cc-btn" id="facetimeBtn">
+        <div class="ic">📹</div><div class="lbl">FaceTime</div>
+      </div>
+      <div class="cc-btn" id="contactsBtn">
+        <div class="ic">👤</div><div class="lbl">contacts</div>
+      </div>
+    </div>
 
-function setNumber(num) {
-    if (calling) return;
-    number = num;
-    display.innerText = number;
-}
+    <button class="end-btn" onclick="endCall()">📞</button>
+  </div>
 
-function startCall() {
-    if (!number) return alert("Enter a number!");
+  <script src="device-state.js"></script>
+  <script>
+  // ============ Phone App ============
+  const KEYS = [
+    ['1', ''], ['2', 'ABC'], ['3', 'DEF'],
+    ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'],
+    ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ'],
+    ['*', ''], ['0', '+'], ['#', ''],
+  ];
 
-    calling = true;
+  const DTMF_FREQS = {
+    '1': [697,1209], '2': [697,1336], '3': [697,1477],
+    '4': [770,1209], '5': [770,1336], '6': [770,1477],
+    '7': [852,1209], '8': [852,1336], '9': [852,1477],
+    '*': [941,1209], '0': [941,1336], '#': [941,1477],
+  };
 
-    document.getElementById("dialScreen").classList.remove("active");
-    document.getElementById("callScreen").classList.add("active");
+  const COLORS = ['#ff453a','#ff9f0a','#ffd60a','#30d158','#64d2ff','#0a84ff','#bf5af2','#ff375f'];
 
-    document.getElementById("callingNumber").innerText = number;
-    document.getElementById("status").innerText = "Calling...";
+  const DEFAULT_CONTACTS = [
+    { name: 'Mom', number: '+1 (555) 123-0001', favorite: true },
+    { name: 'Dad', number: '+1 (555) 123-0002', favorite: true },
+    { name: 'Alex Johnson', number: '+1 (415) 555-0123' },
+    { name: 'Bella Chen', number: '+1 (415) 555-0145' },
+    { name: 'Carlos Rivera', number: '+1 (415) 555-0167' },
+    { name: 'Diana Park', number: '+1 (415) 555-0189' },
+    { name: 'Ethan Wright', number: '+1 (415) 555-0211', favorite: true },
+    { name: 'Fiona Lee', number: '+1 (415) 555-0233' },
+    { name: 'Pizza Palace', number: '+1 (800) PIZZA-12' },
+    { name: 'Voicemail', number: '*86' },
+  ];
+
+  // Storage
+  function getContacts() {
+    try { return JSON.parse(localStorage.getItem('phoneContacts')) || DEFAULT_CONTACTS; }
+    catch { return DEFAULT_CONTACTS; }
+  }
+  function saveContacts(c) { localStorage.setItem('phoneContacts', JSON.stringify(c)); }
+
+  function getRecents() {
+    try { return JSON.parse(localStorage.getItem('phoneRecents')) || seedRecents(); }
+    catch { return []; }
+  }
+  function saveRecents(r) { localStorage.setItem('phoneRecents', JSON.stringify(r)); }
+
+  function seedRecents() {
+    const seed = [
+      { name: 'Mom', number: '+1 (555) 123-0001', dir: 'in', missed: false, dur: 184, t: Date.now() - 1000*60*60*2 },
+      { name: 'Bella Chen', number: '+1 (415) 555-0145', dir: 'out', missed: false, dur: 422, t: Date.now() - 1000*60*60*8 },
+      { name: 'Unknown', number: '+1 (888) 555-0099', dir: 'in', missed: true, dur: 0, t: Date.now() - 1000*60*60*22 },
+      { name: 'Ethan Wright', number: '+1 (415) 555-0211', dir: 'out', missed: false, dur: 65, t: Date.now() - 1000*60*60*30 },
+      { name: 'Pizza Palace', number: '+1 (800) PIZZA-12', dir: 'out', missed: false, dur: 92, t: Date.now() - 1000*60*60*48 },
+    ];
+    saveRecents(seed);
+    return seed;
+  }
+
+  function getVoicemails() {
+    try { return JSON.parse(localStorage.getItem('phoneVoicemails')) || seedVm(); }
+    catch { return seedVm(); }
+  }
+  function saveVoicemails(v) { localStorage.setItem('phoneVoicemails', JSON.stringify(v)); }
+  function seedVm() {
+    const seed = [
+      { name: 'Mom', number: '+1 (555) 123-0001', t: Date.now() - 1000*60*60*5, dur: 28, played: false, transcript: 'Hi honey, just calling to check in. Call me back when you get a chance.' },
+      { name: 'Dr. Smith Office', number: '+1 (415) 555-0199', t: Date.now() - 1000*60*60*30, dur: 14, played: true, transcript: 'This is a reminder for your appointment on Friday at 3 PM.' },
+    ];
+    saveVoicemails(seed);
+    return seed;
+  }
+
+  // ============ Helpers ============
+  function avatarColor(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return COLORS[h % COLORS.length];
+  }
+  function initials(name) {
+    return name.split(/\s+/).filter(Boolean).slice(0,2).map(s => s[0].toUpperCase()).join('') || '?';
+  }
+  function fmtRel(ts) {
+    const diff = (Date.now() - ts) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+  }
+  function fmtDur(s) {
+    const m = Math.floor(s/60), ss = s%60;
+    return m + ':' + String(ss).padStart(2,'0');
+  }
+  function findContact(number) {
+    return getContacts().find(c => c.number === number);
+  }
+
+  // ============ Rendering ============
+  function renderContacts() {
+    const q = (document.getElementById('contactSearch').value || '').toLowerCase();
+    const list = document.getElementById('contactsList');
+    const contacts = getContacts().filter(c => c.name.toLowerCase().includes(q) || c.number.includes(q));
+    contacts.sort((a,b) => a.name.localeCompare(b.name));
+    if (contacts.length === 0) {
+      list.innerHTML = '<div class="empty-state">No matching contacts</div>';
+      return;
+    }
+    list.innerHTML = contacts.map(c => `
+      <div class="list-row" onclick="quickCall('${escapeHtml(c.number)}','${escapeHtml(c.name)}')">
+        <div class="avatar" style="background:${avatarColor(c.name)}">${initials(c.name)}</div>
+        <div class="row-info">
+          <div class="row-name">${escapeHtml(c.name)}</div>
+          <div class="row-meta">${escapeHtml(c.number)}</div>
+        </div>
+        <div class="info-dot">i</div>
+      </div>
+    `).join('');
+  }
+
+  function renderFavorites() {
+    const list = document.getElementById('favoritesList');
+    const favs = getContacts().filter(c => c.favorite);
+    if (favs.length === 0) {
+      list.innerHTML = '<div class="empty-state">Star contacts to add them here</div>';
+      return;
+    }
+    list.innerHTML = favs.map(c => `
+      <div class="list-row" onclick="quickCall('${escapeHtml(c.number)}','${escapeHtml(c.name)}')">
+        <div class="avatar" style="background:${avatarColor(c.name)}">${initials(c.name)}</div>
+        <div class="row-info">
+          <div class="row-name">⭐ ${escapeHtml(c.name)}</div>
+          <div class="row-meta">${escapeHtml(c.number)}</div>
+        </div>
+        <div class="info-dot">📞</div>
+      </div>
+    `).join('');
+  }
+
+  let recentFilter = 'all';
+  function setRecentFilter(f, btn) {
+    recentFilter = f;
+    document.querySelectorAll('.segmented button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderRecents();
+  }
+  function renderRecents() {
+    const list = document.getElementById('recentsList');
+    let items = getRecents().sort((a,b) => b.t - a.t);
+    if (recentFilter === 'missed') items = items.filter(r => r.missed);
+    if (items.length === 0) {
+      list.innerHTML = '<div class="empty-state">No recent calls</div>';
+      return;
+    }
+    list.innerHTML = items.map(r => {
+      const arr = r.missed ? '<span class="arrow miss">↙</span>' : (r.dir === 'in' ? '<span class="arrow in">↙</span>' : '<span class="arrow out">↗</span>');
+      const nameClass = r.missed ? 'row-name missed' : 'row-name';
+      return `
+        <div class="list-row" onclick="quickCall('${escapeHtml(r.number)}','${escapeHtml(r.name)}')">
+          <div class="avatar" style="background:${avatarColor(r.name)}">${initials(r.name)}</div>
+          <div class="row-info">
+            <div class="${nameClass}">${escapeHtml(r.name)}</div>
+            <div class="row-meta">${arr}<span>${escapeHtml(r.number)}</span></div>
+          </div>
+          <div class="row-time">${fmtRel(r.t)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderVoicemails() {
+    const list = document.getElementById('voicemailList');
+    const vms = getVoicemails().sort((a,b) => b.t - a.t);
+    if (vms.length === 0) {
+      list.innerHTML = '<div class="empty-state">No voicemails</div>';
+      return;
+    }
+    list.innerHTML = vms.map(v => `
+      <div class="list-row">
+        <div class="avatar" style="background:${avatarColor(v.name)}">${initials(v.name)}</div>
+        <div class="row-info">
+          <div class="row-name">${v.played ? '' : '<span style="color:#0a84ff">●</span> '}${escapeHtml(v.name)}</div>
+          <div class="row-meta">${escapeHtml(v.transcript)}</div>
+          <div class="row-meta">${fmtRel(v.t)} · ${fmtDur(v.dur)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  }
+
+  // ============ Tabs ============
+  function switchTab(tab, el) {
+    document.querySelectorAll('.tab-screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + tab).classList.add('active');
+    document.querySelectorAll('.tab-bar-item').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    if (tab === 'recents') renderRecents();
+    if (tab === 'contacts') renderContacts();
+    if (tab === 'favorites') renderFavorites();
+    if (tab === 'voicemail') renderVoicemails();
+  }
+
+  // ============ Keypad ============
+  let dialed = '';
+  const display = document.getElementById('dialDisplay');
+  const callBtn = document.getElementById('callBtn');
+  const deleteBtn = document.getElementById('deleteBtn');
+
+  function buildKeypad() {
+    const kp = document.getElementById('keypad');
+    kp.innerHTML = '';
+    KEYS.forEach(([num, letters]) => {
+      const k = document.createElement('div');
+      k.className = 'key';
+      k.innerHTML = `<div class="num">${num}</div><div class="letters">${letters}</div>`;
+      k.addEventListener('click', () => press(num));
+      kp.appendChild(k);
+    });
+  }
+
+  let audioCtx;
+  function tone(digit) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const f = DTMF_FREQS[digit];
+      if (!f) return;
+      const now = audioCtx.currentTime;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+      gain.connect(audioCtx.destination);
+      f.forEach(freq => {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      });
+    } catch (e) {}
+  }
+
+  function press(d) {
+    dialed += d;
+    tone(d);
+    updateDisplay();
+  }
+  function deleteDigit() {
+    dialed = dialed.slice(0, -1);
+    updateDisplay();
+  }
+  function updateDisplay() {
+    display.textContent = dialed;
+    callBtn.disabled = dialed.length === 0;
+    deleteBtn.classList.toggle('show', dialed.length > 0);
+  }
+
+  // ============ Call screen ============
+  let callTimerInterval = null;
+  let callDuration = 0;
+  let callStartTs = 0;
+  let currentCallNumber = '';
+  let currentCallName = '';
+  let muted = false, speaker = false;
+
+  function quickCall(number, name) {
+    dialed = number;
+    updateDisplay();
+    currentCallNumber = number;
+    currentCallName = name || (findContact(number)?.name) || number;
+    showCallScreen();
+  }
+
+  function startCall() {
+    if (!dialed) return;
+    currentCallNumber = dialed;
+    const c = findContact(dialed);
+    currentCallName = c ? c.name : 'Unknown';
+    showCallScreen();
+  }
+
+  function showCallScreen() {
+    const cs = document.getElementById('callScreen');
+    cs.classList.add('active');
+    document.getElementById('callerName').textContent = currentCallName;
+    document.getElementById('callerNumber').textContent = currentCallNumber;
+    const av = document.getElementById('callerAvatar');
+    av.textContent = initials(currentCallName);
+    av.style.background = avatarColor(currentCallName);
+    document.getElementById('callStatus').textContent = 'Calling…';
+    callDuration = 0;
+    callStartTs = Date.now();
+    muted = false; speaker = false;
+    document.getElementById('muteBtn').classList.remove('active');
+    document.getElementById('speakerBtn').classList.remove('active');
 
     setTimeout(() => {
-        document.getElementById("status").innerText = "Connected";
-    }, 2000);
-}
+      document.getElementById('callStatus').textContent = 'Ringing…';
+    }, 800);
+    setTimeout(() => {
+      document.getElementById('callStatus').innerHTML = '<span class="call-timer" id="callTimer">0:00</span>';
+      callTimerInterval = setInterval(updateTimer, 1000);
+    }, 2400);
+  }
 
-function endCall() {
-    calling = false;
-    hold = false;
+  function updateTimer() {
+    callDuration++;
+    const t = document.getElementById('callTimer');
+    if (t) t.textContent = fmtDur(callDuration);
+  }
 
-    audio.pause();
-    audio.currentTime = 0;
+  function endCall() {
+    if (callTimerInterval) clearInterval(callTimerInterval);
+    callTimerInterval = null;
+    document.getElementById('callScreen').classList.remove('active');
 
-    number = "";
-    display.innerText = "";
+    // log to recents
+    const recents = getRecents();
+    recents.unshift({
+      name: currentCallName,
+      number: currentCallNumber,
+      dir: 'out',
+      missed: callDuration === 0,
+      dur: callDuration,
+      t: callStartTs,
+    });
+    saveRecents(recents.slice(0, 30));
 
-    document.getElementById("dialScreen").classList.add("active");
-    document.getElementById("callScreen").classList.remove("active");
+    dialed = '';
+    updateDisplay();
+  }
 
-    document.getElementById("status").innerText = "Dialing...";
-}
+  function toggleMute() { muted = !muted; document.getElementById('muteBtn').classList.toggle('active', muted); }
+  function toggleSpeaker() { speaker = !speaker; document.getElementById('speakerBtn').classList.toggle('active', speaker); }
+  function toggleKeypadOnCall() {
+    document.getElementById('keypadBtn').classList.toggle('active');
+  }
 
-function toggleHold() {
-    if (!calling) return;
-
-    hold = !hold;
-    document.getElementById("holdBtn").classList.toggle("activeBtn");
-
-    if (hold) {
-        document.getElementById("status").innerText = "On Hold";
-
-        audio.pause();
-        audio.currentTime = 0;
-
-        // FIX: user gesture-safe play
-        audio.play().catch(() => {});
-    } else {
-        document.getElementById("status").innerText = "Connected";
-        audio.pause();
-        audio.currentTime = 0;
-    }
-}
-
-function toggleMute() {
-    document.getElementById("muteBtn").classList.toggle("activeBtn");
-}
-
-function toggleSpeaker() {
-    document.getElementById("speakerBtn").classList.toggle("activeBtn");
-}
-</script>
-
+  // ============ Init ============
+  buildKeypad();
+  updateDisplay();
+  renderRecents();
+  renderContacts();
+  renderFavorites();
+  renderVoicemails();
+  </script>
 </body>
 </html>

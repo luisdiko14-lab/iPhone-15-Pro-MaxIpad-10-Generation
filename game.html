@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2048 — Games</title>
+<link rel="stylesheet" href="game.css">
+<!-- React via CDN (no build step) -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+</head>
+<body>
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="time">12:00</div>
+    <div class="status-indicators">
+      <span class="carrier">Thu 14 Aug</span>
+      <div class="right-indicators">
+        <span class="signal">📶</span>
+        <span class="wifi">📶</span>
+        <span class="battery">87% 🔋</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="root"></div>
+
+  <script src="device-state.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

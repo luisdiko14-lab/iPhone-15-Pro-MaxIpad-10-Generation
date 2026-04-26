@@ -2,7 +2,7 @@
 
 ## Overview
 
-A comprehensive web-based iOS ecosystem simulator that replicates the iPhone experience in the browser. The project includes a home screen launcher, an iOS-style settings interface with many sub-pages (Wi-Fi, Bluetooth, Battery, Display, Cellular, Notifications, Focus, etc.), authentication flows, an App Store mock, and several mini-apps such as Calculator, Camera, Mail, Music, Files, Phone/Call, Game Center, and a Discord clone. It is primarily an educational/demo project showcasing iOS-style UI patterns and client-side interactivity.
+A comprehensive web-based iOS ecosystem simulator that replicates the iPhone experience in the browser. The project includes a home screen launcher, an iOS-style settings interface with many sub-pages (Wi-Fi, Bluetooth, Battery, Display, Cellular, Notifications, Focus, etc.), authentication flows, an App Store mock, and several mini-apps such as Calculator, Camera, Mail, Music, Files, Phone/Call, Siri, a 2048 mini-game (built in React via CDN), Game Center, and a Discord clone. It is primarily an educational/demo project showcasing iOS-style UI patterns and client-side interactivity.
 
 ## User Preferences
 
@@ -50,10 +50,33 @@ Preferred communication style: Simple, everyday language.
 - **HTML Files**: One per feature/page.
 - **CSS Files**: A mix of shared (`settings-page.css`, `home.css`, `homescreen.css`, `charging.css`) and page-specific stylesheets.
 - **JS Files**: One per page, named to match the HTML file. `device-state.js` is the cross-page shared state script.
-- **New Working Apps**: `notes.html` (full notes app with autosave), `calculator.html` (full iOS calculator), `call.html` (phone dialer), `camera.html` (webcam), `music.html`, `weather.html`. Calculator/Notes/Phone/Camera are now wired into the home screen.
+- **Working Apps**: `notes.html` (notes app with autosave), `calculator.html` (full iOS calculator), `call.html` (full phone app — see below), `camera.html` (webcam), `music.html`, `weather.html`, `siri.html` (smart offline Siri — see below), `game.html` (React-powered 2048 game). All are wired into the home screen launcher.
 - **Charging Flow**: `charging.html` + `charging.css` + `charging.js` render the empty-battery / plug-in / charging animation when battery reaches 0%.
 - **Python Stub**: `main.py` exists as a minimal placeholder and is not central to the application.
 - **TypeScript Helper**: `discord_setup.ts` documents Discord OAuth2 configuration but is not part of a build pipeline.
+
+### Phone App (`call.html`)
+- Full iOS-style phone with a 5-tab bottom bar: Favorites, Recents, Contacts, Keypad, Voicemail.
+- Keypad uses Web Audio API to synthesize **real DTMF tones** (the dual-tone frequencies actual phones use) on each key press.
+- Quick-call from any contact, favorite, or recent. The active call screen shows caller avatar (auto-colored by name), name, number, status ("Calling…" → "Ringing…" → live timer), and 6 control buttons (mute, keypad, speaker, add call, FaceTime, contacts) plus a red end-call button.
+- Recents are persisted in `localStorage` (`phoneRecents`) and auto-update with every call. Voicemails (`phoneVoicemails`) and contacts (`phoneContacts`) also persist with sensible seed data.
+
+### Siri (`siri.html` / `siri.js`)
+- Fully **offline** smart assistant built for the free tier (no API keys).
+- Uses the browser's **SpeechRecognition API** for voice input (mic button) and **SpeechSynthesis API** to speak responses out loud.
+- Pattern-matches questions for: time, date, battery, Wi-Fi/Bluetooth status, weather (mock), jokes, fortunes, dice rolls, coin flips, math expressions ("what is 23 plus 19"), "open <app>" navigation (Calculator, Notes, Camera, Phone, Settings, Music, Weather, Mail, Game, App Store, Home Screen), charger control via `window.iOSDevice`, and friendly fallbacks.
+- Animated Siri orb (multicolor conic gradient with pulsing rings) reflects state: idle / listening / thinking / speaking.
+- Suggestion chips, transcript display, and a 12-item conversation history persisted to `localStorage`.
+
+### Mini Game (`game.html` — React)
+- Full **2048** implementation using **React 18 + ReactDOM via CDN** (loaded from unpkg, no build pipeline). Demonstrates that React can be used in this app without rewriting the existing pages.
+- Self-contained `game.js` uses `React.createElement` (no JSX/Babel needed for speed). All game state managed via `useState`/`useEffect`/`useCallback`/`useRef`.
+- Supports keyboard arrows, WASD, swipe gestures, and an on-screen D-pad. Tracks best score in `localStorage` (`game2048Best`). Includes win and game-over overlays.
+
+### Installer Flow (`installer.html`)
+- 5-step guided setup with a step-dot indicator: Drive selection → iOS version → Region → License agreement → Installation.
+- Drive list shows multiple realistic drives with status tags (Recommended/Slow/Insufficient Space/Offline) and disk-usage bars.
+- Installation simulation streams a live log window (green-on-black "[time] phase: message" lines), plus live metrics for transfer speed, ETA, and file count.
 
 ## External Dependencies
 

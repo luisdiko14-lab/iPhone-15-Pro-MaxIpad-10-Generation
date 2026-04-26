@@ -1,34 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siri</title>
-    <link rel="stylesheet" href="siri.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Siri</title>
+<link rel="stylesheet" href="siri.css">
 </head>
 <body>
-    <div class="siri-container">
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="time">12:00</div>
+    <div class="status-indicators">
+      <span class="carrier">Thu 14 Aug</span>
+      <div class="right-indicators">
+        <span class="signal">📶</span>
+        <span class="wifi">📶</span>
+        <span class="battery">87% 🔋</span>
+      </div>
+    </div>
+  </div>
 
-        <button class="back-btn" onclick="window.location.href='homescreen.html'">← Back</button>
+  <button class="back-btn" onclick="window.location.href='homescreen.html'">‹ Home</button>
 
-        <div class="siri-circle">
-            🎤
-        </div>
-
-        <p id="siri-status">Hi, I'm Siri. What can I help you with?</p>
-
-        <!-- MODEL SWITCH BUTTONS -->
-        <div class="model-buttons">
-            <button onclick="setModel('groq')">Use Groq</button>
-            <button onclick="setModel('gemini')">Use Gemini Flash Lite</button>
-        </div>
-
-        <input type="text" id="userQuestion" placeholder="Type your question...">
-
-        <button id="askBtn">Ask Siri</button>
-
+  <div class="siri-container">
+    <!-- Animated Siri orb -->
+    <div class="siri-orb" id="siriOrb" data-state="idle">
+      <div class="orb-ring r1"></div>
+      <div class="orb-ring r2"></div>
+      <div class="orb-ring r3"></div>
+      <div class="orb-core"></div>
     </div>
 
-    <script src="siri.js"></script>
+    <p class="siri-status" id="siriStatus">Hi, I'm Siri. What can I help you with?</p>
+    <p class="siri-transcript" id="siriTranscript"></p>
+    <p class="siri-reply" id="siriReply"></p>
+
+    <!-- Suggestion chips -->
+    <div class="suggestions" id="suggestions"></div>
+
+    <!-- Input row -->
+    <div class="input-row">
+      <input type="text" id="userQuestion" placeholder="Type or tap mic to ask..." autocomplete="off">
+      <button id="askBtn" title="Ask">Ask</button>
+      <button id="micBtn" title="Voice input" class="mic-btn">🎤</button>
+    </div>
+
+    <!-- History -->
+    <div class="history-section">
+      <div class="history-header">Recent</div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+
+  <script src="device-state.js"></script>
+  <script src="siri.js"></script>
 </body>
 </html>

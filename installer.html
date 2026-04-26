@@ -1,266 +1,675 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iPhone Installer</title>
-    <style>
-        :root {
-            --bg-primary: #000;
-            --bg-secondary: #1c1c1e;
-            --text-primary: #fff;
-            --text-secondary: #8e8e93;
-            --blue: #0a84ff;
-            --border: #38383a;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPhone OS Installer</title>
+<style>
+:root {
+  --bg-primary: #0a0a0c;
+  --bg-secondary: #1c1c1e;
+  --bg-tertiary: #2c2c2e;
+  --text-primary: #fff;
+  --text-secondary: #8e8e93;
+  --blue: #0a84ff;
+  --green: #30d158;
+  --orange: #ff9f0a;
+  --red: #ff453a;
+  --border: #38383a;
+}
 
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .installer-card {
-            width: 90%;
-            max-width: 400px;
-            background-color: var(--bg-secondary);
-            border-radius: 20px;
-            padding: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: transform 0.5s ease;
-        }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(900px 600px at 70% -10%, #1f293f 0%, transparent 55%),
+    radial-gradient(700px 500px at -10% 120%, #0f3b66 0%, transparent 50%),
+    var(--bg-primary);
+  color: var(--text-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
 
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            text-align: center;
-        }
+.installer-card {
+  width: 100%;
+  max-width: 460px;
+  background: rgba(28, 28, 30, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+  animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1);
+}
 
-        .subtitle {
-            color: var(--text-secondary);
-            text-align: center;
-            margin-bottom: 32px;
-            font-size: 14px;
-        }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-        .drive-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 18px; opacity: 0.7;
+  font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+  font-weight: 600;
+}
+.brand .logo {
+  width: 22px; height: 22px;
+  background: linear-gradient(135deg, var(--blue), var(--green));
+  border-radius: 5px;
+}
 
-        .drive-item {
-            display: flex;
-            align-items: center;
-            padding: 16px;
-            background-color: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-align: center;
+  letter-spacing: -0.3px;
+}
 
-        .drive-item:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: var(--blue);
-        }
+.subtitle {
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 13px;
+  line-height: 1.4;
+}
 
-        .drive-icon {
-            font-size: 24px;
-            margin-right: 16px;
-        }
+.steps-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 22px;
+  justify-content: center;
+}
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.25s ease;
+}
+.step-dot.done { background: var(--green); }
+.step-dot.active { background: var(--blue); transform: scale(1.4); }
+.step-line {
+  width: 30px; height: 2px;
+  background: var(--border);
+}
+.step-line.done { background: var(--green); }
 
-        .drive-info {
-            flex: 1;
-        }
+.section { display: none; }
+.section.active { display: block; animation: fadeIn 0.25s ease; }
 
-        .drive-name {
-            font-weight: 600;
-            font-size: 16px;
-        }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-        .drive-details {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
+/* Drives */
+.drive-list {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.drive-item {
+  display: flex; align-items: center;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.drive-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(10, 132, 255, 0.5);
+}
+.drive-item.selected {
+  background: rgba(10, 132, 255, 0.14);
+  border-color: var(--blue);
+}
+.drive-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.drive-icon {
+  font-size: 26px;
+  margin-right: 14px;
+  width: 40px; text-align: center;
+}
+.drive-info { flex: 1; min-width: 0; }
+.drive-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 3px;
+}
+.drive-details {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.drive-bar {
+  height: 4px; background: var(--bg-tertiary);
+  border-radius: 2px; margin-top: 8px; overflow: hidden;
+}
+.drive-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  border-radius: 2px;
+}
+.drive-tag {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  background: var(--bg-tertiary); color: var(--text-secondary);
+  margin-left: 8px;
+}
+.drive-tag.recommended { background: var(--green); color: #000; }
+.drive-tag.warning { background: var(--orange); color: #000; }
+.drive-tag.error { background: var(--red); color: #fff; }
 
-        .install-btn {
-            width: 100%;
-            padding: 16px;
-            background-color: var(--blue);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            margin-top: 32px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
+/* Options grid */
+.opt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.opt {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.18s ease;
+}
+.opt:hover { border-color: rgba(10,132,255,0.5); }
+.opt.selected { background: rgba(10,132,255,0.14); border-color: var(--blue); }
+.opt-icon { font-size: 26px; margin-bottom: 6px; }
+.opt-title { font-weight: 600; font-size: 14px; }
+.opt-desc { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
 
-        .install-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+/* License */
+.license-box {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  height: 160px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  line-height: 1.55;
+}
+.checkbox-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; cursor: pointer;
+  padding: 8px;
+}
+.checkbox {
+  width: 22px; height: 22px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #fff;
+  transition: all 0.15s ease;
+}
+.checkbox.checked { background: var(--blue); border-color: var(--blue); }
+.checkbox-label { font-size: 13px; }
 
-        .install-btn:active {
-            opacity: 0.8;
-        }
+/* Buttons */
+.btn-row {
+  display: flex; gap: 10px; margin-top: 8px;
+}
+.btn {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: #0974e0; }
+.btn-primary:disabled { background: var(--bg-tertiary); color: var(--text-secondary); cursor: not-allowed; }
+.btn-secondary { background: var(--bg-tertiary); color: #fff; }
+.btn-secondary:hover { background: #3a3a3c; }
+.btn:active:not(:disabled) { transform: scale(0.98); }
 
-        /* Progress Screen */
-        .progress-screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
+/* Progress */
+.progress-box {
+  background: rgba(0,0,0,0.4);
+  border-radius: 12px;
+  padding: 18px;
+  margin: 16px 0;
+}
+.progress-container {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-bar {
+  width: 0%; height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.percent-text {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.status-text {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  min-height: 18px;
+}
 
-        .progress-container {
-            width: 100%;
-            height: 6px;
-            background-color: #333;
-            border-radius: 3px;
-            margin: 30px 0;
-            overflow: hidden;
-        }
+.log-window {
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: #5be584;
+  height: 110px;
+  overflow-y: auto;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.log-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background-color: #fff;
-            transition: width 0.3s linear;
-        }
+.metrics {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-top: 12px;
+}
+.metric {
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+.metric-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-value { font-size: 14px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
 
-        .status-text {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-top: 10px;
-        }
-
-        .percent-text {
-            font-size: 18px;
-            font-weight: 600;
-            margin-top: 5px;
-        }
-    </style>
+/* Done */
+.done-icon {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--green), #5be584);
+  margin: 10px auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+  animation: bounceIn 0.5s cubic-bezier(0.32,0.72,0,1);
+}
+@keyframes bounceIn {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
 </head>
 <body>
-    <div class="installer-card" id="selectionCard">
-        <h1>Select Installation Drive</h1>
-        <p class="subtitle">Choose where you want to install the system</p>
-        
-        <div class="drive-list">
-            <div class="drive-item" onclick="selectDrive(this, 'A', 'Main iPhone Drive')">
-                <span class="drive-icon">📱</span>
-                <div class="drive-info">
-                    <div class="drive-name">A: Main iPhone Drive</div>
-                    <div class="drive-details">2 TB Total • 1.99 TB Available</div>
-                </div>
-            </div>
+  <div class="installer-card" id="card">
+    <div class="brand"><div class="logo"></div><span>iOS Setup Assistant 2.0</span></div>
 
-            <div class="drive-item" onclick="selectDrive(this, 'B', '/USB Drive')">
-                <span class="drive-icon">💾</span>
-                <div class="drive-info">
-                    <div class="drive-name">B: /USB Drive</div>
-                    <div class="drive-details">256 GB Total • 126 GB Available</div>
-                </div>
-            </div>
-
-            <div class="drive-item" onclick="selectDrive(this, 'C', '/Windows 11')">
-                <span class="drive-icon">🪟</span>
-                <div class="drive-info">
-                    <div class="drive-name">C: /Windows 11</div>
-                    <div class="drive-details">0.1 MB space available • System partition</div>
-                </div>
-            </div>
-        </div>
-
-        <button id="installBtn" class="install-btn" disabled onclick="startInstall()">Install System</button>
+    <!-- Step indicator -->
+    <div class="steps-bar" id="stepsBar">
+      <div class="step-dot active" data-step="0"></div>
+      <div class="step-line" data-step="0"></div>
+      <div class="step-dot" data-step="1"></div>
+      <div class="step-line" data-step="1"></div>
+      <div class="step-dot" data-step="2"></div>
+      <div class="step-line" data-step="2"></div>
+      <div class="step-dot" data-step="3"></div>
+      <div class="step-line" data-step="3"></div>
+      <div class="step-dot" data-step="4"></div>
     </div>
 
-    <div class="installer-card progress-screen" id="progressCard">
-        <h1 id="progressTitle">Installing to Drive A:</h1>
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
+    <!-- Step 1: Drive selection -->
+    <div class="section active" id="section-0">
+      <h1>Select Installation Drive</h1>
+      <p class="subtitle">Choose where to install iOS. Make sure the target has enough free space.</p>
+
+      <div class="drive-list" id="driveList">
+        <div class="drive-item" data-letter="A" data-name="Main iPhone Drive" data-size="free">
+          <span class="drive-icon">📱</span>
+          <div class="drive-info">
+            <div class="drive-name">A: Main iPhone Drive <span class="drive-tag recommended">Recommended</span></div>
+            <div class="drive-details">2 TB total · 1.99 TB available</div>
+            <div class="drive-bar"><div class="drive-bar-fill" style="width:0.5%"></div></div>
+          </div>
         </div>
+
+        <div class="drive-item" data-letter="B" data-name="External SSD" data-size="ok">
+          <span class="drive-icon">💾</span>
+          <div class="drive-info">
+            <div class="drive-name">B: External SSD</div>
+            <div class="drive-details">512 GB total · 380 GB available</div>
+            <div class="drive-bar"><div class="drive-bar-fill" style="width:25%"></div></div>
+          </div>
+        </div>
+
+        <div class="drive-item" data-letter="C" data-name="USB Flash Drive" data-size="warn">
+          <span class="drive-icon">💿</span>
+          <div class="drive-info">
+            <div class="drive-name">C: USB Flash Drive <span class="drive-tag warning">Slow</span></div>
+            <div class="drive-details">128 GB total · 110 GB available</div>
+            <div class="drive-bar"><div class="drive-bar-fill" style="width:14%; background:var(--orange)"></div></div>
+          </div>
+        </div>
+
+        <div class="drive-item disabled" data-letter="D" data-name="Windows 11 Partition" data-size="full">
+          <span class="drive-icon">🪟</span>
+          <div class="drive-info">
+            <div class="drive-name">D: Windows 11 Partition <span class="drive-tag error">Insufficient Space</span></div>
+            <div class="drive-details">100 GB total · 0.1 MB available</div>
+            <div class="drive-bar"><div class="drive-bar-fill" style="width:99.9%; background:var(--red)"></div></div>
+          </div>
+        </div>
+
+        <div class="drive-item disabled" data-letter="E" data-name="Network Drive (offline)" data-size="off">
+          <span class="drive-icon">🌐</span>
+          <div class="drive-info">
+            <div class="drive-name">E: Network Drive <span class="drive-tag error">Offline</span></div>
+            <div class="drive-details">Cannot connect to remote host</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="window.location.href='index.html'">‹ Back</button>
+        <button class="btn btn-primary" id="next0" disabled onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 2: iOS version -->
+    <div class="section" id="section-1">
+      <h1>Choose iOS Version</h1>
+      <p class="subtitle">Pick the version of iOS you want to install on your device.</p>
+
+      <div class="opt-grid">
+        <div class="opt selected" data-ver="ios-18">
+          <div class="opt-icon">📱</div>
+          <div class="opt-title">iOS 18</div>
+          <div class="opt-desc">Latest · 6.2 GB</div>
+        </div>
+        <div class="opt" data-ver="ios-17">
+          <div class="opt-icon">📲</div>
+          <div class="opt-title">iOS 17</div>
+          <div class="opt-desc">Stable · 5.8 GB</div>
+        </div>
+        <div class="opt" data-ver="ios-16">
+          <div class="opt-icon">🖥️</div>
+          <div class="opt-title">iOS 16</div>
+          <div class="opt-desc">Legacy · 5.1 GB</div>
+        </div>
+        <div class="opt" data-ver="ios-beta">
+          <div class="opt-icon">🧪</div>
+          <div class="opt-title">iOS 19 Beta</div>
+          <div class="opt-desc">Developer · 7.4 GB</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">‹ Back</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Configuration -->
+    <div class="section" id="section-2">
+      <h1>Region & Configuration</h1>
+      <p class="subtitle">Pick a region. We'll preconfigure the language and date format.</p>
+
+      <div class="opt-grid">
+        <div class="opt selected" data-region="us">
+          <div class="opt-icon">🇺🇸</div>
+          <div class="opt-title">United States</div>
+          <div class="opt-desc">English · Imperial</div>
+        </div>
+        <div class="opt" data-region="uk">
+          <div class="opt-icon">🇬🇧</div>
+          <div class="opt-title">United Kingdom</div>
+          <div class="opt-desc">English · Metric</div>
+        </div>
+        <div class="opt" data-region="de">
+          <div class="opt-icon">🇩🇪</div>
+          <div class="opt-title">Germany</div>
+          <div class="opt-desc">Deutsch · Metric</div>
+        </div>
+        <div class="opt" data-region="jp">
+          <div class="opt-icon">🇯🇵</div>
+          <div class="opt-title">Japan</div>
+          <div class="opt-desc">日本語 · Metric</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">‹ Back</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 4: License -->
+    <div class="section" id="section-3">
+      <h1>License Agreement</h1>
+      <p class="subtitle">Please review and accept the terms to continue.</p>
+
+      <div class="license-box">
+        <p><strong>iOS SOFTWARE LICENSE AGREEMENT</strong></p>
+        <br>
+        <p>By using this simulator, you agree to the following demo-grade terms:</p>
+        <br>
+        <p>1. This is a hobby project simulating an iPhone interface in your browser.</p>
+        <p>2. No real Apple software is being installed.</p>
+        <p>3. All your "settings" are saved in your browser's local storage.</p>
+        <p>4. The simulated battery, time, and notifications are fictional.</p>
+        <p>5. You may use this for educational purposes only.</p>
+        <p>6. The author makes no warranty that anything works correctly.</p>
+        <p>7. By accepting, you acknowledge this is a fun project, not a real OS.</p>
+        <br>
+        <p><em>Last updated: April 2026</em></p>
+      </div>
+
+      <div class="checkbox-row" onclick="toggleAccept()">
+        <div class="checkbox" id="acceptBox"></div>
+        <div class="checkbox-label">I have read and agree to the terms.</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">‹ Back</button>
+        <button class="btn btn-primary" id="acceptBtn" disabled onclick="nextStep()">Install</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Installing -->
+    <div class="section" id="section-4">
+      <h1 id="installTitle">Installing iOS 18…</h1>
+      <p class="subtitle" id="installSubtitle">This may take a moment. Don't close the window.</p>
+
+      <div class="progress-box">
+        <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
         <div class="percent-text" id="percentText">0%</div>
-        <div class="status-text" id="statusText">Preparing installation...</div>
+        <div class="status-text" id="statusText">Preparing…</div>
+
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Speed</div><div class="metric-value" id="metricSpeed">0 MB/s</div></div>
+          <div class="metric"><div class="metric-label">Time left</div><div class="metric-value" id="metricEta">--:--</div></div>
+          <div class="metric"><div class="metric-label">Files</div><div class="metric-value" id="metricFiles">0</div></div>
+        </div>
+
+        <div class="log-window" id="logWindow"></div>
+      </div>
+
+      <div id="finalRow" style="display:none">
+        <div class="done-icon">✓</div>
+        <h1 style="margin-bottom:8px">Installation complete!</h1>
+        <p class="subtitle">Your iPhone is ready to set up.</p>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="window.location.href='setup.html'">Continue to Setup</button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        let selectedDriveLetter = null;
-        let selectedDriveName = null;
+  <script>
+    let currentStep = 0;
+    let selectedDrive = null;
+    let selectedVersion = 'ios-18';
+    let selectedRegion = 'us';
+    let accepted = false;
 
-        function selectDrive(element, letter, name) {
-            document.querySelectorAll('.drive-item').forEach(item => {
-                item.style.borderColor = 'var(--border)';
-                item.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-            });
+    function setStep(n) {
+      currentStep = n;
+      document.querySelectorAll('.section').forEach((s, i) => s.classList.toggle('active', i === n));
+      document.querySelectorAll('.step-dot').forEach((d, i) => {
+        d.classList.toggle('done', i < n);
+        d.classList.toggle('active', i === n);
+      });
+      document.querySelectorAll('.step-line').forEach((l, i) => {
+        l.classList.toggle('done', i < n);
+      });
+      if (n === 4) startInstall();
+    }
 
-            element.style.borderColor = 'var(--blue)';
-            element.style.backgroundColor = 'rgba(10, 132, 255, 0.1)';
-            
-            selectedDriveLetter = letter;
-            selectedDriveName = name;
-            
-            const installBtn = document.getElementById('installBtn');
-            if (letter === 'C') {
-                installBtn.disabled = true;
-                installBtn.textContent = 'Insufficient Space on C:';
-            } else {
-                installBtn.disabled = false;
-                installBtn.textContent = 'Install on ' + letter + ':';
-            }
+    function nextStep() { if (currentStep < 4) setStep(currentStep + 1); }
+    function prevStep() { if (currentStep > 0) setStep(currentStep - 1); }
+
+    // Drive selection
+    document.querySelectorAll('.drive-item:not(.disabled)').forEach(it => {
+      it.addEventListener('click', () => {
+        document.querySelectorAll('.drive-item').forEach(x => x.classList.remove('selected'));
+        it.classList.add('selected');
+        selectedDrive = { letter: it.dataset.letter, name: it.dataset.name };
+        document.getElementById('next0').disabled = false;
+      });
+    });
+
+    // Version selection
+    document.querySelectorAll('#section-1 .opt').forEach(o => {
+      o.addEventListener('click', () => {
+        document.querySelectorAll('#section-1 .opt').forEach(x => x.classList.remove('selected'));
+        o.classList.add('selected');
+        selectedVersion = o.dataset.ver;
+      });
+    });
+
+    // Region selection
+    document.querySelectorAll('#section-2 .opt').forEach(o => {
+      o.addEventListener('click', () => {
+        document.querySelectorAll('#section-2 .opt').forEach(x => x.classList.remove('selected'));
+        o.classList.add('selected');
+        selectedRegion = o.dataset.region;
+      });
+    });
+
+    function toggleAccept() {
+      accepted = !accepted;
+      document.getElementById('acceptBox').classList.toggle('checked', accepted);
+      document.getElementById('acceptBox').textContent = accepted ? '✓' : '';
+      document.getElementById('acceptBtn').disabled = !accepted;
+    }
+
+    // ====== Installation simulation ======
+    const STEPS = [
+      { from: 0, to: 8, msg: 'Verifying installer signature…', files: ['boot.img','signature.sig'] },
+      { from: 8, to: 18, msg: 'Allocating disk space on selected drive…', files: ['/var','/private'] },
+      { from: 18, to: 32, msg: 'Downloading system image…', files: ['core.dmg','frameworks.dmg','SystemApps.zip'] },
+      { from: 32, to: 48, msg: 'Verifying download integrity…', files: ['sha256sum','manifest.plist'] },
+      { from: 48, to: 64, msg: 'Extracting kernel and frameworks…', files: ['xnu','SpringBoard','UIKit.framework'] },
+      { from: 64, to: 78, msg: 'Installing system applications…', files: ['Phone.app','Safari.app','Settings.app','Music.app'] },
+      { from: 78, to: 88, msg: 'Configuring localization for region…', files: ['locale.plist','keyboards/'] },
+      { from: 88, to: 95, msg: 'Optimizing storage layout…', files: ['storage.db','spotlight.idx'] },
+      { from: 95, to: 100, msg: 'Finalizing installation…', files: ['boot.complete'] },
+    ];
+
+    const LOG_LINES = [
+      'Mounting volume on drive {drive}…',
+      'apfs: snapshot created',
+      'fetch: chunk 142/512 ok',
+      'extract: SystemApps/Phone.app',
+      'verify: sha256 ok',
+      'install: registered Phone.app',
+      'install: registered Safari.app',
+      'spotlight: index built (1,247 items)',
+      'localization: applied region={region}',
+      'security: provisioning profile installed',
+      'kext: loaded com.apple.driver.AppleEmbeddedUSBHost',
+      'launch: SpringBoard ready',
+      'cache: dyld_shared_cache_arm64e built',
+    ];
+
+    function startInstall() {
+      const verName = { 'ios-18':'iOS 18','ios-17':'iOS 17','ios-16':'iOS 16','ios-beta':'iOS 19 Beta' }[selectedVersion];
+      document.getElementById('installTitle').textContent = `Installing ${verName}…`;
+      document.getElementById('installSubtitle').textContent = `Target: ${selectedDrive ? selectedDrive.letter + ': ' + selectedDrive.name : 'Drive'}`;
+
+      const bar = document.getElementById('progressBar');
+      const pct = document.getElementById('percentText');
+      const status = document.getElementById('statusText');
+      const log = document.getElementById('logWindow');
+      const speedEl = document.getElementById('metricSpeed');
+      const etaEl = document.getElementById('metricEta');
+      const filesEl = document.getElementById('metricFiles');
+
+      let p = 0;
+      let stepIdx = 0;
+      let fileCount = 0;
+      let elapsed = 0;
+
+      const tick = setInterval(() => {
+        p += Math.random() * 0.8 + 0.2;
+        elapsed += 0.1;
+        if (p >= 100) { p = 100; clearInterval(tick); installDone(); }
+
+        // Move through phases
+        while (stepIdx < STEPS.length - 1 && p > STEPS[stepIdx].to) stepIdx++;
+        const phase = STEPS[stepIdx];
+        status.textContent = phase.msg;
+
+        bar.style.width = p + '%';
+        pct.textContent = Math.floor(p) + '%';
+
+        // Speed: random between 80-220 MB/s during downloads, slower during verify
+        const isDl = phase.msg.toLowerCase().includes('download') || phase.msg.toLowerCase().includes('extract');
+        const speed = isDl ? (80 + Math.random() * 140) : (10 + Math.random() * 30);
+        speedEl.textContent = speed.toFixed(1) + ' MB/s';
+
+        const etaSec = Math.max(0, ((100 - p) / Math.max(0.5, p / Math.max(1, elapsed))) | 0);
+        etaEl.textContent = String(Math.floor(etaSec / 60)).padStart(2,'0') + ':' + String(etaSec % 60).padStart(2,'0');
+
+        if (Math.random() < 0.5) {
+          fileCount += 1 + Math.floor(Math.random() * 4);
+          filesEl.textContent = fileCount.toLocaleString();
+          const tpl = LOG_LINES[Math.floor(Math.random() * LOG_LINES.length)];
+          const line = tpl
+            .replace('{drive}', selectedDrive?.letter || 'A')
+            .replace('{region}', selectedRegion);
+          const div = document.createElement('div');
+          div.className = 'log-line';
+          div.textContent = '[' + (elapsed.toFixed(1) + 's').padStart(6) + '] ' + line;
+          log.appendChild(div);
+          log.scrollTop = log.scrollHeight;
         }
+      }, 100);
+    }
 
-        function startInstall() {
-            if (!selectedDriveLetter) return;
-            
-            document.getElementById('selectionCard').style.display = 'none';
-            document.getElementById('progressCard').style.display = 'flex';
-            document.getElementById('progressTitle').textContent = 'Installing to ' + selectedDriveName;
-            
-            const progressBar = document.getElementById('progressBar');
-            const statusText = document.getElementById('statusText');
-            const percentText = document.getElementById('percentText');
-            
-            const steps = [
-                { percent: 20, text: 'Installing Updates...' },
-                { percent: 45, text: 'Installing Apps...' },
-                { percent: 70, text: 'Installing iOS...' },
-                { percent: 90, text: 'Installing System...' },
-                { percent: 100, text: 'Finalizing...' }
-            ];
-            
-            let currentStep = 0;
-            let currentPercent = 0;
-            
-            const interval = setInterval(() => {
-                currentPercent += 1;
-                progressBar.style.width = currentPercent + '%';
-                percentText.textContent = currentPercent + '%';
-                
-                if (currentStep < steps.length && currentPercent >= steps[currentStep].percent) {
-                    statusText.textContent = steps[currentStep].text;
-                    currentStep++;
-                }
-                
-                if (currentPercent >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        window.location.href = 'home.html';
-                    }, 1000);
-                }
-            }, 50);
-        }
-    </script>
+    function installDone() {
+      document.getElementById('finalRow').style.display = 'block';
+      document.getElementById('statusText').textContent = 'Installation complete';
+      document.getElementById('metricSpeed').textContent = '—';
+      document.getElementById('metricEta').textContent = '00:00';
+    }
+  </script>
 </body>
 </html>
