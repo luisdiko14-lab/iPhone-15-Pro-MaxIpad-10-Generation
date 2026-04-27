@@ -1,44 +1,73 @@
-// Discord OAuth2 Configuration and Verification Script
-// This script provides the necessary configuration for the Discord Developer Portal
+// Discord OAuth2 Configuration & Verification Script
+// Documents the redirect URI you need to paste into the Discord Developer Portal.
+// The actual OAuth flow is implemented server-side in `server.py`.
 
 export const discordConfig = {
+    // Public OAuth client ID. Safe to commit; the *secret* is read from the
+    // DISCORD_CLIENT_SECRET environment variable on the server only.
     clientId: '1454564220413808731',
-    // Public domain for the Replit environment
-    domain: 'bae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev',
-    
-    // Redirect URI to be pasted into the Discord Developer Portal
-    get redirectUri(): string {
-        return `https://${this.domain}/api/callback`;
+
+    // The full domain is resolved at runtime from window.location so the
+    // app keeps working even when Replit rotates the dev URL.
+    get domain(): string {
+        if (typeof window !== 'undefined' && window.location?.host) {
+            return window.location.host;
+        }
+        // Server-side fallback (Node) — read from env.
+        const proc: any = (typeof process !== 'undefined') ? process : {};
+        const envDomain: string | undefined =
+            proc.env?.REPLIT_DOMAINS || proc.env?.REPLIT_DEV_DOMAIN;
+        return (envDomain || 'localhost:5000').split(',')[0];
     },
-    
-    // Required scopes for the application
-    scopes: ['identify', 'guilds', 'email', 'connections'],
-    
-    // Instructions for the user
+
+    get redirectUri(): string {
+        const proto = (typeof window !== 'undefined' && window.location?.protocol) || 'https:';
+        return `${proto}//${this.domain}/api/callback`;
+    },
+
+    // Scopes the app requests. Mirror these in server.py if you change them.
+    scopes: ['identify', 'guilds', 'email', 'connections', 'guilds.member.read'],
+
+    // OAuth state token length (CSRF protection). Matches server.py.
+    stateLength: 126,
+
     instructions: {
-        portalSetup: "Add the redirectUri above to your Discord Application's OAuth2 Redirects.",
-        secrets: "Add DISCORD_CLIENT_SECRET to your Replit Secrets (Environment Variables).",
-        verification: "Visit https://${this.domain}/login to test the flow."
-    }
+        portalSetup: 'Add the redirectUri above to your Discord Application\'s OAuth2 Redirects.',
+        secrets: 'Add DISCORD_CLIENT_SECRET to your Replit Secrets — it must NOT be hard-coded.',
+        verification: 'Visit /login on your deployed domain to test the flow.',
+    },
 };
 
 /**
- * Verifies if the current environment is ready for Discord Authentication
+ * Verifies that the Flask server has the OAuth credentials it needs.
+ * Hits the /api/discord/status endpoint and reports back.
  */
 export async function verifySetup(): Promise<boolean> {
-    console.log("Checking Discord OAuth2 Configuration...");
+    console.log('Checking Discord OAuth2 Configuration…');
     console.log(`Redirect URI: ${discordConfig.redirectUri}`);
     console.log(`Required Scopes: ${discordConfig.scopes.join(', ')}`);
-    
+    console.log(`State length: ${discordConfig.stateLength} chars`);
+
     try {
-        const response = await fetch('/api/user');
-        return response.status !== 404;
+        const response = await fetch('/api/discord/status', { credentials: 'same-origin' });
+        if (!response.ok) {
+            console.error(`Server check failed (HTTP ${response.status}).`);
+            return false;
+        }
+        const status = await response.json();
+        if (!status.configured) {
+            console.warn('Server is up but DISCORD_CLIENT_SECRET is not set.');
+            return false;
+        }
+        console.log('✓ Server is configured for Discord OAuth.');
+        return true;
     } catch (error) {
-        console.error("Server check failed. Ensure the Flask server is running on port 5000.");
+        console.error('Server check failed. Ensure the Flask server is running on port 5000.', error);
         return false;
     }
 }
 
 // Example usage:
-// import { discordConfig } from './discord_setup.ts';
+// import { discordConfig, verifySetup } from './discord_setup.ts';
 // console.log(discordConfig.redirectUri);
+// verifySetup().then(ok => console.log('Ready:', ok));

@@ -19,7 +19,7 @@
   }
 
   function paint() {
-    const lvl = Math.max(1, getLevel());
+    const lvl = Math.max(2, getLevel());
     bbFill.style.width = lvl + '%';
     chargePercent.textContent = lvl + '%';
     if (lvl >= 100) {

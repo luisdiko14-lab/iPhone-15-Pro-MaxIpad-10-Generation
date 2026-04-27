@@ -176,42 +176,58 @@
             }, 1000);
         }
 
-        // Real data fetch from our backend
+        // Real data fetch from our backend.
+        // The access token now lives in a server-side session cookie — we never
+        // see it in the browser. We just call /api/me and the server uses the
+        // cookie to look up the token.
         async function loadDiscordData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const accessToken = urlParams.get('access_token');
-            
-            if (!accessToken) {
-                // Fallback to mock data if no real token
-                document.getElementById('username').innerText = 'Demo User (Login Required)';
-                return;
+            // Strip any legacy ?access_token=… from the URL so it never sits
+            // in browser history or referer headers.
+            if (window.location.search.includes('access_token')) {
+                history.replaceState({}, '', window.location.pathname);
             }
 
             try {
-                // Point to port 5000 where our unified Flask server is now running
-                const backendUrl = window.location.protocol + '//' + window.location.host;
-                const response = await fetch(`${backendUrl}/api/user?access_token=${accessToken}`);
+                const response = await fetch('/api/me', { credentials: 'same-origin' });
+                if (response.status === 401) {
+                    document.getElementById('username').innerText = 'Not signed in';
+                    document.getElementById('email').innerText = 'Tap "Login with Discord" to sign in.';
+                    return;
+                }
+                if (!response.ok) {
+                    document.getElementById('username').innerText = 'Error loading profile';
+                    return;
+                }
                 const data = await response.json();
-                
                 const user = data.user;
-                document.getElementById('username').innerText = `${user.username}#${user.discriminator || '0'}`;
+                if (!user) {
+                    document.getElementById('username').innerText = 'Profile unavailable';
+                    return;
+                }
+
+                const tag = user.discriminator && user.discriminator !== '0'
+                    ? `${user.username}#${user.discriminator}`
+                    : `@${user.username}`;
+                document.getElementById('username').innerText = tag;
                 document.getElementById('email').innerText = user.email || 'No email shared';
                 document.getElementById('user-avatar').innerText = user.username.substring(0, 2).toUpperCase();
-                
+
                 if (user.avatar) {
                     const avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
                     document.getElementById('user-avatar').style.backgroundImage = `url(${avatarUrl})`;
                     document.getElementById('user-avatar').style.backgroundSize = 'cover';
                     document.getElementById('user-avatar').innerText = '';
                 }
-                
-                document.getElementById('connections-list').innerHTML = data.connections.map(c => 
-                    `<div class="item">🔗 ${c.name} (${c.type})</div>`
-                ).join('');
-                
-                document.getElementById('guilds-list').innerHTML = data.guilds.map(g => 
-                    `<div class="item">📁 ${g.name}</div>`
-                ).join('');
+
+                const conns = Array.isArray(data.connections) ? data.connections : [];
+                document.getElementById('connections-list').innerHTML = conns.length
+                    ? conns.map(c => `<div class="item">🔗 ${c.name} (${c.type})</div>`).join('')
+                    : '<div class="item" style="opacity:0.6">No connections shared</div>';
+
+                const guilds = Array.isArray(data.guilds) ? data.guilds : [];
+                document.getElementById('guilds-list').innerHTML = guilds.length
+                    ? guilds.map(g => `<div class="item">📁 ${g.name}</div>`).join('')
+                    : '<div class="item" style="opacity:0.6">No servers</div>';
             } catch (error) {
                 console.error('Error fetching Discord data:', error);
                 document.getElementById('username').innerText = 'Error loading profile';

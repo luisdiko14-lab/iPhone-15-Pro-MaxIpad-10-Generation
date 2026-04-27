@@ -7,23 +7,30 @@
     <style>
         :root {
             --discord-blue: #5865F2;
+            --discord-blue-hover: #4752C4;
             --discord-dark: #313338;
+            --discord-darker: #2b2d31;
             --discord-black: #1E1F22;
             --text-primary: #F2F3F5;
             --text-secondary: #B5BAC1;
+            --text-muted: #80848e;
+            --green: #23a55a;
+            --red: #f23f43;
         }
+        * { box-sizing: border-box; }
         body {
-            font-family: 'gg sans', 'Noto Sans', sans-serif;
+            font-family: 'gg sans', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: var(--discord-black);
             color: var(--text-primary);
             margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            background-image: url('https://discord.com/assets/847541504914fd33810e70a0ea73177e.png');
-            background-size: cover;
-            background-position: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-image:
+                radial-gradient(900px 600px at 70% -10%, #2b3a55 0%, transparent 55%),
+                radial-gradient(700px 500px at -10% 120%, #1a2c4d 0%, transparent 50%);
         }
         .login-card {
             background-color: var(--discord-dark);
@@ -31,70 +38,213 @@
             border-radius: 8px;
             width: 100%;
             max-width: 480px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
             text-align: center;
         }
-        h2 { margin-top: 0; font-size: 24px; font-weight: 600; }
-        p { color: var(--text-secondary); margin-bottom: 20px; }
+        .logo-row {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin-bottom: 18px;
+        }
+        .logo-row svg { fill: var(--discord-blue); }
+        .logo-row .name {
+            font-size: 18px; font-weight: 700; letter-spacing: -0.2px;
+        }
+        h2 { margin: 0 0 4px; font-size: 24px; font-weight: 600; }
+        .subtitle { color: var(--text-secondary); margin: 0 0 22px; font-size: 16px; }
         .btn-discord {
             background-color: var(--discord-blue);
             color: white;
             border: none;
             padding: 12px 24px;
-            border-radius: 3px;
+            border-radius: 4px;
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             width: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            transition: background-color 0.2s;
+            transition: background-color 0.15s;
+            font-family: inherit;
         }
-        .btn-discord:hover { background-color: #4752C4; }
+        .btn-discord:hover:not(:disabled) { background-color: var(--discord-blue-hover); }
+        .btn-discord:disabled {
+            background-color: #3a3c43;
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
         .qr-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 22px;
+            padding-top: 22px;
+            border-top: 1px solid rgba(255,255,255,0.08);
         }
+        .qr-section p { font-size: 14px; color: var(--text-secondary); margin: 0 0 10px; }
+        .qr-frame {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            display: inline-block;
+            line-height: 0;
+        }
+        .qr-frame img { width: 150px; height: 150px; display: block; }
+        .qr-help { font-size: 12px; margin-top: 10px; color: var(--text-muted); }
         .back-link {
-            display: block;
+            display: inline-block;
             margin-top: 20px;
             color: var(--discord-blue);
             text-decoration: none;
             font-size: 14px;
         }
+        .back-link:hover { text-decoration: underline; }
+
+        /* Status banner */
+        .status-banner {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+            text-align: left;
+            line-height: 1.45;
+        }
+        .status-banner.show { display: block; }
+        .status-banner.warn { background: rgba(242, 63, 67, 0.12); border: 1px solid rgba(242, 63, 67, 0.4); color: #ff9095; }
+        .status-banner.ok { background: rgba(35, 165, 90, 0.12); border: 1px solid rgba(35, 165, 90, 0.4); color: #6ed79b; }
+        .status-banner code {
+            background: rgba(0,0,0,0.35);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #dbdee1;
+            word-break: break-all;
+        }
+
+        .signed-in {
+            display: none;
+            background: rgba(35, 165, 90, 0.10);
+            border: 1px solid rgba(35, 165, 90, 0.35);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: left;
+        }
+        .signed-in.show { display: block; }
+        .signed-in strong { color: var(--green); }
+        .signed-in a { color: var(--discord-blue); text-decoration: none; margin-left: 4px; }
+        .signed-in a:hover { text-decoration: underline; }
+
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <h2>Welcome back!</h2>
-        <p>We're so excited to see you again!</p>
-        
-        <button class="btn-discord" id="loginBtn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <div class="logo-row">
+            <svg width="28" height="28" viewBox="0 0 24 24">
                 <path d="M19.27 4.51a14.86 14.86 0 00-3.61-1.12c-.14-.02-.29.04-.36.17-.18.33-.39.78-.53 1.11a13.63 13.63 0 00-4.32 0c-.14-.33-.36-.78-.54-1.11-.07-.13-.22-.19-.36-.17a14.88 14.88 0 00-3.61 1.12.2.2 0 00-.09.08c-2.3 3.44-2.93 6.8-2.62 10.12a.23.23 0 00.1.17c1.51 1.12 2.98 1.8 4.41 2.24.14.04.29-.01.38-.14.34-.46.63-.95.88-1.46.06-.11.01-.24-.1-.28-.46-.17-.9-.38-1.32-.62a.22.22 0 01-.01-.36c.09-.07.18-.14.26-.22a.2.2 0 01.21-.03c2.9 1.33 6.04 1.33 8.9 0a.2.2 0 01.21.03c.08.08.17.15.26.22a.22.22 0 01-.01.36c-.42.24-.86.45-1.32.62-.11.04-.16.17-.1.28.25.51.54 1 .88 1.46.09.13.24.18.38.14 1.43-.44 2.9-1.12 4.41-2.24a.23.23 0 00.1-.17c.37-3.86-.64-7.2-2.62-10.12a.2.2 0 00-.09-.08zM8.52 14.91c-.88 0-1.61-.81-1.61-1.8 0-.99.7-1.8 1.61-1.8.91 0 1.62.81 1.61 1.8 0 .99-.71 1.8-1.61 1.8zm6.96 0c-.88 0-1.61-.81-1.61-1.8 0-.99.71-1.8 1.61-1.8.91 0 1.62.81 1.61 1.8 0 .99-.71 1.8-1.61 1.8z"/>
             </svg>
-            Login with Discord
-        </button>
+            <div class="name">Discord</div>
+        </div>
+        <h2>Welcome back!</h2>
+        <p class="subtitle">We're so excited to see you again!</p>
 
-        <div class="qr-section">
-            <p style="font-size: 14px;">Log in with QR Code</p>
-            <div style="background: white; padding: 10px; border-radius: 4px; display: inline-block;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://discord.com/oauth2/authorize?client_id=1454564220413808731%26redirect_uri=https%3A%2F%2Fbae87d28-4cce-4757-b6dd-10ac5b1f7c9f-00-2ytaz5tnphbrh.kirk.replit.dev%2Fapi%2Fcallback%26response_type=code%26scope=identify+guilds+email+connections" alt="QR Code" width="150">
-            </div>
-            <p style="font-size: 12px; margin-top: 10px;">Scan this with the <strong>Discord mobile app</strong> to log in instantly.</p>
+        <div class="signed-in" id="signedInBanner">
+            <strong>✓ You're already signed in.</strong>
+            <a href="discord_2.html">Go to your profile →</a>
+            &nbsp;·&nbsp;
+            <a href="#" id="logoutLink">Log out</a>
         </div>
 
-        <a href="discord_2.html" class="back-link">Back to Profile</a>
+        <button class="btn-discord" id="loginBtn" disabled>
+            <span class="spinner"></span> Checking server…
+        </button>
+
+        <div class="status-banner" id="statusBanner"></div>
+
+        <div class="qr-section">
+            <p>Log in with QR Code</p>
+            <div class="qr-frame">
+                <img id="qrImage" src="" alt="QR Code (loading…)">
+            </div>
+            <p class="qr-help">Scan this with the <strong>Discord mobile app</strong> to log in instantly.</p>
+        </div>
+
+        <a href="discord_2.html" class="back-link">‹ Back to Profile</a>
     </div>
 
     <script>
-        document.getElementById('loginBtn').addEventListener('click', () => {
-            // Use the centralized /login route for better tracking and control
-            window.location.href = '/login';
+        // ===== Build the OAuth URL dynamically from the live server config =====
+        async function init() {
+            const btn = document.getElementById('loginBtn');
+            const banner = document.getElementById('statusBanner');
+            const signedIn = document.getElementById('signedInBanner');
+            const qrImg = document.getElementById('qrImage');
+
+            try {
+                const res = await fetch('/api/discord/status', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('Status check failed');
+                const status = await res.json();
+
+                // If already logged in, surface that prominently.
+                if (status.logged_in) {
+                    signedIn.classList.add('show');
+                }
+
+                if (!status.configured) {
+                    btn.disabled = true;
+                    btn.innerHTML = '⚠ Login Unavailable';
+                    banner.classList.add('show', 'warn');
+                    banner.innerHTML = '<strong>Server not configured.</strong> ' +
+                        'The <code>DISCORD_CLIENT_SECRET</code> environment variable is missing. ' +
+                        'Add it in Replit Secrets and restart the workflow.';
+                    qrImg.alt = 'QR unavailable';
+                    return;
+                }
+
+                // Server is good to go — enable the button and wire it up.
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                        <path d="M19.27 4.51a14.86 14.86 0 00-3.61-1.12c-.14-.02-.29.04-.36.17-.18.33-.39.78-.53 1.11a13.63 13.63 0 00-4.32 0c-.14-.33-.36-.78-.54-1.11-.07-.13-.22-.19-.36-.17a14.88 14.88 0 00-3.61 1.12.2.2 0 00-.09.08c-2.3 3.44-2.93 6.8-2.62 10.12a.23.23 0 00.1.17c1.51 1.12 2.98 1.8 4.41 2.24.14.04.29-.01.38-.14.34-.46.63-.95.88-1.46.06-.11.01-.24-.1-.28-.46-.17-.9-.38-1.32-.62a.22.22 0 01-.01-.36c.09-.07.18-.14.26-.22a.2.2 0 01.21-.03c2.9 1.33 6.04 1.33 8.9 0a.2.2 0 01.21.03c.08.08.17.15.26.22a.22.22 0 01-.01.36c-.42.24-.86.45-1.32.62-.11.04-.16.17-.1.28.25.51.54 1 .88 1.46.09.13.24.18.38.14 1.43-.44 2.9-1.12 4.41-2.24a.23.23 0 00.1-.17c.37-3.86-.64-7.2-2.62-10.12a.2.2 0 00-.09-.08zM8.52 14.91c-.88 0-1.61-.81-1.61-1.8 0-.99.7-1.8 1.61-1.8.91 0 1.62.81 1.61 1.8 0 .99-.71 1.8-1.61 1.8zm6.96 0c-.88 0-1.61-.81-1.61-1.8 0-.99.71-1.8 1.61-1.8.91 0 1.62.81 1.61 1.8 0 .99-.71 1.8-1.61 1.8z"/>
+                    </svg>
+                    Login with Discord`;
+                btn.addEventListener('click', () => { window.location.href = '/login'; });
+
+                // Build a fresh QR pointing at THIS deployment's /login URL,
+                // not a hard-coded old domain. Scanning it on a phone opens
+                // the OAuth flow in the phone's browser.
+                const loginUrl = window.location.origin + '/login';
+                const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' +
+                    encodeURIComponent(loginUrl);
+                qrImg.src = qrSrc;
+                qrImg.alt = 'QR code linking to ' + loginUrl;
+
+            } catch (err) {
+                btn.disabled = true;
+                btn.innerHTML = '⚠ Server Unreachable';
+                banner.classList.add('show', 'warn');
+                banner.textContent = 'Could not reach the server: ' + err.message;
+            }
+        }
+
+        document.getElementById('logoutLink').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+            window.location.reload();
         });
+
+        init();
     </script>
 </body>
 </html>
