@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Windows 10 || Desktop</title>
-    <link rel="stylesheet" href="win1_.css">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="sound-container" style="display: none; position: absolute; left: -9999px;">
@@ -67,14 +68,12 @@
     </div>
 
     <div id="screen-login" class="screen">
+        <div class="login-left-panel">
+            <div id="login-user-list"></div>
+            <button class="btn-add-user" onclick="createNewUser()">+ Add User</button>
+        </div>
         <div class="login-container">
-            <div class="user-avatar">
-                <svg width="100" height="100" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="48" fill="#0078d4"/>
-                    <circle cx="50" cy="40" r="18" fill="white"/>
-                    <path d="M 20 85 Q 50 70 80 85" fill="white"/>
-                </svg>
-            </div>
+            <div class="user-avatar" id="login-avatar-container" style="width: 100px; height: 100px; background: #0078d4; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 50px;">👤</div>
             <div class="user-name" id="login-username">User</div>
             <div class="password-container">
                 <input type="password" class="password-input" id="login-password" placeholder="Password">
@@ -82,7 +81,7 @@
             </div>
             <div class="login-error" id="login-error"></div>
             <div class="login-options">
-                <button class="btn-text" onclick="switchUser()">Sign in to a different account</button>
+                <button class="btn-text" onclick="switchUser()">Sign in options</button>
             </div>
         </div>
     </div>
@@ -122,6 +121,54 @@
                     <div class="icon-img">🛍️</div>
                     <div class="icon-label">Microsoft Store</div>
                 </div>
+                <div class="desktop-icon" ondblclick="openApp('paint')">
+                    <div class="icon-img">🎨</div>
+                    <div class="icon-label">Paint</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('weather')">
+                    <div class="icon-img">🌤️</div>
+                    <div class="icon-label">Weather</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('solitaire')">
+                    <div class="icon-img">🃏</div>
+                    <div class="icon-label">Solitaire</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('discord')">
+                    <div class="icon-img">💬</div>
+                    <div class="icon-label">Discord</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('photos')">
+                    <div class="icon-img">🖼️</div>
+                    <div class="icon-label">Photos</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('calendar')">
+                    <div class="icon-img">📅</div>
+                    <div class="icon-label">Calendar</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('maps')">
+                    <div class="icon-img">🗺️</div>
+                    <div class="icon-label">Maps</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('music')">
+                    <div class="icon-img">🎵</div>
+                    <div class="icon-label">Groove Music</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('defender')">
+                    <div class="icon-img">🛡️</div>
+                    <div class="icon-label">Windows Security</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('code')">
+                    <div class="icon-img">💻</div>
+                    <div class="icon-label">Code Editor</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('sysinfo')">
+                    <div class="icon-img">ℹ️</div>
+                    <div class="icon-label">System Info</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('advanced')">
+                    <div class="icon-img">⚙️</div>
+                    <div class="icon-label">Advanced</div>
+                </div>
             </div>
 
             <div class="taskbar">
@@ -138,6 +185,16 @@
                         <span class="search-icon">🔍</span>
                         <span class="search-text">Type here to search</span>
                     </div>
+                </div>
+                <div class="taskbar-pinned">
+                    <button class="taskbar-pin-btn" onclick="openApp('browser')" title="Microsoft Edge">🌐</button>
+                    <button class="taskbar-pin-btn" onclick="openApp('explorer')" title="File Explorer">📁</button>
+                    <button class="taskbar-pin-btn" onclick="openApp('mail')" title="Mail">📧</button>
+                    <button class="taskbar-pin-btn" onclick="openApp('teams')" title="Teams">👥</button>
+                    <button class="taskbar-pin-btn" onclick="openApp('store')" title="Microsoft Store">🛍️</button>
+                    <button class="taskbar-pin-btn" onclick="openApp('cmd')" title="Command Prompt">⬛</button>
+                    <button class="taskbar-pin-btn" onclick="openApp('code')" title="VS Code">💻</button>
+                    <button class="taskbar-pin-btn" onclick="openApp('calculator')" title="Calculator">🔢</button>
                 </div>
                 <div class="taskbar-center" id="taskbar-apps"></div>
                 <div class="taskbar-right">
@@ -220,6 +277,74 @@
                             <div class="app-item" onclick="openApp('store'); toggleStartMenu()">
                                 <span class="app-icon">🛍️</span>
                                 <span>Microsoft Store</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('music'); toggleStartMenu()">
+                                <span class="app-icon">🎵</span>
+                                <span>Groove Music</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('solitaire'); toggleStartMenu()">
+                                <span class="app-icon">🃏</span>
+                                <span>Solitaire</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('discord'); toggleStartMenu()">
+                                <span class="app-icon">💬</span>
+                                <span>Discord</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('code'); toggleStartMenu()">
+                                <span class="app-icon">💻</span>
+                                <span>VS Code</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('sysinfo'); toggleStartMenu()">
+                                <span class="app-icon">ℹ️</span>
+                                <span>System Info</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('wordpad'); toggleStartMenu()">
+                                <span class="app-icon">📄</span>
+                                <span>WordPad</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('stickynotes'); toggleStartMenu()">
+                                <span class="app-icon">🟡</span>
+                                <span>Sticky Notes</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('powershell'); toggleStartMenu()">
+                                <span class="app-icon">🔷</span>
+                                <span>PowerShell</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('controlpanel'); toggleStartMenu()">
+                                <span class="app-icon">🎛️</span>
+                                <span>Control Panel</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('devmgr'); toggleStartMenu()">
+                                <span class="app-icon">🖥️</span>
+                                <span>Device Manager</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('registry'); toggleStartMenu()">
+                                <span class="app-icon">📋</span>
+                                <span>Registry Editor</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('mediaplayer'); toggleStartMenu()">
+                                <span class="app-icon">▶️</span>
+                                <span>Media Player</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('teams'); toggleStartMenu()">
+                                <span class="app-icon">👥</span>
+                                <span>Microsoft Teams</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('mail'); toggleStartMenu()">
+                                <span class="app-icon">📧</span>
+                                <span>Mail</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('xbox'); toggleStartMenu()">
+                                <span class="app-icon">🎮</span>
+                                <span>Xbox</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('speedtest'); toggleStartMenu()">
+                                <span class="app-icon">⚡</span>
+                                <span>Speed Test</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('search'); toggleStartMenu()">
+                                <span class="app-icon">🔍</span>
+                                <span>Search</span>
                             </div>
                         </div>
                     </div>
@@ -358,7 +483,7 @@
             </div>
 
             <div class="night-light-overlay" id="night-light-overlay"></div>
-
+            
             <div class="snap-preview" id="snap-preview"></div>
         </div>
     </div>
