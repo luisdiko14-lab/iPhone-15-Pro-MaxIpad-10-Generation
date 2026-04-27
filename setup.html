@@ -14,11 +14,10 @@
   --accent: #0a84ff;
   --accent-2: #5ac8fa;
   --success: #34c759;
+  --danger: #ff453a;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -29,7 +28,7 @@ body {
     radial-gradient(900px 600px at 70% -10%, #1f293f 0%, transparent 55%),
     radial-gradient(700px 500px at -10% 120%, #0f3b66 0%, transparent 50%),
     var(--bg);
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .status {
@@ -48,18 +47,6 @@ body {
   content: "▂▄▆█";
   letter-spacing: 2px;
   margin-right: 6px;
-  animation: signal 1.4s infinite alternate;
-}
-
-@keyframes signal {
-  from {
-    opacity: 0.45;
-    transform: translateY(1px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .island {
@@ -79,11 +66,11 @@ main {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 72px 18px 28px;
+  padding: 64px 18px 28px;
 }
 
 .shell {
-  width: min(460px, 96vw);
+  width: min(480px, 96vw);
   border-radius: 28px;
   border: 1px solid var(--card-border);
   background: rgba(12, 12, 12, 0.78);
@@ -96,49 +83,43 @@ main {
   height: 4px;
   background: #1a1a1a;
 }
-
 .progress > div {
   height: 100%;
-  width: 20%;
+  width: 0%;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   transition: width 350ms ease;
+}
+
+.step-counter {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 0 0;
+  font-weight: 600;
 }
 
 .screen {
   display: none;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   text-align: center;
-  min-height: 580px;
-  padding: 30px 24px 40px;
-  gap: 14px;
+  min-height: 540px;
+  padding: 22px 24px 26px;
+  gap: 12px;
+}
+.screen.active { display: flex; animation: slideIn 0.35s ease; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.screen.active {
-  display: flex;
-}
-
-h1,
-h2,
-p {
-  margin: 0;
-}
-
-h1 {
-  font-size: clamp(2rem, 8vw, 3.1rem);
-  letter-spacing: -0.02em;
-}
-
-h2 {
-  font-size: clamp(1.4rem, 5vw, 1.8rem);
-  letter-spacing: -0.01em;
-}
-
-p {
-  color: var(--muted);
-  line-height: 1.45;
-}
+h1, h2, p { margin: 0; }
+h1 { font-size: clamp(1.7rem, 6vw, 2.3rem); letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.3rem, 4.5vw, 1.65rem); letter-spacing: -0.01em; }
+p { color: var(--muted); line-height: 1.45; font-size: 14px; max-width: 36ch; }
 
 .hello-word {
   font-size: clamp(2.1rem, 10vw, 3.5rem);
@@ -146,46 +127,51 @@ p {
   animation: pulse 1.5s infinite alternate;
   min-height: 1.2em;
 }
-
 @keyframes pulse {
   from { opacity: 0.46; }
   to { opacity: 1; }
 }
 
-.subtitle {
-  max-width: 28ch;
-  color: #d9d9d9;
-}
+.subtitle { max-width: 30ch; color: #d9d9d9; font-size: 14px; }
 
 .btn {
-  margin-top: 8px;
   border: 0;
   border-radius: 14px;
   background: linear-gradient(180deg, #1a94ff, #0a84ff);
   color: #fff;
-  padding: 13px 24px;
-  font-size: 1rem;
+  padding: 13px 28px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.15s ease, filter 0.2s ease;
+  font-family: inherit;
+  min-width: 140px;
 }
-
-.btn:hover {
-  filter: brightness(1.1);
+.btn:hover { filter: brightness(1.1); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { background: #2a2a2a; color: #6a6a6a; cursor: not-allowed; }
+.btn-link {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 500;
+  padding: 8px 16px;
+  min-width: 0;
 }
+.btn-link:hover { background: rgba(10,132,255,0.08); }
 
-.btn:active {
-  transform: scale(0.98);
-}
+.btn-row { display: flex; gap: 10px; margin-top: auto; padding-top: 12px; width: 100%; justify-content: center; flex-wrap: wrap; }
 
-.network-list {
+/* ===== Lists ===== */
+.list {
   width: 100%;
-  display: grid;
-  gap: 10px;
-  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  max-height: 320px;
+  overflow-y: auto;
 }
-
-.wifi {
+.list-item {
   width: 100%;
   border: 1px solid #2b2b2b;
   border-radius: 14px;
@@ -194,38 +180,65 @@ p {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px;
+  padding: 13px 14px;
   cursor: pointer;
-  font-size: 0.97rem;
+  font-size: 15px;
+  transition: all 0.15s ease;
+  text-align: left;
+  font-family: inherit;
 }
-
-.wifi small {
-  color: var(--muted);
-}
-
+.list-item:hover { background: #181818; border-color: #333; }
+.list-item.selected { background: rgba(10,132,255,0.12); border-color: var(--accent); }
+.list-item small { color: var(--muted); font-size: 12px; display: block; margin-top: 2px; }
+.list-item .check { color: var(--accent); font-weight: 700; opacity: 0; }
+.list-item.selected .check { opacity: 1; }
 .badge {
   padding: 2px 8px;
   border-radius: 999px;
   border: 1px solid #2f2f2f;
   color: #cfcfcf;
-  font-size: 0.75rem;
+  font-size: 11px;
+  margin-left: 6px;
 }
 
-input[type="password"] {
+/* ===== Wi-Fi password modal ===== */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: #1c1c1e;
+  border: 1px solid #333;
+  border-radius: 18px;
+  padding: 22px;
+  width: min(360px, 100%);
+  text-align: center;
+}
+.modal h3 { margin-bottom: 6px; font-size: 17px; }
+.modal p { font-size: 13px; margin-bottom: 14px; }
+
+input[type="password"], input[type="text"], input[type="email"] {
   width: 100%;
   border: 1px solid #2f2f2f;
   background: #0d0d0d;
   color: #fff;
   border-radius: 12px;
   padding: 12px 13px;
-  font-size: 1rem;
+  font-size: 15px;
+  font-family: inherit;
+  margin-top: 6px;
 }
-
-input[type="password"]:focus {
+input:focus {
   outline: 2px solid rgba(10, 132, 255, 0.5);
   outline-offset: 1px;
 }
 
+/* ===== Loaders ===== */
 .loader {
   width: min(260px, 82%);
   height: 7px;
@@ -234,23 +247,27 @@ input[type="password"]:focus {
   overflow: hidden;
   margin-top: 6px;
 }
-
 .loader > div {
   height: 100%;
   width: 0;
   background: linear-gradient(90deg, var(--accent), var(--success));
-  animation: load 2.6s forwards;
+  transition: width 0.4s ease;
 }
 
-@keyframes load {
-  to { width: 100%; }
+.spinner {
+  width: 44px; height: 44px;
+  border: 3px solid rgba(255,255,255,0.12);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin: 8px;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .dots::after {
   content: "";
   animation: dots 1.2s infinite;
 }
-
 @keyframes dots {
   0% { content: ""; }
   33% { content: "."; }
@@ -258,10 +275,252 @@ input[type="password"]:focus {
   100% { content: "..."; }
 }
 
+/* ===== Face ID ===== */
+.face-id {
+  position: relative;
+  width: 220px; height: 220px;
+  margin: 8px auto;
+}
+.face-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 2px solid #2a2a2a;
+}
+.face-ring svg {
+  width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+.face-ring circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 660;
+  stroke-dashoffset: 660;
+  transition: stroke-dashoffset 0.1s linear;
+}
+.face-ring.done circle { stroke: var(--success); }
+.face-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  filter: drop-shadow(0 0 18px rgba(10,132,255,0.4));
+}
+.face-id.scanning .face-icon { animation: faceBob 1.2s ease-in-out infinite; }
+@keyframes faceBob {
+  0%,100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-3px) rotate(-3deg); }
+  75% { transform: translateY(3px) rotate(3deg); }
+}
+
+/* ===== Passcode ===== */
+.passcode-dots {
+  display: flex; justify-content: center; gap: 18px;
+  margin: 14px 0 4px;
+}
+.passcode-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1.6px solid #fff;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+.passcode-dot.filled { background: #fff; }
+.passcode-dot.error { border-color: var(--danger); background: var(--danger); animation: shake 0.4s; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: min(280px, 90%);
+  margin: 8px auto 0;
+}
+.key {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  border: 0;
+  font-size: 26px;
+  font-weight: 300;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, transform 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  line-height: 1;
+}
+.key small {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.65);
+  margin-top: 2px;
+}
+.key:hover { background: rgba(255,255,255,0.16); }
+.key:active { transform: scale(0.94); background: rgba(255,255,255,0.22); }
+.key.empty { background: transparent; cursor: default; }
+.key.del { background: transparent; font-size: 14px; color: var(--accent); }
+
+/* ===== Toggles & options ===== */
+.option-card {
+  width: 100%;
+  border: 1px solid #2b2b2b;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.opt-icon-big { font-size: 32px; }
+.opt-info { flex: 1; }
+.opt-info .t { font-weight: 600; font-size: 15px; }
+.opt-info .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.toggle {
+  position: relative;
+  width: 51px; height: 31px;
+  background: #39393d;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--success); }
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* ===== Theme picker ===== */
+.theme-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-top: 6px;
+}
+.theme-card {
+  border-radius: 16px;
+  border: 2px solid #2b2b2b;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  text-align: center;
+}
+.theme-card.selected { border-color: var(--accent); }
+.theme-preview {
+  height: 90px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex; flex-direction: column; padding: 8px; gap: 4px;
+}
+.theme-preview .row { height: 7px; border-radius: 4px; opacity: 0.85; }
+.theme-card.light .theme-preview { background: #f2f2f7; }
+.theme-card.light .row { background: #d1d1d6; }
+.theme-card.dark .theme-preview { background: #000; }
+.theme-card.dark .row { background: #38383a; }
+.theme-name { font-size: 13px; font-weight: 600; }
+
+/* ===== Terms scroll ===== */
+.terms-box {
+  width: 100%;
+  height: 220px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-y: auto;
+  text-align: left;
+  line-height: 1.6;
+}
+.terms-box p { margin: 0 0 8px; max-width: none; color: var(--muted); }
+.terms-box strong { color: #fff; }
+
+/* ===== Apple ID form ===== */
+.form-stack {
+  width: 100%;
+  display: flex; flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.form-stack label {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: left;
+  margin-bottom: -4px;
+  margin-left: 4px;
+}
+
+/* ===== Siri training ===== */
+.siri-orb {
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ff6b6b, #ffd93d, #6bcf7f, #4dabf7, #b197fc, #ff6b6b);
+  filter: blur(2px);
+  animation: orbSpin 4s linear infinite;
+  box-shadow: 0 0 40px rgba(94,124,255,0.4);
+  margin: 4px;
+}
+@keyframes orbSpin { to { transform: rotate(360deg); } }
+.siri-phrases {
+  width: 100%;
+  display: flex; flex-direction: column; gap: 8px;
+  margin-top: 6px;
+}
+.siri-phrase {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  font-size: 14px;
+}
+.siri-phrase.done { border-color: var(--success); background: rgba(52,199,89,0.08); }
+.siri-phrase .check { color: var(--success); opacity: 0; }
+.siri-phrase.done .check { opacity: 1; }
+
 .footer-note {
-  margin-top: auto;
+  margin-top: 8px;
   color: #7f7f7f;
-  font-size: 0.78rem;
+  font-size: 12px;
+}
+
+/* ===== Welcome ===== */
+.welcome-icon {
+  font-size: 70px;
+  margin: 18px;
+  filter: drop-shadow(0 0 22px rgba(94,124,255,0.5));
+}
+.swipe-up {
+  margin-top: auto;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  animation: bob 1.6s ease-in-out infinite;
+}
+@keyframes bob {
+  0%,100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(-6px); opacity: 0.6; }
 }
 </style>
 </head>
@@ -275,67 +534,292 @@ input[type="password"]:focus {
   <main>
     <section class="shell" aria-live="polite">
       <div class="progress"><div id="progressFill"></div></div>
+      <div class="step-counter" id="stepCounter">Step 1 of 14</div>
 
-      <div id="hello" class="screen active" data-step="1">
+      <!-- 1. Hello -->
+      <div id="hello" class="screen active" data-step="hello">
         <h1 class="hello-word" id="helloText">Hello</h1>
-        <p class="subtitle">Swipe up to begin setting up your iPhone experience.</p>
-        <button class="btn" onclick="goTo('wifi')">Start Setup</button>
+        <p class="subtitle">Welcome to your new iPhone. Let's get you set up.</p>
+        <div class="btn-row"><button class="btn" onclick="goTo('language')">Get Started</button></div>
       </div>
 
-      <div id="wifi" class="screen" data-step="2">
-        <h2>Choose a Wi‑Fi Network</h2>
-        <p>Connect to continue activation and data restore.</p>
-        <div class="network-list">
-          <button class="wifi" onclick="goTo('sim')">
-            <span>Home Wi‑Fi <small>Strong signal</small></span>
-            <span class="badge">Secured</span>
+      <!-- 2. Language -->
+      <div id="language" class="screen" data-step="language">
+        <h2>Select Your Language</h2>
+        <p>This is the main language for your device.</p>
+        <div class="list" id="langList">
+          <button class="list-item selected" data-val="English">English <span class="check">✓</span></button>
+          <button class="list-item" data-val="Español">Español <span class="check">✓</span></button>
+          <button class="list-item" data-val="Français">Français <span class="check">✓</span></button>
+          <button class="list-item" data-val="Deutsch">Deutsch <span class="check">✓</span></button>
+          <button class="list-item" data-val="日本語">日本語 <span class="check">✓</span></button>
+          <button class="list-item" data-val="中文 (简体)">中文 (简体) <span class="check">✓</span></button>
+          <button class="list-item" data-val="한국어">한국어 <span class="check">✓</span></button>
+          <button class="list-item" data-val="Português">Português <span class="check">✓</span></button>
+        </div>
+        <div class="btn-row"><button class="btn" onclick="goTo('country')">Continue</button></div>
+      </div>
+
+      <!-- 3. Country / Region -->
+      <div id="country" class="screen" data-step="country">
+        <h2>Select Your Country or Region</h2>
+        <p>This sets your time zone, currency, and store.</p>
+        <div class="list" id="countryList">
+          <button class="list-item selected" data-val="United States">🇺🇸 United States <span class="check">✓</span></button>
+          <button class="list-item" data-val="United Kingdom">🇬🇧 United Kingdom <span class="check">✓</span></button>
+          <button class="list-item" data-val="Canada">🇨🇦 Canada <span class="check">✓</span></button>
+          <button class="list-item" data-val="Germany">🇩🇪 Germany <span class="check">✓</span></button>
+          <button class="list-item" data-val="France">🇫🇷 France <span class="check">✓</span></button>
+          <button class="list-item" data-val="Japan">🇯🇵 Japan <span class="check">✓</span></button>
+          <button class="list-item" data-val="Australia">🇦🇺 Australia <span class="check">✓</span></button>
+          <button class="list-item" data-val="India">🇮🇳 India <span class="check">✓</span></button>
+        </div>
+        <div class="btn-row"><button class="btn" onclick="goTo('quickstart')">Continue</button></div>
+      </div>
+
+      <!-- 4. Quick Start -->
+      <div id="quickstart" class="screen" data-step="quickstart">
+        <h2>Quick Start</h2>
+        <p>Bring your existing iPhone close to set up automatically — or set this device up manually.</p>
+        <div style="font-size: 70px; margin: 16px;">📱⚡📱</div>
+        <div class="btn-row" style="flex-direction: column; gap: 6px;">
+          <button class="btn" onclick="simulateQuickStart()">Use Quick Start</button>
+          <button class="btn-link btn" style="background: transparent; color: var(--accent);" onclick="goTo('wifi')">Set Up Manually</button>
+        </div>
+      </div>
+
+      <!-- 5. Wi-Fi -->
+      <div id="wifi" class="screen" data-step="wifi">
+        <h2>Choose a Wi-Fi Network</h2>
+        <p>Connect to a network to activate and continue.</p>
+        <div class="list" id="wifiList">
+          <button class="list-item" onclick="askWifi('Home Wi-Fi')">
+            <span>Home Wi-Fi <small>Strong signal · 5 GHz</small></span>
+            <span class="badge">🔒 WPA2</span>
           </button>
-          <button class="wifi" onclick="goTo('sim')">
-            <span>School Wi‑Fi <small>Medium signal</small></span>
-            <span class="badge">Secured</span>
+          <button class="list-item" onclick="askWifi('School Wi-Fi')">
+            <span>School Wi-Fi <small>Medium signal</small></span>
+            <span class="badge">🔒 WPA2</span>
           </button>
-          <button class="wifi" onclick="goTo('sim')">
-            <span>Public Wi‑Fi <small>Weak signal</small></span>
+          <button class="list-item" onclick="askWifi('Coffee Shop')">
+            <span>Coffee Shop <small>Weak signal</small></span>
+            <span class="badge">🔒 WPA</span>
+          </button>
+          <button class="list-item" onclick="goTo('activating')">
+            <span>Public Wi-Fi <small>Weak signal · Open</small></span>
             <span class="badge">Open</span>
+          </button>
+          <button class="list-item" onclick="goTo('activating')">
+            <span>Other…</span>
+          </button>
+        </div>
+        <div class="btn-row"><button class="btn-link btn" style="background: transparent; color: var(--accent);" onclick="goTo('activating')">Use Cellular Connection</button></div>
+      </div>
+
+      <!-- 6. Activating iPhone -->
+      <div id="activating" class="screen" data-step="activating">
+        <div class="spinner"></div>
+        <h2>Activating Your iPhone<span class="dots"></span></h2>
+        <p id="activatingMsg">Contacting Apple servers…</p>
+        <div class="loader"><div id="actBar"></div></div>
+      </div>
+
+      <!-- 7. Data & Privacy -->
+      <div id="privacy" class="screen" data-step="privacy">
+        <div style="font-size: 60px; margin: 8px;">✋</div>
+        <h2>Data & Privacy</h2>
+        <p>This icon appears when an Apple feature asks to use your personal information. You'll be told what data is collected and how it's used.</p>
+        <p style="margin-top: 8px;">You can change permissions later in <strong>Settings &rsaquo; Privacy &amp; Security</strong>.</p>
+        <div class="btn-row"><button class="btn" onclick="goTo('faceid')">Continue</button></div>
+      </div>
+
+      <!-- 8. Face ID -->
+      <div id="faceid" class="screen" data-step="faceid">
+        <h2 id="faceTitle">Set Up Face ID</h2>
+        <p id="faceMsg">Position your face inside the frame, then move your head in a circle to complete the scan.</p>
+        <div class="face-id" id="faceWrap">
+          <div class="face-ring" id="faceRing">
+            <svg viewBox="0 0 220 220">
+              <circle cx="110" cy="110" r="105"></circle>
+            </svg>
+          </div>
+          <div class="face-icon">😊</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-link btn" style="background: transparent; color: var(--accent);" onclick="goTo('passcode')">Set Up Later</button>
+          <button class="btn" id="faceStartBtn" onclick="startFaceScan()">Get Started</button>
+        </div>
+      </div>
+
+      <!-- 9. Passcode -->
+      <div id="passcode" class="screen" data-step="passcode">
+        <h2 id="pcTitle">Create a Passcode</h2>
+        <p id="pcMsg">Enter a 6-digit passcode to keep your iPhone secure.</p>
+        <div class="passcode-dots" id="pcDots">
+          <div class="passcode-dot"></div>
+          <div class="passcode-dot"></div>
+          <div class="passcode-dot"></div>
+          <div class="passcode-dot"></div>
+          <div class="passcode-dot"></div>
+          <div class="passcode-dot"></div>
+        </div>
+        <div class="keypad" id="pcKeypad"></div>
+      </div>
+
+      <!-- 10. Apps & Data -->
+      <div id="appsdata" class="screen" data-step="appsdata">
+        <h2>Apps & Data</h2>
+        <p>Choose how to get your apps and data onto this iPhone.</p>
+        <div class="list">
+          <button class="list-item" onclick="goTo('appleid')">
+            <span>Restore from iCloud Backup <small>Bring back your apps and content</small></span>
+            <span>›</span>
+          </button>
+          <button class="list-item" onclick="goTo('appleid')">
+            <span>Restore from Mac or PC <small>Connect via cable</small></span>
+            <span>›</span>
+          </button>
+          <button class="list-item" onclick="goTo('appleid')">
+            <span>Transfer from Android <small>Use the Move to iOS app</small></span>
+            <span>›</span>
+          </button>
+          <button class="list-item selected" onclick="goTo('appleid')">
+            <span>Don't Transfer Apps & Data <small>Set up as new iPhone</small></span>
+            <span class="check">✓</span>
           </button>
         </div>
       </div>
 
-      <div id="sim" class="screen" data-step="3">
-        <h2>Checking Cellular Setup</h2>
-        <p>Searching for network<span class="dots"></span></p>
-        <div class="loader"><div></div></div>
+      <!-- 11. Apple ID -->
+      <div id="appleid" class="screen" data-step="appleid">
+        <div style="font-size: 50px;">🍎</div>
+        <h2>Sign in with Apple ID</h2>
+        <p>Use your Apple ID to access iCloud, the App Store, iMessage, and more.</p>
+        <div class="form-stack">
+          <label>Apple ID</label>
+          <input type="email" id="aidEmail" placeholder="name@example.com" autocomplete="email" />
+          <label>Password</label>
+          <input type="password" id="aidPass" placeholder="Password" autocomplete="current-password" />
+        </div>
+        <div class="btn-row" style="flex-direction: column; gap: 6px;">
+          <button class="btn" onclick="signInAppleId()">Sign In</button>
+          <button class="btn-link btn" style="background: transparent; color: var(--accent);" onclick="goTo('terms')">Don't have an Apple ID? Create One</button>
+          <button class="btn-link btn" style="background: transparent; color: var(--muted); font-size: 13px;" onclick="goTo('terms')">Set Up Later in Settings</button>
+        </div>
       </div>
 
-      <div id="lte" class="screen" data-step="4">
-        <h2>Activating Verizon LTE</h2>
-        <p>This may take a moment<span class="dots"></span></p>
-        <div class="loader"><div></div></div>
+      <!-- 12. Terms & Conditions -->
+      <div id="terms" class="screen" data-step="terms">
+        <h2>Terms and Conditions</h2>
+        <p style="margin-bottom: 8px;">Please read and agree to the iOS terms.</p>
+        <div class="terms-box" id="termsBox">
+          <p><strong>iOS SOFTWARE LICENSE AGREEMENT</strong></p>
+          <p>Single Use License — for the iPhone Simulator (Demo Edition)</p>
+          <p><strong>1. General.</strong> The simulated software you are using is licensed, not sold, to you for use only under the terms of this Agreement.</p>
+          <p><strong>2. Permitted License Uses.</strong> You may use the simulator for personal, non-commercial, educational purposes on any modern web browser.</p>
+          <p><strong>3. Consent to Use of Data.</strong> No data leaves your browser. Everything is stored in localStorage on your device.</p>
+          <p><strong>4. Services and Third Party Materials.</strong> Some features call third-party APIs (e.g., Groq, Google) using keys you provide.</p>
+          <p><strong>5. No Warranty.</strong> The simulator is provided "as is" without warranty of any kind. The author makes no guarantee of accuracy or fitness.</p>
+          <p><strong>6. Limitation of Liability.</strong> In no event shall the author be liable for any indirect or consequential damages arising out of your use of this simulator.</p>
+          <p><strong>7. Termination.</strong> You may terminate this agreement at any time by closing the browser tab.</p>
+          <p><strong>8. Acknowledgement.</strong> By tapping Agree below, you acknowledge that this is a fun educational project and not a real Apple product.</p>
+          <p><em>Last revised: April 2026</em></p>
+        </div>
+        <div class="btn-row">
+          <button class="btn-link btn" style="background: transparent; color: var(--accent);" onclick="goTo('appleid')">Disagree</button>
+          <button class="btn" onclick="goTo('siri')">Agree</button>
+        </div>
       </div>
 
-      <div id="pin" class="screen" data-step="5">
-        <h2>Create a Passcode</h2>
-        <p>Use at least 6 digits to keep your device secure.</p>
-        <input id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="6-digit passcode" />
-        <button class="btn" onclick="continueFromPin()">Continue</button>
+      <!-- 13. Siri -->
+      <div id="siri" class="screen" data-step="siri">
+        <div class="siri-orb"></div>
+        <h2 id="siriTitle">Hey Siri</h2>
+        <p id="siriMsg">Train Siri to recognize your voice. Say each phrase out loud.</p>
+        <div class="siri-phrases" id="siriPhrases">
+          <div class="siri-phrase" data-i="0">"Hey Siri" <span class="check">✓</span></div>
+          <div class="siri-phrase" data-i="1">"Hey Siri, send a message" <span class="check">✓</span></div>
+          <div class="siri-phrase" data-i="2">"Hey Siri, how's the weather today?" <span class="check">✓</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-link btn" style="background: transparent; color: var(--accent);" onclick="goTo('appearance')">Set Up Later</button>
+          <button class="btn" id="siriBtn" onclick="trainSiri()">Continue</button>
+        </div>
       </div>
 
-      <div id="final" class="screen" data-step="6">
-        <h2>Setting Up iPhone<span class="dots"></span></h2>
-        <p>Applying your preferences and preparing apps.</p>
-        <div class="loader"><div></div></div>
-        <a href="installer.html" class="btn" style="text-decoration:none">Continue</a>
-        <p class="footer-note">Estimated time remaining: less than 1 minute.</p>
+      <!-- 14. Appearance -->
+      <div id="appearance" class="screen" data-step="appearance">
+        <h2>Choose Your Look</h2>
+        <p>Light gives a brighter look. Dark uses a darker color palette.</p>
+        <div class="theme-grid" id="themeGrid">
+          <div class="theme-card light" data-theme="light">
+            <div class="theme-preview">
+              <div class="row" style="width: 80%;"></div>
+              <div class="row" style="width: 60%;"></div>
+              <div class="row" style="width: 70%;"></div>
+            </div>
+            <div class="theme-name">☀️ Light</div>
+          </div>
+          <div class="theme-card dark selected" data-theme="dark">
+            <div class="theme-preview">
+              <div class="row" style="width: 80%;"></div>
+              <div class="row" style="width: 60%;"></div>
+              <div class="row" style="width: 70%;"></div>
+            </div>
+            <div class="theme-name">🌙 Dark</div>
+          </div>
+        </div>
+        <div class="option-card" style="margin-top: 14px;">
+          <div class="opt-icon-big">🌗</div>
+          <div class="opt-info">
+            <div class="t">True Tone</div>
+            <div class="d">Adjusts display to match ambient lighting</div>
+          </div>
+          <div class="toggle on" id="trueTone" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="option-card">
+          <div class="opt-icon-big">📊</div>
+          <div class="opt-info">
+            <div class="t">Share Analytics</div>
+            <div class="d">Help Apple improve its products</div>
+          </div>
+          <div class="toggle" id="analytics" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="btn-row"><button class="btn" onclick="goTo('welcome')">Continue</button></div>
       </div>
+
+      <!-- 15. Welcome -->
+      <div id="welcome" class="screen" data-step="welcome">
+        <div class="welcome-icon">👋</div>
+        <h1>Welcome to iPhone</h1>
+        <p>Your iPhone is ready. Tap below to begin.</p>
+        <div class="btn-row"><button class="btn" onclick="finishSetup()">Get Started</button></div>
+        <div class="swipe-up">
+          <div>↑</div>
+          <div>Swipe up to begin</div>
+        </div>
+      </div>
+
     </section>
   </main>
 
-<script>
-const helloWords = [
-  "Hello", "Hola", "Bonjour", "Hallo", "Ciao", "Olá", "Привет", "你好", "こんにちは", "안녕하세요"
-];
+  <!-- Wi-Fi password modal -->
+  <div class="modal-bg" id="wifiModal">
+    <div class="modal">
+      <h3 id="wifiModalNet">Wi-Fi</h3>
+      <p>Enter the password for this network.</p>
+      <input type="password" id="wifiPass" placeholder="Password" />
+      <div class="btn-row">
+        <button class="btn-link btn" style="background: transparent; color: var(--accent);" onclick="closeWifi()">Cancel</button>
+        <button class="btn" onclick="joinWifi()">Join</button>
+      </div>
+    </div>
+  </div>
 
-const stepOrder = ["hello", "wifi", "sim", "lte", "pin", "final"];
+<script>
+const helloWords = ["Hello", "Hola", "Bonjour", "Hallo", "Ciao", "Olá", "Привет", "你好", "こんにちは", "안녕하세요", "नमस्ते", "مرحبا"];
+const stepOrder = ["hello", "language", "country", "quickstart", "wifi", "activating", "privacy", "faceid", "passcode", "appsdata", "appleid", "terms", "siri", "appearance", "welcome"];
+const TOTAL = stepOrder.length;
 let helloIndex = 0;
 
 setInterval(() => {
@@ -354,33 +838,266 @@ setInterval(() => {
 
 function updateProgress(id) {
   const idx = stepOrder.indexOf(id);
+  if (idx === -1) return;
   const progress = document.getElementById("progressFill");
-  if (idx === -1 || !progress) return;
-  progress.style.width = `${((idx + 1) / stepOrder.length) * 100}%`;
+  if (progress) progress.style.width = `${((idx + 1) / TOTAL) * 100}%`;
+  const counter = document.getElementById("stepCounter");
+  if (counter) counter.textContent = `Step ${idx + 1} of ${TOTAL}`;
 }
 
 function goTo(id) {
-  document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   const target = document.getElementById(id);
   if (!target) return;
   target.classList.add("active");
   updateProgress(id);
+  window.scrollTo(0, 0);
 
-  if (id === "sim") {
-    setTimeout(() => goTo("lte"), 2400);
+  // Auto-advance triggers
+  if (id === "activating") simulateActivation();
+  if (id === "passcode") setupKeypad();
+}
+
+// ===== Single-select list helper =====
+function wireList(listId, onChoose) {
+  document.querySelectorAll(`#${listId} .list-item`).forEach(item => {
+    item.addEventListener("click", () => {
+      document.querySelectorAll(`#${listId} .list-item`).forEach(x => x.classList.remove("selected"));
+      item.classList.add("selected");
+      if (onChoose) onChoose(item.dataset.val);
+    });
+  });
+}
+wireList("langList");
+wireList("countryList");
+
+// ===== Quick Start =====
+function simulateQuickStart() {
+  const screen = document.getElementById("quickstart");
+  screen.querySelector("h2").textContent = "Connecting…";
+  screen.querySelector("p").textContent = "Hold on while we transfer your settings.";
+  screen.querySelector(".btn-row").innerHTML = '<div class="spinner"></div>';
+  setTimeout(() => goTo("wifi"), 2200);
+}
+
+// ===== Wi-Fi password modal =====
+let pendingNetwork = null;
+function askWifi(name) {
+  pendingNetwork = name;
+  document.getElementById("wifiModalNet").textContent = name;
+  document.getElementById("wifiPass").value = "";
+  document.getElementById("wifiModal").classList.add("show");
+  setTimeout(() => document.getElementById("wifiPass").focus(), 100);
+}
+function closeWifi() {
+  document.getElementById("wifiModal").classList.remove("show");
+}
+function joinWifi() {
+  const pass = document.getElementById("wifiPass").value;
+  if (pass.length < 4) {
+    alert("Password too short.");
+    return;
   }
-  if (id === "lte") {
-    setTimeout(() => goTo("pin"), 2800);
+  closeWifi();
+  goTo("activating");
+}
+
+// ===== Activation =====
+function simulateActivation() {
+  const bar = document.getElementById("actBar");
+  const msg = document.getElementById("activatingMsg");
+  const phases = [
+    "Contacting Apple servers…",
+    "Verifying device eligibility…",
+    "Authenticating with carrier…",
+    "Provisioning iCloud…",
+    "Activation complete."
+  ];
+  let p = 0, phase = 0;
+  bar.style.width = "0%";
+  const tick = setInterval(() => {
+    p += 2 + Math.random() * 4;
+    if (p > 100) p = 100;
+    bar.style.width = p + "%";
+    const newPhase = Math.min(phases.length - 1, Math.floor((p / 100) * phases.length));
+    if (newPhase !== phase) {
+      phase = newPhase;
+      msg.textContent = phases[phase];
+    }
+    if (p >= 100) {
+      clearInterval(tick);
+      msg.textContent = phases[phases.length - 1];
+      setTimeout(() => goTo("privacy"), 800);
+    }
+  }, 120);
+}
+
+// ===== Face ID =====
+let faceScanState = 0;
+function startFaceScan() {
+  const btn = document.getElementById("faceStartBtn");
+  btn.style.display = "none";
+  faceScanState = 0;
+  doFaceScan();
+}
+function doFaceScan() {
+  const wrap = document.getElementById("faceWrap");
+  const ring = document.getElementById("faceRing");
+  const circle = ring.querySelector("circle");
+  const title = document.getElementById("faceTitle");
+  const msg = document.getElementById("faceMsg");
+
+  wrap.classList.add("scanning");
+  title.textContent = faceScanState === 0 ? "First Scan" : "Second Scan";
+  msg.textContent = "Move your head slowly in a circle…";
+  ring.classList.remove("done");
+  circle.style.strokeDashoffset = "660";
+
+  let progress = 0;
+  const tick = setInterval(() => {
+    progress += 4;
+    circle.style.strokeDashoffset = (660 - (660 * progress / 100)).toString();
+    if (progress >= 100) {
+      clearInterval(tick);
+      ring.classList.add("done");
+      wrap.classList.remove("scanning");
+
+      if (faceScanState === 0) {
+        faceScanState = 1;
+        title.textContent = "First Scan Complete";
+        msg.textContent = "Now do it one more time.";
+        setTimeout(doFaceScan, 1200);
+      } else {
+        title.textContent = "Face ID Is Now Set Up";
+        msg.textContent = "You can use Face ID to unlock your iPhone, sign in to apps, and more.";
+        document.querySelector("#faceid .btn-row").innerHTML = '<button class="btn" onclick="goTo(\'passcode\')">Continue</button>';
+      }
+    }
+  }, 60);
+}
+
+// ===== Passcode keypad =====
+let pcDigits = "";
+let pcConfirm = false;
+let pcFirst = "";
+function setupKeypad() {
+  pcDigits = "";
+  pcConfirm = false;
+  pcFirst = "";
+  document.getElementById("pcTitle").textContent = "Create a Passcode";
+  document.getElementById("pcMsg").textContent = "Enter a 6-digit passcode to keep your iPhone secure.";
+  renderPcDots();
+  buildKeypad();
+}
+function buildKeypad() {
+  const kp = document.getElementById("pcKeypad");
+  const layout = [
+    ["1", ""], ["2", "ABC"], ["3", "DEF"],
+    ["4", "GHI"], ["5", "JKL"], ["6", "MNO"],
+    ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"],
+    ["empty", ""], ["0", ""], ["del", ""]
+  ];
+  kp.innerHTML = layout.map(([d, l]) => {
+    if (d === "empty") return '<button class="key empty" disabled></button>';
+    if (d === "del") return '<button class="key del" onclick="pcDel()">⌫</button>';
+    return `<button class="key" onclick="pcType('${d}')">${d}${l ? `<small>${l}</small>` : ''}</button>`;
+  }).join("");
+}
+function pcType(d) {
+  if (pcDigits.length >= 6) return;
+  pcDigits += d;
+  renderPcDots();
+  if (pcDigits.length === 6) setTimeout(pcSubmit, 200);
+}
+function pcDel() {
+  pcDigits = pcDigits.slice(0, -1);
+  renderPcDots();
+}
+function renderPcDots() {
+  const dots = document.querySelectorAll("#pcDots .passcode-dot");
+  dots.forEach((d, i) => {
+    d.classList.toggle("filled", i < pcDigits.length);
+    d.classList.remove("error");
+  });
+}
+function pcSubmit() {
+  if (!pcConfirm) {
+    pcFirst = pcDigits;
+    pcDigits = "";
+    pcConfirm = true;
+    document.getElementById("pcTitle").textContent = "Re-enter Passcode";
+    document.getElementById("pcMsg").textContent = "Enter the same 6-digit passcode to confirm.";
+    renderPcDots();
+  } else {
+    if (pcDigits === pcFirst) {
+      goTo("appsdata");
+    } else {
+      document.querySelectorAll("#pcDots .passcode-dot").forEach(d => d.classList.add("error"));
+      setTimeout(() => {
+        pcDigits = "";
+        pcFirst = "";
+        pcConfirm = false;
+        document.getElementById("pcTitle").textContent = "Passcodes Didn't Match";
+        document.getElementById("pcMsg").textContent = "Try again.";
+        renderPcDots();
+      }, 700);
+    }
   }
 }
 
-function continueFromPin() {
-  const pin = document.getElementById("pinInput").value.trim();
-  if (pin.length < 6) {
-    alert("Please enter a 6-digit passcode.");
+// ===== Apple ID =====
+function signInAppleId() {
+  const email = document.getElementById("aidEmail").value.trim();
+  const pass = document.getElementById("aidPass").value;
+  if (!email.includes("@") || pass.length < 4) {
+    alert("Please enter a valid Apple ID and password.");
     return;
   }
-  goTo("final");
+  // Simulate sign-in
+  const btn = document.querySelector("#appleid .btn:not(.btn-link)");
+  btn.textContent = "Signing in…";
+  btn.disabled = true;
+  setTimeout(() => {
+    try { localStorage.setItem("profileEmail", email); } catch (e) {}
+    goTo("terms");
+  }, 1400);
+}
+
+// ===== Siri training =====
+function trainSiri() {
+  const btn = document.getElementById("siriBtn");
+  const phrases = document.querySelectorAll("#siriPhrases .siri-phrase");
+  const msg = document.getElementById("siriMsg");
+  btn.disabled = true;
+  btn.textContent = "Listening…";
+  let i = 0;
+  const tick = setInterval(() => {
+    if (i >= phrases.length) {
+      clearInterval(tick);
+      msg.textContent = "Hey Siri is now ready.";
+      btn.disabled = false;
+      btn.textContent = "Continue";
+      btn.onclick = () => goTo("appearance");
+      return;
+    }
+    phrases[i].classList.add("done");
+    i++;
+  }, 900);
+}
+
+// ===== Theme =====
+document.querySelectorAll(".theme-card").forEach(card => {
+  card.addEventListener("click", () => {
+    document.querySelectorAll(".theme-card").forEach(c => c.classList.remove("selected"));
+    card.classList.add("selected");
+    try { localStorage.setItem("appearance", card.dataset.theme); } catch (e) {}
+  });
+});
+
+// ===== Finish =====
+function finishSetup() {
+  try { localStorage.setItem("setupComplete", "1"); } catch (e) {}
+  window.location.href = "homescreen.html";
 }
 
 updateProgress("hello");

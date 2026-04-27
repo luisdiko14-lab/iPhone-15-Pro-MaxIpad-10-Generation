@@ -15,6 +15,7 @@
   --green: #30d158;
   --orange: #ff9f0a;
   --red: #ff453a;
+  --purple: #bf5af2;
   --border: #38383a;
 }
 
@@ -36,12 +37,12 @@ body {
 
 .installer-card {
   width: 100%;
-  max-width: 460px;
+  max-width: 480px;
   background: rgba(28, 28, 30, 0.85);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 22px;
-  padding: 28px;
+  padding: 26px 26px 22px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.55);
   animation: slideUp 0.4s cubic-bezier(0.32,0.72,0,1);
 }
@@ -53,8 +54,8 @@ body {
 
 .brand {
   display: flex; align-items: center; gap: 10px;
-  margin-bottom: 18px; opacity: 0.7;
-  font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 14px; opacity: 0.7;
+  font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
   font-weight: 600;
 }
 .brand .logo {
@@ -64,7 +65,7 @@ body {
 }
 
 h1 {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   margin-bottom: 6px;
   text-align: center;
@@ -74,29 +75,42 @@ h1 {
 .subtitle {
   color: var(--text-secondary);
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.45;
+}
+
+.step-counter {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: 12px;
 }
 
 .steps-bar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 22px;
+  gap: 4px;
+  margin-bottom: 18px;
   justify-content: center;
+  flex-wrap: nowrap;
 }
 .step-dot {
-  width: 8px; height: 8px;
+  width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--border);
   transition: all 0.25s ease;
+  flex-shrink: 0;
 }
 .step-dot.done { background: var(--green); }
-.step-dot.active { background: var(--blue); transform: scale(1.4); }
+.step-dot.active { background: var(--blue); transform: scale(1.5); box-shadow: 0 0 0 3px rgba(10,132,255,0.2); }
 .step-line {
-  width: 30px; height: 2px;
+  width: 16px; height: 2px;
   background: var(--border);
+  flex-shrink: 0;
 }
 .step-line.done { background: var(--green); }
 
@@ -108,9 +122,49 @@ h1 {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Drives */
+/* ===== System requirements check ===== */
+.req-list {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 14px;
+}
+.req-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  gap: 12px;
+}
+.req-icon {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.req-item.checking .req-icon {
+  background: rgba(10,132,255,0.2);
+  animation: pulse-dot 1s infinite;
+}
+.req-item.pass .req-icon { background: var(--green); }
+.req-item.warn .req-icon { background: var(--orange); }
+.req-item.fail .req-icon { background: var(--red); }
+@keyframes pulse-dot {
+  0%,100% { box-shadow: 0 0 0 0 rgba(10,132,255,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(10,132,255,0); }
+}
+.req-info { flex: 1; min-width: 0; }
+.req-name { font-weight: 600; font-size: 14px; }
+.req-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ===== Drives ===== */
 .drive-list {
   display: flex; flex-direction: column; gap: 10px;
+  max-height: 380px; overflow-y: auto;
+  padding-right: 4px;
 }
 .drive-item {
   display: flex; align-items: center;
@@ -121,7 +175,7 @@ h1 {
   cursor: pointer;
   transition: all 0.18s ease;
 }
-.drive-item:hover {
+.drive-item:hover:not(.disabled) {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(10, 132, 255, 0.5);
 }
@@ -141,7 +195,7 @@ h1 {
 .drive-info { flex: 1; min-width: 0; }
 .drive-name {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   margin-bottom: 3px;
 }
 .drive-details {
@@ -166,7 +220,7 @@ h1 {
 .drive-tag.warning { background: var(--orange); color: #000; }
 .drive-tag.error { background: var(--red); color: #fff; }
 
-/* Options grid */
+/* ===== Options grid ===== */
 .opt-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -188,7 +242,81 @@ h1 {
 .opt-title { font-weight: 600; font-size: 14px; }
 .opt-desc { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
 
-/* License */
+/* ===== Partition / Install options (radio cards) ===== */
+.radio-list {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 14px;
+}
+.radio-card {
+  display: flex; align-items: flex-start;
+  padding: 13px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  gap: 12px;
+}
+.radio-card:hover { border-color: rgba(10,132,255,0.4); background: rgba(255,255,255,0.06); }
+.radio-card.selected {
+  background: rgba(10,132,255,0.12);
+  border-color: var(--blue);
+}
+.radio-bullet {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--text-secondary);
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.radio-card.selected .radio-bullet {
+  border-color: var(--blue);
+}
+.radio-card.selected .radio-bullet::after {
+  content: "";
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.radio-body { flex: 1; }
+.radio-title { font-weight: 600; font-size: 14px; }
+.radio-desc { font-size: 12px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+.radio-warn { color: var(--orange); }
+
+/* ===== Checkbox option ===== */
+.check-list {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 14px;
+}
+.check-card {
+  display: flex; align-items: center;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  gap: 12px;
+}
+.check-card:hover { background: rgba(255,255,255,0.06); }
+.check-box {
+  width: 22px; height: 22px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #fff;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.check-card.checked .check-box { background: var(--blue); border-color: var(--blue); }
+.check-body { flex: 1; }
+.check-title { font-size: 14px; font-weight: 600; }
+.check-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ===== License ===== */
 .license-box {
   background: rgba(0,0,0,0.4);
   border: 1px solid var(--border);
@@ -196,14 +324,17 @@ h1 {
   padding: 14px;
   font-size: 12px;
   color: var(--text-secondary);
-  height: 160px;
+  height: 180px;
   overflow-y: auto;
   margin-bottom: 12px;
   line-height: 1.55;
+  text-align: left;
 }
+.license-box p { margin-bottom: 7px; }
+.license-box strong { color: #fff; }
 .checkbox-row {
   display: flex; align-items: center; gap: 10px;
-  margin-bottom: 16px; cursor: pointer;
+  margin-bottom: 12px; cursor: pointer;
   padding: 8px;
 }
 .checkbox {
@@ -217,7 +348,7 @@ h1 {
 .checkbox.checked { background: var(--blue); border-color: var(--blue); }
 .checkbox-label { font-size: 13px; }
 
-/* Buttons */
+/* ===== Buttons ===== */
 .btn-row {
   display: flex; gap: 10px; margin-top: 8px;
 }
@@ -230,15 +361,18 @@ h1 {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
+  font-family: inherit;
 }
 .btn-primary { background: var(--blue); color: #fff; }
 .btn-primary:hover { background: #0974e0; }
 .btn-primary:disabled { background: var(--bg-tertiary); color: var(--text-secondary); cursor: not-allowed; }
 .btn-secondary { background: var(--bg-tertiary); color: #fff; }
 .btn-secondary:hover { background: #3a3a3c; }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #d63a31; }
 .btn:active:not(:disabled) { transform: scale(0.98); }
 
-/* Progress */
+/* ===== Progress / installing ===== */
 .progress-box {
   background: rgba(0,0,0,0.4);
   border-radius: 12px;
@@ -281,27 +415,50 @@ h1 {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 11px;
   color: #5be584;
-  height: 110px;
+  height: 120px;
   overflow-y: auto;
   margin-top: 12px;
   line-height: 1.5;
 }
 .log-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-line.warn { color: var(--orange); }
+.log-line.err { color: var(--red); }
 
 .metrics {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 8px; margin-top: 12px;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 6px; margin-top: 12px;
 }
 .metric {
   background: var(--bg-tertiary);
   border-radius: 8px;
-  padding: 8px;
+  padding: 8px 4px;
   text-align: center;
 }
-.metric-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-.metric-value { font-size: 14px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.metric-label { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-value { font-size: 13px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
 
-/* Done */
+/* ===== Phase chip ===== */
+.phase-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(10,132,255,0.15);
+  color: var(--blue);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.phase-chip::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+  animation: pulse-dot 1s infinite;
+}
+
+/* ===== Done / reboot ===== */
 .done-icon {
   width: 80px; height: 80px;
   border-radius: 50%;
@@ -316,6 +473,40 @@ h1 {
   60% { transform: scale(1.1); }
   100% { transform: scale(1); opacity: 1; }
 }
+
+.reboot-icon {
+  width: 100px; height: 100px;
+  margin: 18px auto 12px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #1c1c1e, #2c2c2e);
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 60px;
+  position: relative;
+  overflow: hidden;
+}
+.reboot-icon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(10,132,255,0.18), transparent 60%);
+  animation: glow 1.6s ease-in-out infinite;
+}
+@keyframes glow {
+  0%,100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.reboot-progress {
+  width: 100%; max-width: 240px; margin: 14px auto;
+  height: 4px; background: var(--bg-tertiary);
+  border-radius: 2px; overflow: hidden;
+}
+.reboot-progress > div {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--blue), var(--purple));
+  animation: rebootFill 4s forwards ease-out;
+}
+@keyframes rebootFill { to { width: 100%; } }
 </style>
 </head>
 <body>
@@ -323,20 +514,101 @@ h1 {
     <div class="brand"><div class="logo"></div><span>iOS Setup Assistant 2.0</span></div>
 
     <!-- Step indicator -->
-    <div class="steps-bar" id="stepsBar">
-      <div class="step-dot active" data-step="0"></div>
-      <div class="step-line" data-step="0"></div>
-      <div class="step-dot" data-step="1"></div>
-      <div class="step-line" data-step="1"></div>
-      <div class="step-dot" data-step="2"></div>
-      <div class="step-line" data-step="2"></div>
-      <div class="step-dot" data-step="3"></div>
-      <div class="step-line" data-step="3"></div>
-      <div class="step-dot" data-step="4"></div>
+    <div class="step-counter" id="stepCounter">Step 1 of 9</div>
+    <div class="steps-bar" id="stepsBar"></div>
+
+    <!-- Step 0: Welcome / language -->
+    <div class="section active" id="section-0">
+      <h1>Welcome to iOS Installer</h1>
+      <p class="subtitle">This wizard will guide you through installing iOS on your device. Choose your installer language to begin.</p>
+
+      <div class="opt-grid">
+        <div class="opt selected" data-lang="en">
+          <div class="opt-icon">🇺🇸</div>
+          <div class="opt-title">English</div>
+          <div class="opt-desc">United States</div>
+        </div>
+        <div class="opt" data-lang="es">
+          <div class="opt-icon">🇪🇸</div>
+          <div class="opt-title">Español</div>
+          <div class="opt-desc">España</div>
+        </div>
+        <div class="opt" data-lang="fr">
+          <div class="opt-icon">🇫🇷</div>
+          <div class="opt-title">Français</div>
+          <div class="opt-desc">France</div>
+        </div>
+        <div class="opt" data-lang="de">
+          <div class="opt-icon">🇩🇪</div>
+          <div class="opt-title">Deutsch</div>
+          <div class="opt-desc">Deutschland</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="window.location.href='index.html'">Quit</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
     </div>
 
-    <!-- Step 1: Drive selection -->
-    <div class="section active" id="section-0">
+    <!-- Step 1: System Requirements -->
+    <div class="section" id="section-1">
+      <h1>Checking System Requirements</h1>
+      <p class="subtitle">Verifying your device meets the minimum requirements for iOS.</p>
+
+      <div class="req-list" id="reqList">
+        <div class="req-item" data-req="cpu" data-detail="Apple A14 Bionic · 6 cores @ 2.99 GHz" data-result="pass">
+          <div class="req-icon">⏳</div>
+          <div class="req-info">
+            <div class="req-name">Processor</div>
+            <div class="req-detail">Checking CPU…</div>
+          </div>
+        </div>
+        <div class="req-item" data-req="ram" data-detail="6 GB DDR4X · OK" data-result="pass">
+          <div class="req-icon">⏳</div>
+          <div class="req-info">
+            <div class="req-name">Memory (RAM)</div>
+            <div class="req-detail">Detecting installed memory…</div>
+          </div>
+        </div>
+        <div class="req-item" data-req="gpu" data-detail="Apple GPU · Metal 3 supported" data-result="pass">
+          <div class="req-icon">⏳</div>
+          <div class="req-info">
+            <div class="req-name">Graphics</div>
+            <div class="req-detail">Querying GPU capabilities…</div>
+          </div>
+        </div>
+        <div class="req-item" data-req="storage" data-detail="2 TB available · 12 GB needed" data-result="pass">
+          <div class="req-icon">⏳</div>
+          <div class="req-info">
+            <div class="req-name">Storage</div>
+            <div class="req-detail">Scanning available drives…</div>
+          </div>
+        </div>
+        <div class="req-item" data-req="network" data-detail="Wi-Fi connected · 245 Mbps" data-result="pass">
+          <div class="req-icon">⏳</div>
+          <div class="req-info">
+            <div class="req-name">Network</div>
+            <div class="req-detail">Testing internet connection…</div>
+          </div>
+        </div>
+        <div class="req-item" data-req="battery" data-detail="87% · plugged in not required" data-result="pass">
+          <div class="req-icon">⏳</div>
+          <div class="req-info">
+            <div class="req-name">Battery</div>
+            <div class="req-detail">Reading battery status…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">‹ Back</button>
+        <button class="btn btn-primary" id="reqContinue" disabled onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Drive selection -->
+    <div class="section" id="section-2">
       <h1>Select Installation Drive</h1>
       <p class="subtitle">Choose where to install iOS. Make sure the target has enough free space.</p>
 
@@ -345,7 +617,7 @@ h1 {
           <span class="drive-icon">📱</span>
           <div class="drive-info">
             <div class="drive-name">A: Main iPhone Drive <span class="drive-tag recommended">Recommended</span></div>
-            <div class="drive-details">2 TB total · 1.99 TB available</div>
+            <div class="drive-details">2 TB total · 1.99 TB available · APFS</div>
             <div class="drive-bar"><div class="drive-bar-fill" style="width:0.5%"></div></div>
           </div>
         </div>
@@ -354,7 +626,7 @@ h1 {
           <span class="drive-icon">💾</span>
           <div class="drive-info">
             <div class="drive-name">B: External SSD</div>
-            <div class="drive-details">512 GB total · 380 GB available</div>
+            <div class="drive-details">512 GB total · 380 GB available · APFS (Encrypted)</div>
             <div class="drive-bar"><div class="drive-bar-fill" style="width:25%"></div></div>
           </div>
         </div>
@@ -363,7 +635,7 @@ h1 {
           <span class="drive-icon">💿</span>
           <div class="drive-info">
             <div class="drive-name">C: USB Flash Drive <span class="drive-tag warning">Slow</span></div>
-            <div class="drive-details">128 GB total · 110 GB available</div>
+            <div class="drive-details">128 GB total · 110 GB available · USB 2.0</div>
             <div class="drive-bar"><div class="drive-bar-fill" style="width:14%; background:var(--orange)"></div></div>
           </div>
         </div>
@@ -372,7 +644,7 @@ h1 {
           <span class="drive-icon">🪟</span>
           <div class="drive-info">
             <div class="drive-name">D: Windows 11 Partition <span class="drive-tag error">Insufficient Space</span></div>
-            <div class="drive-details">100 GB total · 0.1 MB available</div>
+            <div class="drive-details">100 GB total · 0.1 MB available · NTFS</div>
             <div class="drive-bar"><div class="drive-bar-fill" style="width:99.9%; background:var(--red)"></div></div>
           </div>
         </div>
@@ -381,19 +653,69 @@ h1 {
           <span class="drive-icon">🌐</span>
           <div class="drive-info">
             <div class="drive-name">E: Network Drive <span class="drive-tag error">Offline</span></div>
-            <div class="drive-details">Cannot connect to remote host</div>
+            <div class="drive-details">Cannot connect to remote host (192.168.1.42)</div>
+          </div>
+        </div>
+
+        <div class="drive-item disabled" data-letter="F" data-name="Recovery Partition" data-size="locked">
+          <span class="drive-icon">🔒</span>
+          <div class="drive-info">
+            <div class="drive-name">F: Recovery <span class="drive-tag error">Read Only</span></div>
+            <div class="drive-details">8 GB total · System protected</div>
           </div>
         </div>
       </div>
 
       <div class="btn-row">
-        <button class="btn btn-secondary" onclick="window.location.href='index.html'">‹ Back</button>
-        <button class="btn btn-primary" id="next0" disabled onclick="nextStep()">Continue</button>
+        <button class="btn btn-secondary" onclick="prevStep()">‹ Back</button>
+        <button class="btn btn-primary" id="driveContinue" disabled onclick="nextStep()">Continue</button>
       </div>
     </div>
 
-    <!-- Step 2: iOS version -->
-    <div class="section" id="section-1">
+    <!-- Step 3: Partition options -->
+    <div class="section" id="section-3">
+      <h1>Partition Options</h1>
+      <p class="subtitle">Decide how iOS should use the selected drive.</p>
+
+      <div class="radio-list" id="partitionList">
+        <div class="radio-card selected" data-partition="clean">
+          <div class="radio-bullet"></div>
+          <div class="radio-body">
+            <div class="radio-title">Clean Install</div>
+            <div class="radio-desc">Erase the entire drive and install iOS as the only operating system. Recommended for best performance.</div>
+          </div>
+        </div>
+        <div class="radio-card" data-partition="alongside">
+          <div class="radio-bullet"></div>
+          <div class="radio-body">
+            <div class="radio-title">Install Alongside Existing OS</div>
+            <div class="radio-desc">Create a new partition and dual-boot with the current operating system.</div>
+          </div>
+        </div>
+        <div class="radio-card" data-partition="upgrade">
+          <div class="radio-bullet"></div>
+          <div class="radio-body">
+            <div class="radio-title">Upgrade in Place</div>
+            <div class="radio-desc">Keep your existing files, settings, and apps. Faster, but uses more storage.</div>
+          </div>
+        </div>
+        <div class="radio-card" data-partition="custom">
+          <div class="radio-bullet"></div>
+          <div class="radio-body">
+            <div class="radio-title">Custom Partition Layout <span class="radio-warn">⚠ Advanced</span></div>
+            <div class="radio-desc">Manually configure partitions, sizes, and file systems.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">‹ Back</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 4: iOS Version -->
+    <div class="section" id="section-4">
       <h1>Choose iOS Version</h1>
       <p class="subtitle">Pick the version of iOS you want to install on your device.</p>
 
@@ -426,8 +748,8 @@ h1 {
       </div>
     </div>
 
-    <!-- Step 3: Configuration -->
-    <div class="section" id="section-2">
+    <!-- Step 5: Region -->
+    <div class="section" id="section-5">
       <h1>Region & Configuration</h1>
       <p class="subtitle">Pick a region. We'll preconfigure the language and date format.</p>
 
@@ -460,25 +782,72 @@ h1 {
       </div>
     </div>
 
-    <!-- Step 4: License -->
-    <div class="section" id="section-3">
+    <!-- Step 6: Install Options -->
+    <div class="section" id="section-6">
+      <h1>Install Options</h1>
+      <p class="subtitle">Customize what gets installed alongside iOS.</p>
+
+      <div class="check-list" id="optionsList">
+        <div class="check-card checked" data-opt="apps">
+          <div class="check-box">✓</div>
+          <div class="check-body">
+            <div class="check-title">Install Default Apps</div>
+            <div class="check-desc">Phone, Messages, Mail, Safari, and 30 others (1.4 GB)</div>
+          </div>
+        </div>
+        <div class="check-card checked" data-opt="restore">
+          <div class="check-box">✓</div>
+          <div class="check-body">
+            <div class="check-title">Restore from iCloud Backup</div>
+            <div class="check-desc">Bring back photos, contacts, and settings (4.2 GB)</div>
+          </div>
+        </div>
+        <div class="check-card" data-opt="dev">
+          <div class="check-box"></div>
+          <div class="check-body">
+            <div class="check-title">Developer Tools</div>
+            <div class="check-desc">Xcode debugger, instruments, and command-line tools (820 MB)</div>
+          </div>
+        </div>
+        <div class="check-card" data-opt="beta">
+          <div class="check-box"></div>
+          <div class="check-body">
+            <div class="check-title">Enroll in Beta Program</div>
+            <div class="check-desc">Receive future beta updates automatically</div>
+          </div>
+        </div>
+        <div class="check-card checked" data-opt="updates">
+          <div class="check-box">✓</div>
+          <div class="check-body">
+            <div class="check-title">Automatic Updates</div>
+            <div class="check-desc">Download and install future iOS updates overnight</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">‹ Back</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 7: License -->
+    <div class="section" id="section-7">
       <h1>License Agreement</h1>
       <p class="subtitle">Please review and accept the terms to continue.</p>
 
       <div class="license-box">
         <p><strong>iOS SOFTWARE LICENSE AGREEMENT</strong></p>
-        <br>
-        <p>By using this simulator, you agree to the following demo-grade terms:</p>
-        <br>
-        <p>1. This is a hobby project simulating an iPhone interface in your browser.</p>
-        <p>2. No real Apple software is being installed.</p>
-        <p>3. All your "settings" are saved in your browser's local storage.</p>
-        <p>4. The simulated battery, time, and notifications are fictional.</p>
-        <p>5. You may use this for educational purposes only.</p>
-        <p>6. The author makes no warranty that anything works correctly.</p>
-        <p>7. By accepting, you acknowledge this is a fun project, not a real OS.</p>
-        <br>
-        <p><em>Last updated: April 2026</em></p>
+        <p><em>Demo Edition — for educational use only</em></p>
+        <p><strong>1. License grant.</strong> The licensor grants you a non-exclusive, non-transferable license to use this iPhone simulator software for personal, non-commercial educational purposes only.</p>
+        <p><strong>2. No real software.</strong> No real Apple operating system is being installed. This is a browser-based simulation. All "settings" and "data" are saved in your browser's local storage and never leave your device.</p>
+        <p><strong>3. Third-party services.</strong> Optional features (such as Siri AI) call third-party services (Groq, Google Gemini) using API keys you provide. The licensor is not responsible for the terms or pricing of those services.</p>
+        <p><strong>4. Simulated data.</strong> The battery percentage, signal strength, time-of-day on the status bar, and notifications are entirely fictional and bear no relation to your actual device.</p>
+        <p><strong>5. Privacy.</strong> No personal data is collected by the simulator itself. The author cannot see your simulated passcodes, photos, or notes.</p>
+        <p><strong>6. No warranty.</strong> The simulator is provided "AS IS", without warranty of any kind, express or implied.</p>
+        <p><strong>7. Limitation of liability.</strong> In no event shall the author be liable for any damages arising from use of this simulator.</p>
+        <p><strong>8. Acceptance.</strong> By tapping "I Agree" below, you acknowledge that this is a fun educational project and not a real Apple product.</p>
+        <p><em>Last revised: April 2026</em></p>
       </div>
 
       <div class="checkbox-row" onclick="toggleAccept()">
@@ -492,10 +861,12 @@ h1 {
       </div>
     </div>
 
-    <!-- Step 5: Installing -->
-    <div class="section" id="section-4">
+    <!-- Step 8: Installing -->
+    <div class="section" id="section-8">
       <h1 id="installTitle">Installing iOS 18…</h1>
       <p class="subtitle" id="installSubtitle">This may take a moment. Don't close the window.</p>
+
+      <div style="text-align: center;"><span class="phase-chip" id="phaseChip">Phase 1 of 10</span></div>
 
       <div class="progress-box">
         <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
@@ -506,6 +877,7 @@ h1 {
           <div class="metric"><div class="metric-label">Speed</div><div class="metric-value" id="metricSpeed">0 MB/s</div></div>
           <div class="metric"><div class="metric-label">Time left</div><div class="metric-value" id="metricEta">--:--</div></div>
           <div class="metric"><div class="metric-label">Files</div><div class="metric-value" id="metricFiles">0</div></div>
+          <div class="metric"><div class="metric-label">Errors</div><div class="metric-value" id="metricErrors">0</div></div>
         </div>
 
         <div class="log-window" id="logWindow"></div>
@@ -513,21 +885,47 @@ h1 {
 
       <div id="finalRow" style="display:none">
         <div class="done-icon">✓</div>
-        <h1 style="margin-bottom:8px">Installation complete!</h1>
-        <p class="subtitle">Your iPhone is ready to set up.</p>
+        <h1 style="margin-bottom:8px">Installation Complete!</h1>
+        <p class="subtitle">Your iPhone is ready to restart.</p>
         <div class="btn-row">
-          <button class="btn btn-primary" onclick="window.location.href='setup.html'">Continue to Setup</button>
+          <button class="btn btn-primary" onclick="nextStep()">Restart Now</button>
         </div>
       </div>
+    </div>
+
+    <!-- Step 9: Reboot -->
+    <div class="section" id="section-9">
+      <h1>Restarting iPhone</h1>
+      <p class="subtitle" id="rebootMsg">Please wait while your iPhone reboots into iOS for the first time…</p>
+      <div class="reboot-icon">🍎</div>
+      <div class="reboot-progress"><div></div></div>
+      <p class="subtitle" id="rebootStage" style="margin-top: 4px;">Booting kernel…</p>
     </div>
   </div>
 
   <script>
+    // ===== Step navigation =====
+    const TOTAL_STEPS = 10; // 0..9
     let currentStep = 0;
     let selectedDrive = null;
     let selectedVersion = 'ios-18';
     let selectedRegion = 'us';
+    let selectedPartition = 'clean';
+    let selectedLang = 'en';
     let accepted = false;
+
+    function buildStepBar() {
+      const bar = document.getElementById('stepsBar');
+      let html = '';
+      for (let i = 0; i < TOTAL_STEPS; i++) {
+        html += `<div class="step-dot${i === 0 ? ' active' : ''}" data-step="${i}"></div>`;
+        if (i < TOTAL_STEPS - 1) {
+          html += `<div class="step-line" data-step="${i}"></div>`;
+        }
+      }
+      bar.innerHTML = html;
+    }
+    buildStepBar();
 
     function setStep(n) {
       currentStep = n;
@@ -539,37 +937,96 @@ h1 {
       document.querySelectorAll('.step-line').forEach((l, i) => {
         l.classList.toggle('done', i < n);
       });
-      if (n === 4) startInstall();
+      document.getElementById('stepCounter').textContent = `Step ${n + 1} of ${TOTAL_STEPS}`;
+
+      if (n === 1) startReqCheck();
+      if (n === 8) startInstall();
+      if (n === 9) startReboot();
     }
 
-    function nextStep() { if (currentStep < 4) setStep(currentStep + 1); }
+    function nextStep() { if (currentStep < TOTAL_STEPS - 1) setStep(currentStep + 1); }
     function prevStep() { if (currentStep > 0) setStep(currentStep - 1); }
 
-    // Drive selection
+    // ===== Language selection =====
+    document.querySelectorAll('#section-0 .opt').forEach(o => {
+      o.addEventListener('click', () => {
+        document.querySelectorAll('#section-0 .opt').forEach(x => x.classList.remove('selected'));
+        o.classList.add('selected');
+        selectedLang = o.dataset.lang;
+      });
+    });
+
+    // ===== System requirements check =====
+    let reqStarted = false;
+    function startReqCheck() {
+      if (reqStarted) return;
+      reqStarted = true;
+      const items = document.querySelectorAll('#reqList .req-item');
+      let i = 0;
+      const tick = () => {
+        if (i >= items.length) {
+          document.getElementById('reqContinue').disabled = false;
+          return;
+        }
+        const item = items[i];
+        item.classList.add('checking');
+        item.querySelector('.req-icon').textContent = '⏳';
+        setTimeout(() => {
+          item.classList.remove('checking');
+          const result = item.dataset.result;
+          item.classList.add(result);
+          const icons = { pass: '✓', warn: '!', fail: '✕' };
+          item.querySelector('.req-icon').textContent = icons[result];
+          item.querySelector('.req-detail').textContent = item.dataset.detail;
+          i++;
+          setTimeout(tick, 300);
+        }, 500 + Math.random() * 400);
+      };
+      setTimeout(tick, 400);
+    }
+
+    // ===== Drive selection =====
     document.querySelectorAll('.drive-item:not(.disabled)').forEach(it => {
       it.addEventListener('click', () => {
         document.querySelectorAll('.drive-item').forEach(x => x.classList.remove('selected'));
         it.classList.add('selected');
         selectedDrive = { letter: it.dataset.letter, name: it.dataset.name };
-        document.getElementById('next0').disabled = false;
+        document.getElementById('driveContinue').disabled = false;
       });
     });
 
-    // Version selection
-    document.querySelectorAll('#section-1 .opt').forEach(o => {
+    // ===== Partition selection =====
+    document.querySelectorAll('#partitionList .radio-card').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#partitionList .radio-card').forEach(x => x.classList.remove('selected'));
+        c.classList.add('selected');
+        selectedPartition = c.dataset.partition;
+      });
+    });
+
+    // ===== Version selection =====
+    document.querySelectorAll('#section-4 .opt').forEach(o => {
       o.addEventListener('click', () => {
-        document.querySelectorAll('#section-1 .opt').forEach(x => x.classList.remove('selected'));
+        document.querySelectorAll('#section-4 .opt').forEach(x => x.classList.remove('selected'));
         o.classList.add('selected');
         selectedVersion = o.dataset.ver;
       });
     });
 
-    // Region selection
-    document.querySelectorAll('#section-2 .opt').forEach(o => {
+    // ===== Region selection =====
+    document.querySelectorAll('#section-5 .opt').forEach(o => {
       o.addEventListener('click', () => {
-        document.querySelectorAll('#section-2 .opt').forEach(x => x.classList.remove('selected'));
+        document.querySelectorAll('#section-5 .opt').forEach(x => x.classList.remove('selected'));
         o.classList.add('selected');
         selectedRegion = o.dataset.region;
+      });
+    });
+
+    // ===== Install options checkboxes =====
+    document.querySelectorAll('#optionsList .check-card').forEach(c => {
+      c.addEventListener('click', () => {
+        c.classList.toggle('checked');
+        c.querySelector('.check-box').textContent = c.classList.contains('checked') ? '✓' : '';
       });
     });
 
@@ -580,39 +1037,55 @@ h1 {
       document.getElementById('acceptBtn').disabled = !accepted;
     }
 
-    // ====== Installation simulation ======
+    // ===== Installation simulation =====
     const STEPS = [
-      { from: 0, to: 8, msg: 'Verifying installer signature…', files: ['boot.img','signature.sig'] },
-      { from: 8, to: 18, msg: 'Allocating disk space on selected drive…', files: ['/var','/private'] },
-      { from: 18, to: 32, msg: 'Downloading system image…', files: ['core.dmg','frameworks.dmg','SystemApps.zip'] },
-      { from: 32, to: 48, msg: 'Verifying download integrity…', files: ['sha256sum','manifest.plist'] },
-      { from: 48, to: 64, msg: 'Extracting kernel and frameworks…', files: ['xnu','SpringBoard','UIKit.framework'] },
-      { from: 64, to: 78, msg: 'Installing system applications…', files: ['Phone.app','Safari.app','Settings.app','Music.app'] },
-      { from: 78, to: 88, msg: 'Configuring localization for region…', files: ['locale.plist','keyboards/'] },
-      { from: 88, to: 95, msg: 'Optimizing storage layout…', files: ['storage.db','spotlight.idx'] },
-      { from: 95, to: 100, msg: 'Finalizing installation…', files: ['boot.complete'] },
+      { from: 0, to: 6, msg: 'Verifying installer signature…', phase: 1 },
+      { from: 6, to: 14, msg: 'Allocating disk space on selected drive…', phase: 2 },
+      { from: 14, to: 24, msg: 'Partitioning drive (APFS)…', phase: 3 },
+      { from: 24, to: 38, msg: 'Downloading system image…', phase: 4 },
+      { from: 38, to: 50, msg: 'Verifying download integrity (sha256)…', phase: 5 },
+      { from: 50, to: 64, msg: 'Extracting kernel and frameworks…', phase: 6 },
+      { from: 64, to: 78, msg: 'Installing system applications…', phase: 7 },
+      { from: 78, to: 88, msg: 'Configuring localization for region…', phase: 8 },
+      { from: 88, to: 95, msg: 'Optimizing storage layout…', phase: 9 },
+      { from: 95, to: 100, msg: 'Finalizing installation…', phase: 10 },
     ];
 
     const LOG_LINES = [
-      'Mounting volume on drive {drive}…',
-      'apfs: snapshot created',
-      'fetch: chunk 142/512 ok',
+      'mount: volume {drive}: ready',
+      'apfs: snapshot created (/private/var)',
+      'fetch: chunk {n}/512 ok ({mb} MB)',
       'extract: SystemApps/Phone.app',
-      'verify: sha256 ok',
+      'extract: SystemApps/Safari.app',
+      'extract: SystemApps/Music.app',
+      'verify: sha256 ok ({hash})',
       'install: registered Phone.app',
       'install: registered Safari.app',
+      'install: registered Settings.app',
+      'install: registered Mail.app',
       'spotlight: index built (1,247 items)',
       'localization: applied region={region}',
       'security: provisioning profile installed',
       'kext: loaded com.apple.driver.AppleEmbeddedUSBHost',
+      'kext: loaded com.apple.iokit.IOAcceleratorFamily2',
       'launch: SpringBoard ready',
       'cache: dyld_shared_cache_arm64e built',
+      'codesign: kernel cache resealed',
+      'launchd: applied launchd.plist',
+      'apfs: snapshot pinned',
+      'commkit: provisioned baseband firmware',
+    ];
+
+    const WARN_LINES = [
+      'warn: deprecated entitlement com.apple.private.legacy ignored',
+      'warn: low entropy detected, retrying…',
+      'warn: skipping unsupported framework Compatibility.kext',
     ];
 
     function startInstall() {
       const verName = { 'ios-18':'iOS 18','ios-17':'iOS 17','ios-16':'iOS 16','ios-beta':'iOS 19 Beta' }[selectedVersion];
       document.getElementById('installTitle').textContent = `Installing ${verName}…`;
-      document.getElementById('installSubtitle').textContent = `Target: ${selectedDrive ? selectedDrive.letter + ': ' + selectedDrive.name : 'Drive'}`;
+      document.getElementById('installSubtitle').textContent = `Target: ${selectedDrive ? selectedDrive.letter + ': ' + selectedDrive.name : 'Drive A'} · ${selectedPartition} install`;
 
       const bar = document.getElementById('progressBar');
       const pct = document.getElementById('percentText');
@@ -621,42 +1094,54 @@ h1 {
       const speedEl = document.getElementById('metricSpeed');
       const etaEl = document.getElementById('metricEta');
       const filesEl = document.getElementById('metricFiles');
+      const errorsEl = document.getElementById('metricErrors');
+      const phaseChip = document.getElementById('phaseChip');
 
       let p = 0;
       let stepIdx = 0;
       let fileCount = 0;
+      let warnCount = 0;
       let elapsed = 0;
 
       const tick = setInterval(() => {
-        p += Math.random() * 0.8 + 0.2;
+        p += Math.random() * 0.8 + 0.18;
         elapsed += 0.1;
         if (p >= 100) { p = 100; clearInterval(tick); installDone(); }
 
-        // Move through phases
         while (stepIdx < STEPS.length - 1 && p > STEPS[stepIdx].to) stepIdx++;
         const phase = STEPS[stepIdx];
         status.textContent = phase.msg;
+        phaseChip.textContent = `Phase ${phase.phase} of 10`;
 
         bar.style.width = p + '%';
         pct.textContent = Math.floor(p) + '%';
 
-        // Speed: random between 80-220 MB/s during downloads, slower during verify
-        const isDl = phase.msg.toLowerCase().includes('download') || phase.msg.toLowerCase().includes('extract');
+        const isDl = /download|extract/.test(phase.msg.toLowerCase());
         const speed = isDl ? (80 + Math.random() * 140) : (10 + Math.random() * 30);
         speedEl.textContent = speed.toFixed(1) + ' MB/s';
 
         const etaSec = Math.max(0, ((100 - p) / Math.max(0.5, p / Math.max(1, elapsed))) | 0);
         etaEl.textContent = String(Math.floor(etaSec / 60)).padStart(2,'0') + ':' + String(etaSec % 60).padStart(2,'0');
 
-        if (Math.random() < 0.5) {
+        if (Math.random() < 0.55) {
           fileCount += 1 + Math.floor(Math.random() * 4);
           filesEl.textContent = fileCount.toLocaleString();
-          const tpl = LOG_LINES[Math.floor(Math.random() * LOG_LINES.length)];
-          const line = tpl
-            .replace('{drive}', selectedDrive?.letter || 'A')
-            .replace('{region}', selectedRegion);
+          let line;
+          if (Math.random() < 0.06) {
+            line = WARN_LINES[Math.floor(Math.random() * WARN_LINES.length)];
+            warnCount++;
+            errorsEl.textContent = warnCount;
+          } else {
+            const tpl = LOG_LINES[Math.floor(Math.random() * LOG_LINES.length)];
+            line = tpl
+              .replace('{drive}', selectedDrive?.letter || 'A')
+              .replace('{region}', selectedRegion)
+              .replace('{n}', Math.floor(Math.random() * 512))
+              .replace('{mb}', (Math.random() * 4).toFixed(1))
+              .replace('{hash}', Math.random().toString(16).slice(2, 10));
+          }
           const div = document.createElement('div');
-          div.className = 'log-line';
+          div.className = 'log-line' + (line.startsWith('warn') ? ' warn' : '');
           div.textContent = '[' + (elapsed.toFixed(1) + 's').padStart(6) + '] ' + line;
           log.appendChild(div);
           log.scrollTop = log.scrollHeight;
@@ -669,6 +1154,29 @@ h1 {
       document.getElementById('statusText').textContent = 'Installation complete';
       document.getElementById('metricSpeed').textContent = '—';
       document.getElementById('metricEta').textContent = '00:00';
+    }
+
+    // ===== Reboot screen =====
+    function startReboot() {
+      const stages = [
+        'Booting kernel…',
+        'Mounting root filesystem…',
+        'Starting launchd…',
+        'Loading SpringBoard…',
+        'Almost there…'
+      ];
+      let i = 0;
+      const stage = document.getElementById('rebootStage');
+      const interval = setInterval(() => {
+        i++;
+        if (i >= stages.length) {
+          clearInterval(interval);
+          stage.textContent = 'Welcome to iOS!';
+          setTimeout(() => { window.location.href = 'setup.html'; }, 700);
+          return;
+        }
+        stage.textContent = stages[i];
+      }, 800);
     }
   </script>
 </body>

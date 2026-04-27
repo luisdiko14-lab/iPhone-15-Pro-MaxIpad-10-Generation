@@ -85,9 +85,35 @@ Preferred communication style: Simple, everyday language.
 - Supports keyboard arrows, WASD, swipe gestures, and an on-screen D-pad. Tracks best score in `localStorage` (`game2048Best`). Includes win and game-over overlays.
 
 ### Installer Flow (`installer.html`)
-- 5-step guided setup with a step-dot indicator: Drive selection → iOS version → Region → License agreement → Installation.
-- Drive list shows multiple realistic drives with status tags (Recommended/Slow/Insufficient Space/Offline) and disk-usage bars.
-- Installation simulation streams a live log window (green-on-black "[time] phase: message" lines), plus live metrics for transfer speed, ETA, and file count.
+- **10-step** guided wizard with step-dot indicator and "Step N of 10" counter:
+  1. **Welcome / Language** — English/Español/Français/Deutsch installer language
+  2. **System Requirements** — animated check of CPU, RAM, GPU, Storage, Network, Battery (one-by-one with spinner → green check)
+  3. **Drive selection** — 6 drives with status tags (Recommended/Slow/Insufficient Space/Offline/Read Only) and disk-usage bars
+  4. **Partition Options** — Clean install / Install Alongside / Upgrade in Place / Custom (radio cards)
+  5. **iOS Version** — iOS 18 / 17 / 16 / 19 Beta
+  6. **Region** — US/UK/Germany/Japan
+  7. **Install Options** — checkboxes for Default Apps, iCloud Restore, Developer Tools, Beta enrollment, Auto Updates
+  8. **License Agreement** — scrollable ToS with Agree checkbox
+  9. **Installing** — 10 phases with live phase chip, percent, speed (MB/s), ETA, file count, error count, plus streaming green-on-black log window with realistic apfs/extract/install/spotlight messages and occasional yellow warnings
+  10. **Reboot** — animated Apple logo with multi-stage boot text (Booting kernel → Mounting root → Starting launchd → SpringBoard → Welcome) before redirecting to setup.html
+
+### Setup Flow (`setup.html`)
+- **15-step** Apple-style activation flow with progress bar and "Step N of 15" counter:
+  1. **Hello** — animated multi-language greeting (12 languages cycling)
+  2. **Language** — pick main device language
+  3. **Country/Region** — sets time zone, currency, store
+  4. **Quick Start** — option to use another iPhone or set up manually
+  5. **Wi-Fi** — pick network (Open networks join directly; Secured networks open password modal)
+  6. **Activating iPhone** — animated 4-phase activation (Apple servers → Eligibility → Carrier → iCloud)
+  7. **Data & Privacy** — Apple's data icon disclosure
+  8. **Face ID** — animated face scan with circular progress ring (two passes: First Scan + Second Scan)
+  9. **Passcode** — full iOS 6-dot passcode UI with on-screen keypad (1-9 with letters underneath, ⌫), then re-enter to confirm with shake animation on mismatch
+  10. **Apps & Data** — Restore from iCloud / Restore from Mac / Transfer from Android / Set up as new
+  11. **Apple ID** — email + password sign-in form with "Signing in…" simulation
+  12. **Terms and Conditions** — scrollable iOS license agreement
+  13. **Siri** — animated multicolor orb with "Hey Siri" voice training (3 phrases auto-tick green one-by-one)
+  14. **Appearance** — Light/Dark theme cards with mini previews + True Tone and Share Analytics toggles
+  15. **Welcome** — final swipe-up screen, redirects to homescreen.html on Get Started
 
 ## External Dependencies
 
