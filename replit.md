@@ -62,11 +62,22 @@ Preferred communication style: Simple, everyday language.
 - Recents are persisted in `localStorage` (`phoneRecents`) and auto-update with every call. Voicemails (`phoneVoicemails`) and contacts (`phoneContacts`) also persist with sensible seed data.
 
 ### Siri (`siri.html` / `siri.js`)
-- Fully **offline** smart assistant built for the free tier (no API keys).
-- Uses the browser's **SpeechRecognition API** for voice input (mic button) and **SpeechSynthesis API** to speak responses out loud.
-- Pattern-matches questions for: time, date, battery, Wi-Fi/Bluetooth status, weather (mock), jokes, fortunes, dice rolls, coin flips, math expressions ("what is 23 plus 19"), "open <app>" navigation (Calculator, Notes, Camera, Phone, Settings, Music, Weather, Mail, Game, App Store, Home Screen), charger control via `window.iOSDevice`, and friendly fallbacks.
+- Three-mode assistant with a **model selector** at the top: **⚡ Offline**, **🧠 Groq**, **✨ Gemini**. Selection persisted to `localStorage` (`siriModel`).
+- **Offline**: pattern matches for time, date, battery, Wi-Fi/Bluetooth, weather (mock), jokes, fortunes, dice, coin flips, math, and friendly fallbacks. No network needed.
+- **Groq**: calls Flask proxy `/api/siri/groq` which uses `GROQ_SECRET` to hit Groq's `llama-3.1-8b-instant` (very fast, free tier friendly).
+- **Gemini**: calls Flask proxy `/api/siri/gemini` which uses `GEMINI_SECRET` to hit Google's `gemini-2.0-flash-lite`.
+- Both AI calls send the last 6 conversation turns as context so Siri remembers what you just said. Server-side `SIRI_SYSTEM_PROMPT` keeps replies short, conversational, no markdown (so they speak nicely).
+- **Local intents always run first** before any AI call — "open Calculator", "plug in charger", etc. work in any mode and never waste an API call.
+- **Auto-fallback**: if Groq/Gemini errors out (network, quota, etc.), Siri quietly falls back to the offline answer with a "(model unavailable)" note appended.
+- **Availability check**: on load, `/api/siri/status` returns which keys are configured; missing models are shown with a 🔒 lock and disabled.
+- Uses the browser's **SpeechRecognition API** for voice input and **SpeechSynthesis API** to speak responses out loud.
 - Animated Siri orb (multicolor conic gradient with pulsing rings) reflects state: idle / listening / thinking / speaking.
 - Suggestion chips, transcript display, and a 12-item conversation history persisted to `localStorage`.
+
+### Server-side AI Proxy (`server.py`)
+- New Flask routes added: `POST /api/siri/groq`, `POST /api/siri/gemini`, `GET /api/siri/status`.
+- API keys (`GROQ_SECRET`, `GEMINI_SECRET`) are read from environment **server-side only** and never exposed to the browser.
+- Both endpoints accept `{question, history}` JSON, prepend the shared `SIRI_SYSTEM_PROMPT`, replay the last 6 conversation turns as context, call the upstream API with a 20-second timeout, and return `{reply, model}` or `{error, detail}`.
 
 ### Mini Game (`game.html` — React)
 - Full **2048** implementation using **React 18 + ReactDOM via CDN** (loaded from unpkg, no build pipeline). Demonstrates that React can be used in this app without rewriting the existing pages.

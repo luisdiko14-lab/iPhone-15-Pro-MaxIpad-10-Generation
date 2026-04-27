@@ -274,3 +274,63 @@ body {
   font-size: 13px;
   padding: 12px;
 }
+
+/* ===== Model selector ===== */
+.model-selector {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+  flex-wrap: wrap;
+}
+
+.model-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.model-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.model-btn.active {
+  background: linear-gradient(135deg, #5e7cff, #b65cff);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(94, 124, 255, 0.35);
+}
+
+.model-btn.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  position: relative;
+}
+.model-btn.disabled::after {
+  content: "🔒";
+  margin-left: 6px;
+  font-size: 11px;
+}
+
+.model-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+  margin-left: 6px;
+  vertical-align: middle;
+}

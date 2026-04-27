@@ -87,5 +87,100 @@ def get_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+SIRI_SYSTEM_PROMPT = (
+    "You are Siri, Apple's friendly voice assistant on iOS. "
+    "Keep replies short (1-3 sentences), conversational, and warm. "
+    "Never use markdown formatting, lists, headings, or code blocks — your reply will be spoken out loud. "
+    "If asked to open an app, just acknowledge naturally."
+)
+
+@app.route('/api/siri/groq', methods=['POST'])
+def siri_groq():
+    api_key = os.environ.get('GROQ_SECRET') or os.environ.get('GROQ_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'GROQ_SECRET not configured'}), 500
+
+    body = request.get_json(silent=True) or {}
+    user_msg = (body.get('question') or '').strip()
+    if not user_msg:
+        return jsonify({'error': 'Missing question'}), 400
+
+    recent = body.get('history') or []
+    messages = [{'role': 'system', 'content': SIRI_SYSTEM_PROMPT}]
+    for h in recent[-6:]:
+        if h.get('q'): messages.append({'role': 'user', 'content': h['q']})
+        if h.get('a'): messages.append({'role': 'assistant', 'content': h['a']})
+    messages.append({'role': 'user', 'content': user_msg})
+
+    try:
+        r = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'llama-3.1-8b-instant',
+                'messages': messages,
+                'temperature': 0.7,
+                'max_tokens': 200
+            },
+            timeout=20
+        )
+        if not r.ok:
+            return jsonify({'error': f'Groq API error: {r.status_code}', 'detail': r.text[:200]}), 502
+        data = r.json()
+        reply = data['choices'][0]['message']['content'].strip()
+        return jsonify({'reply': reply, 'model': 'groq:llama-3.1-8b-instant'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/siri/gemini', methods=['POST'])
+def siri_gemini():
+    api_key = os.environ.get('GEMINI_SECRET') or os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'GEMINI_SECRET not configured'}), 500
+
+    body = request.get_json(silent=True) or {}
+    user_msg = (body.get('question') or '').strip()
+    if not user_msg:
+        return jsonify({'error': 'Missing question'}), 400
+
+    recent = body.get('history') or []
+    contents = []
+    for h in recent[-6:]:
+        if h.get('q'): contents.append({'role': 'user', 'parts': [{'text': h['q']}]})
+        if h.get('a'): contents.append({'role': 'model', 'parts': [{'text': h['a']}]})
+    contents.append({'role': 'user', 'parts': [{'text': user_msg}]})
+
+    try:
+        r = requests.post(
+            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={api_key}',
+            headers={'Content-Type': 'application/json'},
+            json={
+                'system_instruction': {'parts': [{'text': SIRI_SYSTEM_PROMPT}]},
+                'contents': contents,
+                'generationConfig': {
+                    'temperature': 0.7,
+                    'maxOutputTokens': 200
+                }
+            },
+            timeout=20
+        )
+        if not r.ok:
+            return jsonify({'error': f'Gemini API error: {r.status_code}', 'detail': r.text[:200]}), 502
+        data = r.json()
+        reply = data['candidates'][0]['content']['parts'][0]['text'].strip()
+        return jsonify({'reply': reply, 'model': 'gemini-2.0-flash-lite'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/siri/status')
+def siri_status():
+    return jsonify({
+        'groq': bool(os.environ.get('GROQ_SECRET') or os.environ.get('GROQ_API_KEY')),
+        'gemini': bool(os.environ.get('GEMINI_SECRET') or os.environ.get('GEMINI_API_KEY'))
+    })
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

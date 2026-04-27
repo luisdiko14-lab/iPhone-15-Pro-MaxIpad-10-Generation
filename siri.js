@@ -10,10 +10,15 @@
   const micBtn = document.getElementById('micBtn');
   const suggestionsEl = document.getElementById('suggestions');
   const historyList = document.getElementById('historyList');
+  const modelSelector = document.getElementById('modelSelector');
 
   const HIST_KEY = 'siriHistory';
+  const MODEL_KEY = 'siriModel';
   let history = [];
   try { history = JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch (e) {}
+
+  let currentModel = localStorage.getItem(MODEL_KEY) || 'offline';
+  let availableModels = { groq: false, gemini: false };
 
   const SUGGESTIONS = [
     "What time is it?",
@@ -25,7 +30,10 @@
     "Flip a coin",
     "Set a timer for 5 minutes",
     "What day is it?",
-    "What can you do?"
+    "What can you do?",
+    "Explain black holes simply",
+    "Write a haiku about iPhones",
+    "What's the capital of Japan?"
   ];
 
   const JOKES = [
@@ -44,7 +52,7 @@
     "You will find what you've been looking for.",
     "The early bird catches the worm. Set an alarm.",
     "A smooth sea never made a skilled sailor.",
-    "Today is the day you make something new.",
+    "Today is the day you make something new."
   ];
 
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -137,20 +145,50 @@
     return `Opening ${what}…`;
   }
 
-  function answer(question) {
+  // ===== Local navigation/device intents (always run before AI) =====
+  function tryLocalIntent(question) {
+    const q = question.trim().toLowerCase();
+    if (!q) return null;
+
+    if (/\bopen|launch|start|go to\b/.test(q)) {
+      if (/calculator|math app/.test(q)) return navigate('calculator.html', 'Calculator');
+      if (/notes/.test(q)) return navigate('notes.html', 'Notes');
+      if (/camera/.test(q)) return navigate('camera.html', 'Camera');
+      if (/phone|dialer|call app/.test(q)) return navigate('call.html', 'Phone');
+      if (/settings|setting/.test(q)) return navigate('home.html', 'Settings');
+      if (/music/.test(q)) return navigate('music.html', 'Music');
+      if (/weather app/.test(q)) return navigate('weather.html', 'Weather');
+      if (/mail|email/.test(q)) return navigate('mail.html', 'Mail');
+      if (/home screen|home$/.test(q)) return navigate('homescreen.html', 'Home Screen');
+      if (/2048|game|play/.test(q)) return navigate('game.html', 'Games');
+      if (/app store|store/.test(q)) return navigate('app-store.html', 'App Store');
+    }
+
+    if (/(plug|start charging|turn on charger)/.test(q) && !/unplug|stop/.test(q)) {
+      if (window.iOSDevice) window.iOSDevice.setCharging(true);
+      return "Done. I've turned on charging.";
+    }
+    if (/unplug|stop charging|turn off charger/.test(q)) {
+      if (window.iOSDevice) window.iOSDevice.setCharging(false);
+      return "Charger unplugged.";
+    }
+
+    return null;
+  }
+
+  // ===== Offline pattern matcher =====
+  function offlineAnswer(question) {
     const q = question.trim().toLowerCase();
     if (!q) return "I didn't catch that. Try again.";
 
-    // Greetings
     if (/^(hi|hello|hey|yo|hola)\b/.test(q)) return "Hi! What can I help you with?";
     if (/how are you|how's it going/.test(q)) return "I'm doing great, thanks for asking. How can I help?";
     if (/thank|thanks/.test(q)) return "You're welcome!";
     if (/who are you|what are you/.test(q)) return "I'm Siri, your virtual assistant.";
     if (/what can you do|help me|capabilities/.test(q)) {
-      return "I can tell you the time, date, battery level, do math, tell jokes, flip coins, roll dice, give weather, and open apps like Calculator, Notes, Camera, Phone, and Settings. Just ask!";
+      return "I can tell you the time, date, battery level, do math, tell jokes, flip coins, roll dice, give weather, and open apps. Switch to Groq or Gemini above for full AI answers.";
     }
 
-    // Time / date
     if (/what.*time|current time|what time is it/.test(q)) {
       const d = new Date();
       const hr = d.getHours(); const mn = String(d.getMinutes()).padStart(2, '0');
@@ -163,7 +201,6 @@
       return "Today is " + d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + ".";
     }
 
-    // Battery
     if (/battery|charge|power/.test(q)) {
       const st = deviceState();
       const lvl = Math.round(st.battery);
@@ -172,7 +209,6 @@
       return `Your iPhone battery is at ${lvl}%.`;
     }
 
-    // Wifi / bluetooth status
     if (/wifi|wi-fi|wireless/.test(q)) {
       return deviceState().wifiOn ? "Wi-Fi is on." : "Wi-Fi is off.";
     }
@@ -180,97 +216,139 @@
       return deviceState().bluetoothOn ? "Bluetooth is on." : "Bluetooth is off.";
     }
 
-    // Weather (mock)
     if (/weather|forecast|rain|sunny|temperature/.test(q)) {
       const conditions = ['sunny', 'partly cloudy', 'cloudy', 'lightly raining', 'clear'];
       const temp = 60 + Math.floor(Math.random() * 25);
       return `Right now it's ${temp}°F and ${pick(conditions)} where you are.`;
     }
 
-    // Coin flip
-    if (/flip.*coin|coin.*flip/.test(q)) {
-      return Math.random() < 0.5 ? "Heads." : "Tails.";
-    }
-
-    // Dice
+    if (/flip.*coin|coin.*flip/.test(q)) return Math.random() < 0.5 ? "Heads." : "Tails.";
     if (/(roll|throw).*(dice|die)|dice|random number/.test(q)) {
       return "I rolled a " + (1 + Math.floor(Math.random() * 6)) + ".";
     }
-
-    // Joke
     if (/joke|funny|humor/.test(q)) return pick(JOKES);
-
-    // Fortune
     if (/fortune|future|predict|will i/.test(q)) return pick(FORTUNES);
 
-    // Open apps
-    if (/open|launch|start|go to/.test(q)) {
-      if (/calculator|math/.test(q)) return navigate('calculator.html', 'Calculator');
-      if (/notes/.test(q)) return navigate('notes.html', 'Notes');
-      if (/camera/.test(q)) return navigate('camera.html', 'Camera');
-      if (/phone|dialer|call/.test(q)) return navigate('call.html', 'Phone');
-      if (/settings|setting/.test(q)) return navigate('home.html', 'Settings');
-      if (/music/.test(q)) return navigate('music.html', 'Music');
-      if (/weather/.test(q)) return navigate('weather.html', 'Weather');
-      if (/mail|email/.test(q)) return navigate('mail.html', 'Mail');
-      if (/home|home screen/.test(q)) return navigate('homescreen.html', 'Home Screen');
-      if (/game|2048|play/.test(q)) return navigate('game.html', 'Games');
-      if (/app store|store/.test(q)) return navigate('app-store.html', 'App Store');
-    }
-
-    // Math
     const m = evaluateMath(q);
     if (m !== null) return `That's ${m}.`;
 
-    // Set timer (mock)
     const tm = q.match(/(\d+)\s*(minute|min|sec|second|hour)/);
     if (/timer|alarm/.test(q) && tm) {
       return `Okay, I would set a ${tm[1]} ${tm[2]}${parseInt(tm[1])>1?'s':''} timer (demo).`;
     }
 
-    // Reminders / notes (mock)
     if (/remind|note|remember/.test(q)) {
       return navigate('notes.html', 'Notes to write that down');
     }
 
-    // Charger control
-    if (/(plug|charge).*(charger|in)|start charging/.test(q)) {
-      if (window.iOSDevice) window.iOSDevice.setCharging(true);
-      return "Done. I've turned on charging.";
-    }
-    if (/unplug|stop charging/.test(q)) {
-      if (window.iOSDevice) window.iOSDevice.setCharging(false);
-      return "Charger unplugged.";
-    }
-
-    // Fallbacks
-    const fallbacks = [
-      "I'm not sure I understood that. Try asking about the time, weather, battery, or to open an app.",
-      "Hmm, I don't have an answer for that yet. Try a different question.",
-      "I didn't quite get that. Tap a suggestion below to see what I can do."
-    ];
-    return pick(fallbacks);
+    return pick([
+      "I'm not sure I understood that. Try Groq or Gemini above for smarter answers.",
+      "Hmm, I don't have an answer for that in offline mode. Switch to Groq or Gemini for AI replies.",
+      "I didn't quite get that. Tap a suggestion below or switch to an AI model."
+    ]);
   }
 
-  function ask() {
+  // ===== AI proxy call =====
+  async function callAI(model, question) {
+    const res = await fetch(`/api/siri/${model}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        history: history.slice(0, 6).reverse()
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.reply) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    return data.reply;
+  }
+
+  async function answer(question) {
+    const local = tryLocalIntent(question);
+    if (local !== null) return local;
+
+    if (currentModel === 'offline') {
+      return offlineAnswer(question);
+    }
+
+    try {
+      return await callAI(currentModel, question);
+    } catch (err) {
+      console.warn('AI call failed, falling back to offline:', err);
+      const fallback = offlineAnswer(question);
+      return fallback + ` (${currentModel} unavailable)`;
+    }
+  }
+
+  async function ask() {
     const question = input.value.trim();
     if (!question) return;
     transcript.textContent = '"' + question + '"';
     transcript.classList.add('active');
-    setStatus('Thinking…', 'thinking');
+    setStatus(currentModel === 'offline' ? 'Thinking…' : `Asking ${currentModel}…`, 'thinking');
     setOrbState('thinking');
-    setTimeout(() => {
-      const a = answer(question);
+    input.value = '';
+
+    try {
+      const a = await answer(question);
       replyEl.textContent = a;
       replyEl.classList.add('active');
       setStatus('', 'idle');
       pushHistory(question, a);
       speak(a);
-      input.value = '';
-    }, 500);
+    } catch (err) {
+      replyEl.textContent = "Sorry, something went wrong.";
+      setStatus('Error. Try again.', 'idle');
+      setOrbState('idle');
+    }
   }
 
-  // Voice input via Web Speech API
+  // ===== Model selector =====
+  function setModel(model) {
+    if (model !== 'offline' && !availableModels[model]) {
+      setStatus(`${model} key not configured on the server.`, 'idle');
+      return;
+    }
+    currentModel = model;
+    try { localStorage.setItem(MODEL_KEY, model); } catch (e) {}
+    modelSelector.querySelectorAll('.model-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.model === model);
+    });
+    const labels = { offline: 'Offline mode — fast pattern matching', groq: 'Groq (Llama 3.1) — fast AI', gemini: 'Gemini 2.0 Flash — smart AI' };
+    setStatus(labels[model] || '', 'idle');
+  }
+
+  async function loadModelStatus() {
+    try {
+      const r = await fetch('/api/siri/status');
+      const data = await r.json();
+      availableModels = { groq: !!data.groq, gemini: !!data.gemini };
+    } catch (e) {
+      availableModels = { groq: false, gemini: false };
+    }
+    modelSelector.querySelectorAll('.model-btn').forEach(b => {
+      const m = b.dataset.model;
+      if (m === 'offline') return;
+      if (!availableModels[m]) {
+        b.classList.add('disabled');
+        b.title = `${m} API key not configured on server`;
+      } else {
+        b.classList.remove('disabled');
+      }
+    });
+    if (currentModel !== 'offline' && !availableModels[currentModel]) {
+      currentModel = 'offline';
+    }
+    setModel(currentModel);
+  }
+
+  modelSelector.querySelectorAll('.model-btn').forEach(b => {
+    b.addEventListener('click', () => setModel(b.dataset.model));
+  });
+
+  // Voice input
   let recognition = null;
   let listening = false;
   function setupRecognition() {
@@ -326,7 +404,6 @@
     }
   }
 
-  // Wire up
   askBtn.addEventListener('click', ask);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
   micBtn.addEventListener('click', toggleMic);
@@ -335,9 +412,8 @@
   setupRecognition();
   renderSuggestions();
   renderHistory();
-  setStatus("Hi, I'm Siri. What can I help you with?", 'idle');
+  loadModelStatus();
 
-  // Voices may load async
   if ('speechSynthesis' in window) {
     window.speechSynthesis.onvoiceschanged = () => {};
   }
