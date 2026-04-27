@@ -95,10 +95,16 @@ Preferred communication style: Simple, everyday language.
 
 ### Discord OAuth2 Flow
 - **Server-side routes** (`server.py`) for handling login, callback, user data retrieval, status checks, and logout.
-- **Secrets**: `DISCORD_CLIENT_SECRET` is read from environment variables.
+- **Scopes**: `identify guilds email connections`. (`guilds.member.read` was removed — Discord rejects it without a `guild_id` parameter and was causing "Scope 4 is invalid" errors.)
+- **CSRF state**: 126-character URL-safe token, validated with constant-time comparison on `/api/callback`.
+- **Secrets**: `DISCORD_CLIENT_SECRET` is read from environment variables (no hard-coded fallback).
 - **Cookies**: Configured with `SESSION_COOKIE_SAMESITE=Lax`, `SESSION_COOKIE_SECURE=True`, `SESSION_COOKIE_HTTPONLY=True`.
 - **Redirect URI**: Dynamically resolved to match the Replit development URL.
-- **Frontend** (`discord_login.html`, `discord_2.html`): Manages login button state, QR code generation, and token handling.
+- **Bot chat**: `POST /api/discord/bot` → Groq `llama-3.1-8b-instant` powers "Pixel", the Discord clone's chat bot. Falls back to a friendly stub message if `GROQ_SECRET` isn't set or the API errors.
+- **Frontend** (`discord_login.html`, `discord_2.html`): Manages login button state, QR code generation, and session-cookie token handling. The profile page shows banner/accent color, avatar, verified badge, locale, account-creation date (decoded from Discord snowflake), tap-to-copy user ID, sorted server list with real guild icons, connections with verified badges, and the Groq-powered bot chat with typing indicator.
+
+### Homescreen Apps
+The homescreen launcher (`homescreen.html` / `homescreen.js`) wires up icons via `setupAppClick(elementId, url, name, emoji)`. Discord lives at `#discord-app` (Discord-purple icon with the official logo SVG) and routes to `discord_2.html`.
 
 ### Fonts and Assets
 - **System Font Stack**: Uses Apple system fonts.

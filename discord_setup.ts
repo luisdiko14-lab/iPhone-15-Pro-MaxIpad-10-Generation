@@ -26,7 +26,9 @@ export const discordConfig = {
     },
 
     // Scopes the app requests. Mirror these in server.py if you change them.
-    scopes: ['identify', 'guilds', 'email', 'connections', 'guilds.member.read'],
+    // Note: 'guilds.member.read' was removed because it requires a guild_id
+    // parameter and Discord rejects it on plain login flows.
+    scopes: ['identify', 'guilds', 'email', 'connections'],
 
     // OAuth state token length (CSRF protection). Matches server.py.
     stateLength: 126,

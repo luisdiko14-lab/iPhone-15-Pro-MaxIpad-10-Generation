@@ -21,7 +21,7 @@ CORS(app, supports_credentials=True)
 # Client Secret MUST come from environment — never hard-code it.
 DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '1454564220413808731')
 DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')  # no default!
-DISCORD_SCOPES = 'identify guilds email connections guilds.member.read'
+DISCORD_SCOPES = 'identify guilds email connections'
 
 # Length of the OAuth `state` token (CSRF protection). 126 characters of
 # URL-safe base64 ≈ 94 random bytes ≈ 752 bits of entropy.
@@ -309,6 +309,46 @@ def siri_gemini():
         return jsonify({'reply': reply, 'model': 'gemini-2.0-flash-lite'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+DISCORD_BOT_PROMPT = (
+    "You are 'Pixel', a friendly Discord bot in a casual chat. "
+    "Reply in 1-3 short sentences. Use casual tone, occasional emoji, no markdown headers. "
+    "Stay in character as a chill bot. If asked who you are, say you're Pixel, a Discord bot."
+)
+
+@app.route('/api/discord/bot', methods=['POST'])
+def discord_bot():
+    """Groq-powered chat for the Discord clone bot. Falls back gracefully if no key."""
+    api_key = os.environ.get('GROQ_SECRET') or os.environ.get('GROQ_API_KEY')
+    if not api_key:
+        return jsonify({'reply': "Hey! I'm offline right now (no Groq key). But I read your message: that's neat!", 'model': 'fallback'})
+
+    body = request.get_json(silent=True) or {}
+    user_msg = (body.get('message') or '').strip()
+    if not user_msg:
+        return jsonify({'error': 'Missing message'}), 400
+
+    recent = body.get('history') or []
+    messages = [{'role': 'system', 'content': DISCORD_BOT_PROMPT}]
+    for h in recent[-6:]:
+        if h.get('user'): messages.append({'role': 'user', 'content': h['user']})
+        if h.get('bot'):  messages.append({'role': 'assistant', 'content': h['bot']})
+    messages.append({'role': 'user', 'content': user_msg})
+
+    try:
+        r = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+            json={'model': 'llama-3.1-8b-instant', 'messages': messages,
+                  'temperature': 0.8, 'max_tokens': 150},
+            timeout=15
+        )
+        if not r.ok:
+            return jsonify({'reply': f"(Bot hiccup: {r.status_code}) Anyway — that's interesting!", 'model': 'fallback'})
+        reply = r.json()['choices'][0]['message']['content'].strip()
+        return jsonify({'reply': reply, 'model': 'groq:llama-3.1-8b-instant'})
+    except Exception as e:
+        return jsonify({'reply': "(Network blip!) Tell me more though.", 'model': 'fallback', 'detail': str(e)})
 
 @app.route('/api/siri/status')
 def siri_status():

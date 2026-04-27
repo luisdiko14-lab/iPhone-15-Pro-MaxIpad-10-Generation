@@ -139,6 +139,7 @@ class HomeScreen {
     this.setupAppClick('facetime-app', `call.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'FaceTime', '📹');
     this.setupAppClick('game-app', `game.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Games', '🎮');
     this.setupAppClick('siri-app', `siri.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Siri', '🎙️');
+    this.setupAppClick('discord-app', `discord_2.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Discord', '💬');
 
     // Apps still showing "coming soon"
     const comingSoonApps = ['photos-app', 'safari-app', 'clock-app', 'maps-app', 'health-app', 'find-my-app'];
