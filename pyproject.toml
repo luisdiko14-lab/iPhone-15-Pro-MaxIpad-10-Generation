@@ -9,4 +9,5 @@ dependencies = [
     "requests>=2.33.0",
     "ddgs>=9.14.1",
     "pypdf>=6.10.2",
+    "discord.py",
 ]
