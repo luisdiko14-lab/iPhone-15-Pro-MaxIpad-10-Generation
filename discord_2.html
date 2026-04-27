@@ -327,6 +327,13 @@
         </div>
 
         <div class="content">
+            <div class="section" id="openid-section" style="display:none;">
+                <div class="section-title">
+                    <span>OpenID Identity</span>
+                    <span class="count-pill" id="openid-iss">—</span>
+                </div>
+                <div id="openid-list"></div>
+            </div>
             <div class="section">
                 <div class="section-title">
                     <span>Connections</span>
@@ -413,6 +420,79 @@
         // Convert int color (e.g. 0x5865F2) → CSS hex
         function intToHex(n) {
             return '#' + n.toString(16).padStart(6, '0');
+        }
+
+        // ===== Render OpenID Connect claims =====
+        // When the `openid` scope is requested, Discord returns an id_token
+        // (JWT). The server decodes it and forwards the claims here.
+        // Discord's id_token typically contains: iss, sub, aud, exp, iat,
+        // email, email_verified, preferred_username, picture, locale.
+        // (No standard "description"/"bio" field — Discord doesn't expose
+        // user bios via OAuth, so we display whatever Discord actually sends.)
+        function renderOpenId(claims) {
+            if (!claims || typeof claims !== 'object') return;
+            const section = document.getElementById('openid-section');
+            const list = document.getElementById('openid-list');
+            const issEl = document.getElementById('openid-iss');
+
+            // Friendly issuer label
+            const iss = claims.iss || claims.issuer || '';
+            issEl.textContent = iss
+                ? iss.replace(/^https?:\/\//, '').split('/')[0]
+                : 'verified';
+
+            // Friendly labels for known claims; everything else falls through.
+            const labels = {
+                preferred_username: 'Username',
+                email: 'Email',
+                email_verified: 'Email verified',
+                picture: 'Picture',
+                locale: 'Locale',
+                sub: 'Subject (User ID)',
+                description: 'Description',
+                bio: 'Bio',
+                profile: 'Profile',
+                website: 'Website',
+                given_name: 'Given name',
+                family_name: 'Family name',
+                name: 'Name',
+                updated_at: 'Last updated',
+            };
+            // Skip purely-mechanical JWT plumbing
+            const skip = new Set(['iss', 'aud', 'exp', 'iat', 'nbf', 'jti', 'azp']);
+
+            const rows = [];
+            for (const [k, v] of Object.entries(claims)) {
+                if (skip.has(k)) continue;
+                const label = labels[k] || k;
+                let display;
+                if (typeof v === 'boolean') {
+                    display = v ? '✓ Yes' : '✗ No';
+                } else if (k === 'picture' && typeof v === 'string') {
+                    display = `<a href="${escapeHtml(v)}" target="_blank" style="color: var(--discord-blue); word-break: break-all;">${escapeHtml(v)}</a>`;
+                } else if (k === 'updated_at' && (typeof v === 'number' || typeof v === 'string')) {
+                    const d = new Date(typeof v === 'number' ? v * 1000 : v);
+                    display = isNaN(d) ? escapeHtml(String(v)) : d.toLocaleString();
+                } else if (typeof v === 'object') {
+                    display = `<code style="font-size: 11px;">${escapeHtml(JSON.stringify(v))}</code>`;
+                } else {
+                    display = escapeHtml(String(v));
+                }
+                rows.push(`
+                    <div class="item" style="align-items: flex-start;">
+                        <div style="flex: 0 0 110px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; padding-top: 2px;">
+                            ${escapeHtml(label)}
+                        </div>
+                        <div class="grow" style="white-space: normal; word-break: break-word; font-size: 13px;">${display}</div>
+                    </div>
+                `);
+            }
+            if (!rows.length) {
+                list.innerHTML = '<div class="empty">No claims returned</div>';
+            } else {
+                list.innerHTML = rows.join('');
+            }
+            section.style.display = 'block';
         }
 
         // ===== Load profile =====
@@ -507,7 +587,7 @@
                     connEl.innerHTML = '<div class="empty">No connected accounts</div>';
                 }
 
-                // ---- Guilds (sorted) ----
+                // ---- Guilds (sorted, with per-guild member info) ----
                 const guilds = Array.isArray(data.guilds) ? [...data.guilds] : [];
                 guilds.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                 document.getElementById('guild-count').textContent = guilds.length;
@@ -518,10 +598,28 @@
                         const iconStyle = g.icon
                             ? `background-image: url(https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64);`
                             : '';
+                        const m = g.member || null;
+                        const nick = m && m.nick ? m.nick : null;
+                        const roleCount = m && Array.isArray(m.roles) ? m.roles.length : 0;
+                        const joined = m && m.joined_at ? new Date(m.joined_at) : null;
+                        const joinedStr = joined && !isNaN(joined)
+                            ? joined.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                            : null;
+                        const subBits = [];
+                        if (nick) subBits.push(`as <strong>${escapeHtml(nick)}</strong>`);
+                        if (roleCount) subBits.push(`${roleCount} role${roleCount === 1 ? '' : 's'}`);
+                        if (joinedStr) subBits.push(`joined ${joinedStr}`);
+                        if (m && m.premium_since) subBits.push('💎 boosting');
+                        const subline = subBits.length
+                            ? `<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${subBits.join(' · ')}</div>`
+                            : '';
                         return `
-                            <div class="item">
+                            <div class="item" style="align-items: flex-start;">
                                 <div class="guild-icon" style="${iconStyle}">${g.icon ? '' : escapeHtml(initials)}</div>
-                                <div class="grow">${escapeHtml(g.name || 'Unnamed server')}</div>
+                                <div class="grow" style="white-space: normal;">
+                                    <div>${escapeHtml(g.name || 'Unnamed server')}</div>
+                                    ${subline}
+                                </div>
                                 ${g.owner ? '<span class="tag" style="background: rgba(240,178,50,0.18); color: var(--yellow);">owner</span>' : ''}
                             </div>
                         `;
@@ -529,6 +627,9 @@
                 } else {
                     guildEl.innerHTML = '<div class="empty">Not in any servers</div>';
                 }
+
+                // ---- OpenID claims (when openid scope present) ----
+                renderOpenId(data.openid);
 
             } catch (error) {
                 console.error('Error fetching Discord data:', error);

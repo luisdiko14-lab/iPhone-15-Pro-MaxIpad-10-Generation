@@ -3,6 +3,9 @@ import requests
 import os
 import secrets
 import urllib.parse
+import base64
+import json
+from concurrent.futures import ThreadPoolExecutor
 from flask_cors import CORS
 
 app = Flask(__name__, static_url_path='', static_folder='.')
@@ -21,7 +24,25 @@ CORS(app, supports_credentials=True)
 # Client Secret MUST come from environment — never hard-code it.
 DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '1454564220413808731')
 DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET')  # no default!
-DISCORD_SCOPES = 'identify guilds email connections'
+DISCORD_SCOPES = 'identify guilds email connections openid guilds.members.read'
+
+# Per-guild member fetches use this many parallel HTTP calls and cap to keep
+# OAuth login snappy even when the user is in many servers.
+GUILD_MEMBER_CONCURRENCY = 8
+GUILD_MEMBER_CAP = 50
+
+def decode_jwt_payload(token):
+    """Decode a JWT's payload (no signature verification — Discord serves
+    these tokens to us directly over HTTPS, so we trust them for display)."""
+    try:
+        parts = token.split('.')
+        if len(parts) < 2:
+            return None
+        payload = parts[1]
+        payload += '=' * (-len(payload) % 4)
+        return json.loads(base64.urlsafe_b64decode(payload))
+    except Exception:
+        return None
 
 # Length of the OAuth `state` token (CSRF protection). 126 characters of
 # URL-safe base64 ≈ 94 random bytes ≈ 752 bits of entropy.
@@ -168,6 +189,17 @@ def callback():
     session['discord_refresh_token'] = tokens.get('refresh_token')
     session['discord_token_type'] = tokens.get('token_type', 'Bearer')
 
+    # OpenID Connect: when the `openid` scope is requested, Discord returns
+    # an id_token (JWT) alongside the access token. Decode and stash the
+    # claims so the profile page can surface extra info (preferred_username,
+    # picture, locale, etc).
+    id_token = tokens.get('id_token')
+    if id_token:
+        claims = decode_jwt_payload(id_token) or {}
+        session['discord_id_claims'] = claims
+    else:
+        session.pop('discord_id_claims', None)
+
     return redirect('/discord_2.html')
 
 @app.route('/api/logout', methods=['POST', 'GET'])
@@ -175,11 +207,36 @@ def logout():
     session.pop('discord_access_token', None)
     session.pop('discord_refresh_token', None)
     session.pop('discord_token_type', None)
+    session.pop('discord_id_claims', None)
     return jsonify({'ok': True})
+
+def _fetch_guild_member(guild_id, headers):
+    """Hit /users/@me/guilds/{id}/member to get nickname + role IDs.
+    Requires the `guilds.members.read` scope. Returns None on failure so
+    one bad guild doesn't break the rest of the response."""
+    try:
+        r = requests.get(
+            f'https://discord.com/api/v10/users/@me/guilds/{guild_id}/member',
+            headers=headers, timeout=10
+        )
+        if r.ok:
+            data = r.json()
+            return {
+                'nick': data.get('nick'),
+                'roles': data.get('roles', []),
+                'joined_at': data.get('joined_at'),
+                'premium_since': data.get('premium_since'),
+                'pending': data.get('pending', False),
+                'communication_disabled_until': data.get('communication_disabled_until'),
+            }
+    except requests.RequestException:
+        pass
+    return None
 
 @app.route('/api/me')
 def get_me():
-    """Returns the logged-in user's profile, guilds, and connections.
+    """Returns the logged-in user's profile, guilds (with per-guild member
+    info), connections, and OpenID Connect claims.
     Reads the access token from the session — token is never exposed to the browser."""
     access_token = session.get('discord_access_token')
     if not access_token:
@@ -189,15 +246,34 @@ def get_me():
     try:
         user_r = requests.get('https://discord.com/api/v10/users/@me', headers=headers, timeout=15)
         if user_r.status_code == 401:
+            # Token rejected — likely the user's old token doesn't have the
+            # newly-added scopes. Force a fresh login.
             session.pop('discord_access_token', None)
+            session.pop('discord_id_claims', None)
             return jsonify({'error': 'token_expired'}), 401
         guilds_r = requests.get('https://discord.com/api/v10/users/@me/guilds', headers=headers, timeout=15)
         connections_r = requests.get('https://discord.com/api/v10/users/@me/connections', headers=headers, timeout=15)
 
+        guilds = guilds_r.json() if guilds_r.ok else []
+        if not isinstance(guilds, list):
+            guilds = []
+
+        # Parallel fan-out: fetch nickname + roles for each guild (capped).
+        targets = guilds[:GUILD_MEMBER_CAP]
+        if targets:
+            with ThreadPoolExecutor(max_workers=GUILD_MEMBER_CONCURRENCY) as pool:
+                members = list(pool.map(lambda g: _fetch_guild_member(g.get('id'), headers), targets))
+            for g, m in zip(targets, members):
+                if m is not None:
+                    g['member'] = m
+
         return jsonify({
             'user': user_r.json() if user_r.ok else None,
-            'guilds': guilds_r.json() if guilds_r.ok else [],
+            'guilds': guilds,
             'connections': connections_r.json() if connections_r.ok else [],
+            'openid': session.get('discord_id_claims') or None,
+            'scopes': DISCORD_SCOPES.split(),
+            'guild_member_cap': GUILD_MEMBER_CAP,
         })
     except requests.RequestException as e:
         return jsonify({'error': 'network_error', 'detail': str(e)}), 502

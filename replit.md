@@ -95,13 +95,16 @@ Preferred communication style: Simple, everyday language.
 
 ### Discord OAuth2 Flow
 - **Server-side routes** (`server.py`) for handling login, callback, user data retrieval, status checks, and logout.
-- **Scopes**: `identify guilds email connections`. (`guilds.member.read` was removed — Discord rejects it without a `guild_id` parameter and was causing "Scope 4 is invalid" errors.)
+- **Scopes**: `identify guilds email connections openid guilds.members.read`. The earlier "Scope 4 is invalid" error came from a misspelled `guilds.member.read` (singular) — the correct Discord scope is `guilds.members.read` (plural).
+  - `openid` — returns an `id_token` JWT in the token response. The server decodes the JWT payload (no signature verification — it's read directly off the HTTPS response from Discord) and stashes the OIDC claims (`preferred_username`, `picture`, `email`, `locale`, `sub`, `email_verified`, …) in the session under `discord_id_claims`.
+  - `guilds.members.read` — lets the server call `/users/@me/guilds/{guild_id}/member` per server to fetch the user's nickname, role IDs, join date, and Nitro-boost status.
 - **CSRF state**: 126-character URL-safe token, validated with constant-time comparison on `/api/callback`.
 - **Secrets**: `DISCORD_CLIENT_SECRET` is read from environment variables (no hard-coded fallback).
 - **Cookies**: Configured with `SESSION_COOKIE_SAMESITE=Lax`, `SESSION_COOKIE_SECURE=True`, `SESSION_COOKIE_HTTPONLY=True`.
 - **Redirect URI**: Dynamically resolved to match the Replit development URL.
 - **Bot chat**: `POST /api/discord/bot` → Groq `llama-3.1-8b-instant` powers "Pixel", the Discord clone's chat bot. Falls back to a friendly stub message if `GROQ_SECRET` isn't set or the API errors.
-- **Frontend** (`discord_login.html`, `discord_2.html`): Manages login button state, QR code generation, and session-cookie token handling. The profile page shows banner/accent color, avatar, verified badge, locale, account-creation date (decoded from Discord snowflake), tap-to-copy user ID, sorted server list with real guild icons, connections with verified badges, and the Groq-powered bot chat with typing indicator.
+- **Per-guild member data**: `/api/me` fans out (8-way parallel `ThreadPoolExecutor`, capped at 50 guilds) to fetch each guild's member info; the response embeds a `member: {nick, roles, joined_at, premium_since, pending}` object on each guild.
+- **Frontend** (`discord_login.html`, `discord_2.html`): Manages login button state, QR code generation, and session-cookie token handling. The profile page shows banner/accent color, avatar, verified badge, locale, account-creation date (decoded from Discord snowflake), tap-to-copy user ID, sorted server list with real guild icons + per-server nickname/role count/join date/boost status, connections with verified badges, an "OpenID Identity" section listing every OIDC claim Discord returns, and the Groq-powered bot chat with typing indicator.
 
 ### Homescreen Apps
 The homescreen launcher (`homescreen.html` / `homescreen.js`) wires up icons via `setupAppClick(elementId, url, name, emoji)`. Discord lives at `#discord-app` (Discord-purple icon with the official logo SVG) and routes to `discord_2.html`.

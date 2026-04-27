@@ -26,9 +26,13 @@ export const discordConfig = {
     },
 
     // Scopes the app requests. Mirror these in server.py if you change them.
-    // Note: 'guilds.member.read' was removed because it requires a guild_id
-    // parameter and Discord rejects it on plain login flows.
-    scopes: ['identify', 'guilds', 'email', 'connections'],
+    // - 'openid' returns an id_token (JWT) with OIDC claims.
+    // - 'guilds.members.read' lets us call /users/@me/guilds/{id}/member
+    //   per server to fetch the user's nickname + role IDs.
+    // (Note: the scope is `guilds.members.read` — plural members — the
+    // singular `guilds.member.read` is invalid and will trigger a
+    // "Scope is invalid" error from Discord.)
+    scopes: ['identify', 'guilds', 'email', 'connections', 'openid', 'guilds.members.read'],
 
     // OAuth state token length (CSRF protection). Matches server.py.
     stateLength: 126,
