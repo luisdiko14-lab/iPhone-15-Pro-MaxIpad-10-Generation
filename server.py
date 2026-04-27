@@ -388,43 +388,244 @@ def siri_gemini():
 
 DISCORD_BOT_PROMPT = (
     "You are 'Pixel', a friendly Discord bot in a casual chat. "
-    "Reply in 1-3 short sentences. Use casual tone, occasional emoji, no markdown headers. "
-    "Stay in character as a chill bot. If asked who you are, say you're Pixel, a Discord bot."
+    "Reply in 1-4 short paragraphs (or fewer). Use casual tone, occasional emoji, no markdown headers. "
+    "Stay in character as a chill bot. If asked who you are, say you're Pixel, a Discord bot. "
+    "When the user provides 'WEB SEARCH RESULTS' or attached files in their message, use them as authoritative context "
+    "and cite sources inline like [1], [2] referring to the result number. If the search results don't answer the question, say so."
 )
+
+# Groq model picks. Vision model is used when the user attaches images.
+GROQ_TEXT_MODEL = 'llama-3.1-8b-instant'
+GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+
+# Limits to keep requests sane
+MAX_ATTACHMENTS = 5
+MAX_TEXT_ATTACHMENT_CHARS = 50_000
+MAX_IMAGE_DATA_URL_BYTES = 5 * 1024 * 1024  # 5 MB
+MAX_PDF_BYTES = 8 * 1024 * 1024              # 8 MB
+MAX_PDF_TEXT_CHARS = 80_000
+MAX_SEARCH_RESULTS = 5
+
+
+def _ddg_search(query, max_results=MAX_SEARCH_RESULTS):
+    """Run a DuckDuckGo text search. Returns a list of {title, url, snippet}.
+    Empty list on failure — never raises."""
+    try:
+        from ddgs import DDGS  # ddgs (renamed from duckduckgo-search)
+        out = []
+        for r in DDGS().text(query, max_results=max_results):
+            out.append({
+                'title': (r.get('title') or '').strip()[:200],
+                'url':   (r.get('href')  or r.get('url') or '').strip()[:500],
+                'snippet': (r.get('body') or '').strip()[:400],
+            })
+        return out
+    except Exception as e:
+        app.logger.warning('DDG search failed: %s', e)
+        return []
+
+
+def _format_search_for_llm(results):
+    """Render search results as a numbered context block the LLM can cite from."""
+    if not results:
+        return ''
+    lines = ['WEB SEARCH RESULTS (use these as authoritative context):']
+    for i, r in enumerate(results, 1):
+        lines.append(f"[{i}] {r['title']}\n    {r['url']}\n    {r['snippet']}")
+    return '\n'.join(lines)
+
+
+@app.route('/api/discord/search', methods=['GET', 'POST'])
+def discord_search():
+    """Standalone web search endpoint. Lets the front-end show raw results
+    (so a user typing /search shows a list of links)."""
+    if request.method == 'POST':
+        body = request.get_json(silent=True) or {}
+        query = (body.get('query') or body.get('q') or '').strip()
+    else:
+        query = (request.args.get('q') or '').strip()
+    if not query:
+        return jsonify({'error': 'Missing query'}), 400
+    results = _ddg_search(query, max_results=MAX_SEARCH_RESULTS)
+    return jsonify({'query': query, 'results': results, 'count': len(results)})
+
+
+@app.route('/api/discord/extract-pdf', methods=['POST'])
+def discord_extract_pdf():
+    """Accepts a PDF upload and returns extracted plain text.
+    Used so the chat can attach PDFs (browsers can't natively read them)."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    f = request.files['file']
+    raw = f.read(MAX_PDF_BYTES + 1)
+    if len(raw) > MAX_PDF_BYTES:
+        return jsonify({'error': f'PDF too large (max {MAX_PDF_BYTES // 1024 // 1024} MB)'}), 413
+    try:
+        from pypdf import PdfReader
+        from io import BytesIO
+        reader = PdfReader(BytesIO(raw))
+        pages = []
+        for page in reader.pages:
+            try:
+                pages.append(page.extract_text() or '')
+            except Exception:
+                pages.append('')
+        text = '\n\n'.join(pages).strip()
+        truncated = False
+        if len(text) > MAX_PDF_TEXT_CHARS:
+            text = text[:MAX_PDF_TEXT_CHARS]
+            truncated = True
+        return jsonify({
+            'name': f.filename or 'document.pdf',
+            'pages': len(reader.pages),
+            'chars': len(text),
+            'truncated': truncated,
+            'text': text,
+        })
+    except Exception as e:
+        return jsonify({'error': 'pdf_parse_failed', 'detail': str(e)}), 400
+
 
 @app.route('/api/discord/bot', methods=['POST'])
 def discord_bot():
-    """Groq-powered chat for the Discord clone bot. Falls back gracefully if no key."""
-    api_key = os.environ.get('GROQ_SECRET') or os.environ.get('GROQ_API_KEY')
-    if not api_key:
-        return jsonify({'reply': "Hey! I'm offline right now (no Groq key). But I read your message: that's neat!", 'model': 'fallback'})
+    """Groq-powered chat with optional web search + multimodal attachments.
 
+    Body shape:
+      {
+        message: str,
+        history: [{user, bot}],         # last few turns
+        web_search: bool,                # opt-in DDG search
+        attachments: [                   # processed client-side
+          {kind: 'image', name, mime, data_url},
+          {kind: 'text',  name, mime, text},     # also used for PDF text
+        ]
+      }
+    """
+    api_key = os.environ.get('GROQ_SECRET') or os.environ.get('GROQ_API_KEY')
     body = request.get_json(silent=True) or {}
     user_msg = (body.get('message') or '').strip()
-    if not user_msg:
-        return jsonify({'error': 'Missing message'}), 400
+    history = body.get('history') or []
+    web_search_on = bool(body.get('web_search'))
+    attachments = (body.get('attachments') or [])[:MAX_ATTACHMENTS]
 
-    recent = body.get('history') or []
+    if not user_msg and not attachments:
+        return jsonify({'error': 'Need a message or at least one attachment'}), 400
+
+    # ---- Build the textual context (search + text/PDF attachments) ----
+    context_blocks = []
+
+    search_results = []
+    if web_search_on and user_msg:
+        search_results = _ddg_search(user_msg)
+        block = _format_search_for_llm(search_results)
+        if block:
+            context_blocks.append(block)
+
+    text_attachments = [a for a in attachments if a.get('kind') == 'text']
+    image_attachments = [a for a in attachments if a.get('kind') == 'image']
+
+    for a in text_attachments:
+        text = (a.get('text') or '')[:MAX_TEXT_ATTACHMENT_CHARS]
+        if text:
+            context_blocks.append(
+                f"ATTACHED FILE: {a.get('name', 'file.txt')}\n```\n{text}\n```"
+            )
+
+    composed_msg = user_msg or 'Please describe / analyze the attached content.'
+    if context_blocks:
+        composed_msg = '\n\n'.join(context_blocks) + '\n\n---\nUSER QUESTION: ' + composed_msg
+
+    # ---- Graceful fallback if Groq isn't configured ----
+    if not api_key:
+        snippet_msg = 'Groq is not configured, so I can only echo. '
+        if search_results:
+            snippet_msg += f"I found {len(search_results)} search result(s); top: {search_results[0]['title']} ({search_results[0]['url']})"
+        return jsonify({
+            'reply': snippet_msg, 'model': 'fallback',
+            'search_results': search_results,
+        })
+
+    # ---- Build messages for Groq ----
     messages = [{'role': 'system', 'content': DISCORD_BOT_PROMPT}]
-    for h in recent[-6:]:
+    for h in history[-6:]:
         if h.get('user'): messages.append({'role': 'user', 'content': h['user']})
         if h.get('bot'):  messages.append({'role': 'assistant', 'content': h['bot']})
-    messages.append({'role': 'user', 'content': user_msg})
+
+    if image_attachments:
+        # Multimodal vision request
+        parts = [{'type': 'text', 'text': composed_msg}]
+        for img in image_attachments:
+            data_url = img.get('data_url', '')
+            if not data_url.startswith('data:image'):
+                continue
+            if len(data_url) > MAX_IMAGE_DATA_URL_BYTES:
+                continue
+            parts.append({'type': 'image_url', 'image_url': {'url': data_url}})
+        messages.append({'role': 'user', 'content': parts})
+        model = GROQ_VISION_MODEL
+        max_tokens = 500
+    else:
+        messages.append({'role': 'user', 'content': composed_msg})
+        model = GROQ_TEXT_MODEL
+        max_tokens = 400 if context_blocks else 200
 
     try:
         r = requests.post(
             'https://api.groq.com/openai/v1/chat/completions',
             headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
-            json={'model': 'llama-3.1-8b-instant', 'messages': messages,
-                  'temperature': 0.8, 'max_tokens': 150},
-            timeout=15
+            json={'model': model, 'messages': messages,
+                  'temperature': 0.7, 'max_tokens': max_tokens},
+            timeout=30
         )
         if not r.ok:
-            return jsonify({'reply': f"(Bot hiccup: {r.status_code}) Anyway — that's interesting!", 'model': 'fallback'})
+            # If vision model rejected (e.g. deprecated), fall back to text-only.
+            if image_attachments and r.status_code in (400, 404):
+                return _retry_text_only(api_key, messages[:-1] + [{'role': 'user', 'content': composed_msg + '\n(Note: image attachments could not be processed.)'}], search_results)
+            return jsonify({
+                'reply': f"(Groq returned {r.status_code} — try again?)",
+                'model': 'fallback',
+                'search_results': search_results,
+                'detail': r.text[:200],
+            })
         reply = r.json()['choices'][0]['message']['content'].strip()
-        return jsonify({'reply': reply, 'model': 'groq:llama-3.1-8b-instant'})
+        return jsonify({
+            'reply': reply,
+            'model': f'groq:{model}',
+            'search_results': search_results,
+            'used_web_search': bool(search_results),
+            'used_vision': bool(image_attachments),
+        })
     except Exception as e:
-        return jsonify({'reply': "(Network blip!) Tell me more though.", 'model': 'fallback', 'detail': str(e)})
+        return jsonify({
+            'reply': "(Network blip — try again?)",
+            'model': 'fallback',
+            'detail': str(e),
+            'search_results': search_results,
+        })
+
+
+def _retry_text_only(api_key, messages, search_results):
+    try:
+        r = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+            json={'model': GROQ_TEXT_MODEL, 'messages': messages,
+                  'temperature': 0.7, 'max_tokens': 400},
+            timeout=20
+        )
+        if not r.ok:
+            return jsonify({'reply': f"(Vision unavailable, text fallback also failed: {r.status_code})",
+                            'model': 'fallback', 'search_results': search_results})
+        reply = r.json()['choices'][0]['message']['content'].strip()
+        return jsonify({
+            'reply': reply, 'model': f'groq:{GROQ_TEXT_MODEL} (text fallback)',
+            'search_results': search_results, 'used_web_search': bool(search_results),
+            'used_vision': False, 'vision_failed': True,
+        })
+    except Exception as e:
+        return jsonify({'reply': "(Both vision and text fallback failed.)",
+                        'model': 'fallback', 'detail': str(e),
+                        'search_results': search_results})
 
 @app.route('/api/siri/status')
 def siri_status():
