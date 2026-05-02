@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find My</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;overflow:hidden}
+.status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600;flex-shrink:0;z-index:100;position:relative;background:rgba(0,0,0,.85);backdrop-filter:blur(10px)}
+.tab-bar{display:flex;border-bottom:1px solid #2c2c2e;flex-shrink:0;background:#000;z-index:100;position:relative}
+.tab{flex:1;text-align:center;padding:10px;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;border-bottom:2px solid transparent}
+.tab.active{color:#30d158;border-bottom-color:#30d158}
+#map{flex:0 0 45%}
+.panel{flex:1;overflow-y:auto;background:#1c1c1e}
+.section-hdr{padding:10px 16px 6px;font-size:13px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px}
+.device-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #2c2c2e;cursor:pointer;transition:background .15s}
+.device-item:hover{background:#2c2c2e}
+.device-item.selected{background:#2c2c2e}
+.device-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.device-info h3{font-size:16px;font-weight:600;margin-bottom:3px}
+.device-info p{font-size:13px;color:#8e8e93}
+.device-badge{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600;flex-shrink:0}
+.badge-green{background:rgba(48,209,88,.2);color:#30d158}
+.badge-gray{background:rgba(142,142,147,.15);color:#8e8e93}
+.badge-red{background:rgba(255,59,48,.15);color:#ff3b30}
+.detail-sheet{position:absolute;bottom:0;left:0;right:0;background:#1c1c1e;border-radius:20px 20px 0 0;padding:16px 18px;z-index:200;transform:translateY(100%);transition:transform .3s;max-width:480px}
+.detail-sheet.open{transform:translateY(0)}
+.ds-handle{width:36px;height:4px;background:#3a3a3c;border-radius:2px;margin:0 auto 16px}
+.ds-row{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.ds-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px}
+.ds-name{font-size:22px;font-weight:700}
+.ds-status{font-size:14px;color:#8e8e93;margin-top:3px}
+.ds-actions{display:flex;gap:10px;margin-top:4px}
+.ds-btn{flex:1;background:#2c2c2e;border:none;color:#007aff;border-radius:12px;padding:10px 6px;font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+.ds-btn .db-ic{font-size:20px}
+.ds-info-row{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #2c2c2e;font-size:14px}
+.ds-info-row span:first-child{color:#8e8e93}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#30d158;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+<div class="tab-bar">
+  <div class="tab active" onclick="switchPanel('people')">People</div>
+  <div class="tab" onclick="switchPanel('devices')">Devices</div>
+  <div class="tab" onclick="switchPanel('items')">Items</div>
+</div>
+<div id="map"></div>
+<div class="panel" id="panel"></div>
+
+<div class="detail-sheet" id="detail-sheet">
+  <div class="ds-handle"></div>
+  <div class="ds-row">
+    <div class="ds-icon" id="ds-icon"></div>
+    <div>
+      <div class="ds-name" id="ds-name"></div>
+      <div class="ds-status" id="ds-status"></div>
+    </div>
+  </div>
+  <div class="ds-actions">
+    <button class="ds-btn" onclick="playSound()"><span class="db-ic">🔊</span><span>Play Sound</span></button>
+    <button class="ds-btn" onclick="getDirections()"><span class="db-ic">🗺️</span><span>Directions</span></button>
+    <button class="ds-btn" onclick="notify()"><span class="db-ic">🔔</span><span>Notify Me</span></button>
+    <button class="ds-btn" onclick="lostMode()"><span class="db-ic">🔒</span><span>Lost Mode</span></button>
+  </div>
+  <div id="ds-info-rows"></div>
+  <button onclick="closeDetail()" style="width:100%;margin-top:12px;background:#2c2c2e;border:none;color:#fff;border-radius:12px;padding:13px;font-size:16px;cursor:pointer">Close</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+
+const PEOPLE=[
+  {id:'p1',name:'Mom',icon:'👩',bg:'linear-gradient(135deg,#ff9500,#ff6b00)',lat:37.3346,lng:-122.009,status:'Home · 2 min ago',badge:'green',battery:72,addr:'1 Apple Park Way, Cupertino'},
+  {id:'p2',name:'Dad',icon:'👨',bg:'linear-gradient(135deg,#007aff,#339cff)',lat:37.3361,lng:-121.891,status:'On the go · 5 min ago',badge:'green',battery:45,addr:'3 Infinite Loop, Cupertino'},
+  {id:'p3',name:'Alex',icon:'🧑',bg:'linear-gradient(135deg,#30d158,#34c759)',lat:37.785,lng:-122.407,status:'San Francisco · 1 hr ago',badge:'gray',battery:88,addr:'Market St, San Francisco'},
+];
+const DEVICES=[
+  {id:'d1',name:'My iPhone',icon:'📱',bg:'linear-gradient(135deg,#8e8e93,#636366)',lat:37.3346,lng:-122.009,status:'Now · This device',badge:'green',battery:81,model:'iPhone 16 Pro',addr:'Current location'},
+  {id:'d2',name:'MacBook Pro',icon:'💻',bg:'linear-gradient(135deg,#636366,#48484a)',lat:37.3350,lng:-122.008,status:'Home · 2 min ago',badge:'green',battery:100,model:'MacBook Pro 16"',addr:'Home Network'},
+  {id:'d3',name:'AirPods Pro',icon:'🎧',bg:'linear-gradient(135deg,#48484a,#3a3a3c)',lat:37.3346,lng:-122.0092,status:'Last seen 3 hr ago',badge:'gray',battery:34,model:'AirPods Pro 2nd gen',addr:'Near iPhone'},
+  {id:'d4',name:'iPad Pro',icon:'📱',bg:'linear-gradient(135deg,#5e5ce6,#7877c6)',lat:37.3342,lng:-122.0095,status:'Home · 15 min ago',badge:'green',battery:67,model:'iPad Pro 12.9"',addr:'Home Wi-Fi'},
+  {id:'d5',name:'Apple Watch',icon:'⌚',bg:'linear-gradient(135deg,#ff2d55,#ff6b6b)',lat:37.3346,lng:-122.009,status:'On wrist · Now',badge:'green',battery:55,model:'Apple Watch Series 9',addr:'On wrist'},
+];
+const ITEMS=[
+  {id:'i1',name:'Keys',icon:'🔑',bg:'linear-gradient(135deg,#ff9500,#ffd60a)',lat:37.3341,lng:-122.0088,status:'Home · 20 min ago',badge:'green',battery:100,model:'AirTag',addr:'Living room'},
+  {id:'i2',name:'Wallet',icon:'👛',bg:'linear-gradient(135deg,#5e5ce6,#7877c6)',lat:37.3346,lng:-122.009,status:'With You · Now',badge:'green',battery:85,model:'AirTag',addr:'With iPhone'},
+  {id:'i3',name:'Backpack',icon:'🎒',bg:'linear-gradient(135deg,#30b0c7,#30d158)',lat:37.785,lng:-122.407,status:'San Francisco · 2 days ago',badge:'red',battery:60,model:'AirTag',addr:'Last seen SF'},
+];
+
+let map,currentData=PEOPLE,selectedItem=null,markers=[];
+let currentLat=37.3346,currentLng=-122.009;
+
+function initMap(){
+  map=L.map('map',{zoomControl:false,attributionControl:false}).setView([37.3346,-122.009],13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  plotItems(PEOPLE);
+}
+
+function makeIcon(item){
+  return L.divIcon({
+    html:`<div style="background:${item.bg};width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5)">${item.icon}</div>`,
+    className:'',iconSize:[36,36],iconAnchor:[18,18]
+  });
+}
+
+function plotItems(items){
+  markers.forEach(m=>map.removeLayer(m));
+  markers=[];
+  items.forEach(item=>{
+    const m=L.marker([item.lat,item.lng],{icon:makeIcon(item)}).addTo(map);
+    m.on('click',()=>openDetail(item));
+    markers.push(m);
+  });
+  if(items.length){
+    const bounds=L.latLngBounds(items.map(i=>[i.lat,i.lng]));
+    map.fitBounds(bounds,{padding:[30,30]});
+  }
+}
+
+function switchPanel(type){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['people','devices','items'][i]===type));
+  currentData=type==='people'?PEOPLE:type==='devices'?DEVICES:ITEMS;
+  renderPanel(currentData);
+  plotItems(currentData);
+  closeDetail();
+}
+
+function renderPanel(items){
+  const panel=document.getElementById('panel');
+  panel.innerHTML=`<div class="section-hdr">${items===PEOPLE?'People':items===DEVICES?'Devices':'Items'}</div>`+
+    items.map(item=>`<div class="device-item" id="di-${item.id}" onclick="openDetail(${JSON.stringify(item).replace(/"/g,"'").replace(/'/g,'"')})">
+      <div class="device-icon" style="background:${item.bg}">${item.icon}</div>
+      <div class="device-info"><h3>${item.name}</h3><p>${item.status}</p></div>
+      <div class="device-badge badge-${item.badge}">${item.badge==='green'?'Now':'Offline'}</div>
+    </div>`).join('');
+}
+
+function openDetail(item){
+  selectedItem=item;
+  document.getElementById('ds-icon').style.background=item.bg;
+  document.getElementById('ds-icon').textContent=item.icon;
+  document.getElementById('ds-name').textContent=item.name;
+  document.getElementById('ds-status').textContent=item.status;
+  document.getElementById('ds-info-rows').innerHTML=`
+    <div class="ds-info-row"><span>Battery</span><span>🔋 ${item.battery}%</span></div>
+    <div class="ds-info-row"><span>Address</span><span>${item.addr}</span></div>
+    ${item.model?`<div class="ds-info-row"><span>Model</span><span>${item.model}</span></div>`:''}
+    <div class="ds-info-row"><span>Coordinates</span><span>${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</span></div>
+  `;
+  document.getElementById('detail-sheet').classList.add('open');
+  map.setView([item.lat,item.lng],15);
+}
+function closeDetail(){document.getElementById('detail-sheet').classList.remove('open');}
+function playSound(){if(selectedItem)alert(`🔊 Playing sound on ${selectedItem.name}…\n\nBeep beep beep! 📣`);}
+function getDirections(){if(selectedItem)window.open(`https://www.openstreetmap.org/directions?to=${selectedItem.lat},${selectedItem.lng}`,'_blank');}
+function notify(){if(selectedItem){alert(`🔔 You'll be notified when ${selectedItem.name} leaves or arrives at this location.`);}}
+function lostMode(){if(selectedItem){if(confirm(`Enable Lost Mode for ${selectedItem.name}?\n\nIt will be locked and you'll be notified when it's found.`))alert(`🔒 Lost Mode enabled for ${selectedItem.name}.`);}}
+
+renderPanel(PEOPLE);
+initMap();
+</script>
+</body>
+</html>

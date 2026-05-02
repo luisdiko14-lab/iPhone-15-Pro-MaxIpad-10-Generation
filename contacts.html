@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contacts</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;min-height:100vh;max-width:480px;margin:0 auto}
+.status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600}
+.header{display:flex;justify-content:space-between;align-items:center;padding:8px 18px 8px}
+.header h1{font-size:28px;font-weight:700}
+.hbtn{background:none;border:none;color:#007aff;font-size:15px;cursor:pointer;padding:4px 8px}
+.search-wrap{padding:0 14px 8px}
+.search-inner{display:flex;align-items:center;background:#1c1c1e;border-radius:10px;padding:0 12px;height:36px;gap:8px}
+.search-inner input{flex:1;background:none;border:none;color:#fff;font-size:14px;outline:none}
+.search-inner input::placeholder{color:#8e8e93}
+.alpha-nav{position:fixed;right:2px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;z-index:10}
+.alpha-nav a{color:#007aff;font-size:10px;font-weight:600;text-decoration:none;padding:1px 4px;line-height:1.4;cursor:pointer}
+.alpha-nav a:hover{color:#fff}
+.section-hdr{font-size:13px;font-weight:700;color:#8e8e93;padding:10px 18px 4px;background:#000;position:sticky;top:0;z-index:5}
+.contact-row{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid #1c1c1e;cursor:pointer;transition:background .1s}
+.contact-row:hover{background:#1c1c1e}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
+.contact-info .name{font-size:16px;font-weight:500}
+.contact-info .sub{font-size:13px;color:#8e8e93}
+/* Detail view */
+.detail{position:fixed;inset:0;background:#000;transform:translateX(100%);transition:transform .3s;z-index:50;overflow-y:auto;max-width:480px;left:50%;margin-left:-240px}
+.detail.open{transform:translateX(-50%)}
+@media(max-width:480px){.detail{left:0;margin-left:0}.detail.open{transform:translateX(0)}}
+.detail-header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #1c1c1e}
+.detail-header button{background:none;border:none;color:#007aff;font-size:16px;cursor:pointer}
+.contact-hero{display:flex;flex-direction:column;align-items:center;padding:28px 18px 16px}
+.hero-avatar{width:90px;height:90px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:700;color:#fff;margin-bottom:14px}
+.hero-name{font-size:28px;font-weight:700;margin-bottom:4px;text-align:center}
+.hero-sub{font-size:15px;color:#8e8e93;text-align:center}
+.action-row{display:flex;gap:10px;padding:0 18px 16px;justify-content:center}
+.action-btn{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;min-width:64px}
+.action-btn .ab-circle{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px}
+.action-btn span{font-size:11px;color:#8e8e93}
+.info-section{background:#1c1c1e;border-radius:14px;margin:0 14px 12px}
+.info-row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-bottom:1px solid #2c2c2e}
+.info-row:last-child{border-bottom:none}
+.info-row .ir-label{font-size:12px;color:#8e8e93;margin-bottom:3px}
+.info-row .ir-val{font-size:15px}
+.info-row .ir-val a{color:#007aff;text-decoration:none}
+.info-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+.delete-btn{display:block;width:calc(100%-28px);margin:0 14px 30px;background:#1c1c1e;border:none;color:#ff3b30;border-radius:14px;padding:15px;font-size:16px;cursor:pointer;text-align:center}
+/* Add/Edit form */
+.form-sheet{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.form-inner{background:#1c1c1e;border-radius:20px 20px 0 0;padding:20px 18px 36px;width:100%;max-width:480px;overflow-y:auto;max-height:90vh}
+.form-inner h3{font-size:20px;font-weight:700;margin-bottom:16px;text-align:center}
+.form-group{margin-bottom:10px}
+.form-group label{font-size:12px;color:#8e8e93;margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.form-group input{width:100%;background:#2c2c2e;border:none;color:#fff;padding:10px 14px;border-radius:10px;font-size:15px;outline:none}
+.form-group input::placeholder{color:#8e8e93}
+.form-btns{display:flex;gap:10px;margin-top:16px}
+.fbtn{flex:1;padding:13px;border-radius:12px;border:none;font-size:16px;font-weight:600;cursor:pointer}
+.fbtn.cancel{background:#2c2c2e;color:#fff}
+.fbtn.save{background:#007aff;color:#fff}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#007aff;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+<div class="header">
+  <h1>Contacts</h1>
+  <button class="hbtn" onclick="openAdd()">+</button>
+</div>
+<div class="search-wrap">
+  <div class="search-inner">
+    <span style="color:#8e8e93">🔍</span>
+    <input type="text" id="search" placeholder="Search" oninput="renderList(this.value)">
+  </div>
+</div>
+<div id="list-container" style="padding-bottom:60px"></div>
+<div class="alpha-nav" id="alpha-nav"></div>
+
+<!-- Detail view -->
+<div class="detail" id="detail">
+  <div class="detail-header">
+    <button onclick="closeDetail()">‹ Contacts</button>
+    <button onclick="openEdit()">Edit</button>
+  </div>
+  <div id="detail-body"></div>
+</div>
+
+<!-- Add/Edit form -->
+<div class="form-sheet" id="form-sheet" style="display:none" onclick="if(event.target===this)closeForm()">
+  <div class="form-inner">
+    <h3 id="form-title">New Contact</h3>
+    <div class="form-group"><label>First Name</label><input id="f-first" type="text" placeholder="First name"></div>
+    <div class="form-group"><label>Last Name</label><input id="f-last" type="text" placeholder="Last name"></div>
+    <div class="form-group"><label>Phone</label><input id="f-phone" type="tel" placeholder="+1 (555) 000-0000"></div>
+    <div class="form-group"><label>Email</label><input id="f-email" type="email" placeholder="email@example.com"></div>
+    <div class="form-group"><label>Company</label><input id="f-company" type="text" placeholder="Company"></div>
+    <div class="form-group"><label>Notes</label><input id="f-notes" type="text" placeholder="Notes"></div>
+    <div class="form-btns">
+      <button class="fbtn cancel" onclick="closeForm()">Cancel</button>
+      <button class="fbtn save" onclick="saveContact()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+
+const COLORS=['#ff3b30','#ff9500','#ffcc02','#30d158','#007aff','#5e5ce6','#af52de','#ff2d55'];
+function colorFor(name){return COLORS[(name.charCodeAt(0)+name.charCodeAt(1||0))%COLORS.length];}
+function initials(c){return((c.first[0]||'')+(c.last[0]||'')).toUpperCase()||'?';}
+
+const SEED=[
+  {first:'Alice',last:'Anderson',phone:'(555) 234-5678',email:'alice@example.com',company:'Apple Inc.',notes:''},
+  {first:'Bob',last:'Baker',phone:'(555) 345-6789',email:'bob@example.com',company:'',notes:'Gym buddy'},
+  {first:'Carol',last:'Chen',phone:'(555) 456-7890',email:'carol@example.com',company:'Google',notes:''},
+  {first:'David',last:'Davis',phone:'(555) 567-8901',email:'david@example.com',company:'',notes:''},
+  {first:'Emma',last:'Evans',phone:'(555) 678-9012',email:'emma@example.com',company:'Meta',notes:'Birthday March 12'},
+  {first:'Frank',last:'Fisher',phone:'(555) 789-0123',email:'frank@example.com',company:'',notes:''},
+  {first:'Grace',last:'Green',phone:'(555) 890-1234',email:'grace@example.com',company:'Netflix',notes:''},
+  {first:'Henry',last:'Harris',phone:'(555) 901-2345',email:'henry@example.com',company:'',notes:'Dad\'s friend'},
+  {first:'Isabel',last:'Ibrahim',phone:'(555) 012-3456',email:'isabel@example.com',company:'Amazon',notes:''},
+  {first:'James',last:'Johnson',phone:'(555) 123-4567',email:'james@example.com',company:'',notes:'College friend'},
+  {first:'Kate',last:'Kim',phone:'(555) 234-0000',email:'kate@example.com',company:'Spotify',notes:''},
+  {first:'Liam',last:'Lopez',phone:'(555) 345-1111',email:'liam@example.com',company:'',notes:''},
+  {first:'Mia',last:'Martinez',phone:'(555) 456-2222',email:'mia@example.com',company:'Airbnb',notes:''},
+  {first:'Noah',last:'Nelson',phone:'(555) 567-3333',email:'noah@example.com',company:'',notes:'Neighbor'},
+  {first:'Olivia',last:'Ortiz',phone:'(555) 678-4444',email:'olivia@example.com',company:'Stripe',notes:''},
+  {first:'Peyton',last:'Park',phone:'(555) 789-5555',email:'peyton@example.com',company:'',notes:''},
+  {first:'Quinn',last:'Quinn',phone:'(555) 890-6666',email:'quinn@example.com',company:'',notes:''},
+  {first:'Ryan',last:'Roberts',phone:'(555) 901-7777',email:'ryan@example.com',company:'Tesla',notes:''},
+  {first:'Sara',last:'Smith',phone:'(555) 012-8888',email:'sara@example.com',company:'',notes:'Sister'},
+  {first:'Tom',last:'Taylor',phone:'(555) 123-9999',email:'tom@example.com',company:'SpaceX',notes:''},
+];
+
+let contacts=JSON.parse(localStorage.getItem('contacts')||'null');
+if(!contacts){contacts=SEED.map((c,i)=>({...c,id:i+1}));localStorage.setItem('contacts',JSON.stringify(contacts));}
+let nextId=Math.max(...contacts.map(c=>c.id))+1;
+let selectedId=null,isEditing=false;
+
+function save(){localStorage.setItem('contacts',JSON.stringify(contacts));}
+function sorted(arr){return [...arr].sort((a,b)=>(a.last+a.first).localeCompare(b.last+b.first));}
+
+function renderList(filter=''){
+  const lc=document.getElementById('list-container');
+  const f=filter.toLowerCase();
+  const filtered=sorted(contacts).filter(c=>!f||(c.first+c.last+c.phone+c.email).toLowerCase().includes(f));
+  // Group by first letter of last name
+  const groups={};
+  filtered.forEach(c=>{
+    const k=(c.last[0]||c.first[0]||'#').toUpperCase();
+    if(!groups[k])groups[k]=[];
+    groups[k].push(c);
+  });
+  const letters=Object.keys(groups).sort();
+  lc.innerHTML=letters.map(l=>`
+    <div id="section-${l}" class="section-hdr">${l}</div>
+    ${groups[l].map(c=>`<div class="contact-row" onclick="openDetail(${c.id})">
+      <div class="avatar" style="background:${colorFor(c.first+c.last)}">${initials(c)}</div>
+      <div class="contact-info">
+        <div class="name">${c.first} ${c.last}</div>
+        ${c.company?`<div class="sub">${c.company}</div>`:''}
+      </div>
+    </div>`).join('')}
+  `).join('');
+  // Alpha nav
+  const nav=document.getElementById('alpha-nav');
+  nav.innerHTML=letters.map(l=>`<a onclick="scrollToSection('${l}')">${l}</a>`).join('');
+}
+function scrollToSection(l){document.getElementById('section-'+l)?.scrollIntoView({behavior:'smooth'});}
+
+function openDetail(id){
+  selectedId=id;
+  const c=contacts.find(x=>x.id===id);
+  if(!c)return;
+  const col=colorFor(c.first+c.last);
+  document.getElementById('detail-body').innerHTML=`
+    <div class="contact-hero">
+      <div class="hero-avatar" style="background:${col}">${initials(c)}</div>
+      <div class="hero-name">${c.first} ${c.last}</div>
+      ${c.company?`<div class="hero-sub">${c.company}</div>`:''}
+    </div>
+    <div class="action-row">
+      <div class="action-btn" onclick="window.location.href='call.html'"><div class="ab-circle" style="background:rgba(52,199,89,.15)">📞</div><span>Call</span></div>
+      <div class="action-btn" onclick="window.location.href='discord_2.html'"><div class="ab-circle" style="background:rgba(0,122,255,.15)">💬</div><span>Message</span></div>
+      <div class="action-btn" onclick="window.location.href='mail.html'"><div class="ab-circle" style="background:rgba(0,122,255,.15)">✉️</div><span>Mail</span></div>
+      <div class="action-btn" onclick="window.location.href='call.html'"><div class="ab-circle" style="background:rgba(52,199,89,.15)">📹</div><span>FaceTime</span></div>
+    </div>
+    <div class="info-section">
+      ${c.phone?`<div class="info-row"><span class="info-icon">📞</span><div><div class="ir-label">mobile</div><div class="ir-val"><a href="tel:${c.phone}">${c.phone}</a></div></div></div>`:''}
+      ${c.email?`<div class="info-row"><span class="info-icon">✉️</span><div><div class="ir-label">home</div><div class="ir-val"><a href="mailto:${c.email}">${c.email}</a></div></div></div>`:''}
+      ${c.notes?`<div class="info-row"><span class="info-icon">📝</span><div><div class="ir-label">notes</div><div class="ir-val">${c.notes}</div></div></div>`:''}
+    </div>
+    <button class="delete-btn" onclick="deleteContact(${id})">Delete Contact</button>
+  `;
+  document.getElementById('detail').classList.add('open');
+}
+function closeDetail(){document.getElementById('detail').classList.remove('open');}
+function deleteContact(id){
+  if(!confirm('Delete this contact?'))return;
+  contacts=contacts.filter(c=>c.id!==id);save();closeDetail();renderList();
+}
+function openEdit(){
+  const c=contacts.find(x=>x.id===selectedId);
+  if(!c)return;
+  isEditing=true;
+  document.getElementById('form-title').textContent='Edit Contact';
+  document.getElementById('f-first').value=c.first;
+  document.getElementById('f-last').value=c.last;
+  document.getElementById('f-phone').value=c.phone;
+  document.getElementById('f-email').value=c.email;
+  document.getElementById('f-company').value=c.company||'';
+  document.getElementById('f-notes').value=c.notes||'';
+  document.getElementById('form-sheet').style.display='flex';
+}
+function openAdd(){
+  isEditing=false;selectedId=null;
+  document.getElementById('form-title').textContent='New Contact';
+  ['first','last','phone','email','company','notes'].forEach(f=>document.getElementById('f-'+f).value='');
+  document.getElementById('form-sheet').style.display='flex';
+  setTimeout(()=>document.getElementById('f-first').focus(),100);
+}
+function closeForm(){document.getElementById('form-sheet').style.display='none';}
+function saveContact(){
+  const first=document.getElementById('f-first').value.trim();
+  const last=document.getElementById('f-last').value.trim();
+  if(!first&&!last)return;
+  const data={first:first||'',last:last||'',phone:document.getElementById('f-phone').value.trim(),email:document.getElementById('f-email').value.trim(),company:document.getElementById('f-company').value.trim(),notes:document.getElementById('f-notes').value.trim()};
+  if(isEditing){
+    const c=contacts.find(x=>x.id===selectedId);
+    if(c)Object.assign(c,data);
+    save();closeForm();renderList();openDetail(selectedId);
+  } else {
+    const c={...data,id:nextId++};
+    contacts.push(c);save();closeForm();renderList();
+  }
+}
+renderList();
+</script>
+</body>
+</html>

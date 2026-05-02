@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reminders</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;min-height:100vh;max-width:480px;margin:0 auto}
+.status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600}
+.header{display:flex;justify-content:space-between;align-items:center;padding:8px 18px 12px}
+.header h1{font-size:28px;font-weight:700}
+.hbtn{background:none;border:none;color:#ff9500;font-size:15px;cursor:pointer;padding:4px 8px}
+.smart-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 20px}
+.smart-card{border-radius:14px;padding:14px;cursor:pointer;transition:opacity .15s}
+.smart-card:active{opacity:.75}
+.sc-count{font-size:32px;font-weight:700;margin-bottom:6px}
+.sc-label{font-size:15px;font-weight:600}
+.lists-section{padding:0 14px}
+.section-hdr{font-size:13px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;padding:0 4px 8px}
+.list-item{display:flex;align-items:center;gap:12px;background:#1c1c1e;border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:background .15s}
+.list-item:hover{background:#2c2c2e}
+.list-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.list-name{flex:1;font-size:16px;font-weight:500}
+.list-count{font-size:15px;color:#8e8e93}
+.list-chevron{color:#3a3a3c;font-size:16px}
+.add-list-btn{display:flex;align-items:center;gap:8px;color:#ff9500;padding:14px 18px;font-size:16px;cursor:pointer;background:none;border:none;width:100%;text-align:left}
+
+/* Reminder detail panel */
+.panel{position:fixed;inset:0;background:#1c1c1e;transform:translateX(100%);transition:transform .3s;z-index:50;display:flex;flex-direction:column;max-width:480px;left:50%;transform:translateX(calc(100% + 50%));margin-left:-240px}
+.panel.open{transform:translateX(-50%);margin-left:0;left:50%}
+@media(max-width:480px){.panel{left:0;margin-left:0}.panel.open{transform:translateX(0)}}
+.panel-header{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #2c2c2e}
+.panel-header h2{font-size:20px;font-weight:700}
+.panel-items{flex:1;overflow-y:auto}
+.reminder-row{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid #2c2c2e}
+.check-circle{width:26px;height:26px;border-radius:50%;border:2px solid;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:background .2s,border-color .2s}
+.check-circle.done{background:currentColor}
+.check-circle.done::after{content:'✓';color:#000;font-size:13px;font-weight:700}
+.rem-body{flex:1}
+.rem-title{font-size:16px;line-height:1.3}
+.rem-title.done{text-decoration:line-through;color:#8e8e93}
+.rem-meta{font-size:12px;color:#8e8e93;margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.rem-meta .overdue{color:#ff3b30}
+.rem-del{background:none;border:none;color:#8e8e93;font-size:18px;cursor:pointer;padding:2px 6px;margin-top:-1px}
+.rem-del:hover{color:#ff3b30}
+.add-reminder-area{padding:14px 18px;border-top:1px solid #2c2c2e;background:#000}
+.add-row{display:flex;gap:8px;align-items:center}
+.add-input{flex:1;background:#2c2c2e;border:none;color:#fff;padding:10px 14px;border-radius:10px;font-size:15px;outline:none}
+.add-input::placeholder{color:#8e8e93}
+.add-extra{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.add-extra input{background:#2c2c2e;border:none;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;outline:none;color-scheme:dark}
+.add-btn{background:#ff9500;color:#000;border:none;border-radius:10px;padding:10px 16px;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#ff9500;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+<div class="header">
+  <h1>Reminders</h1>
+  <button class="hbtn" onclick="openList('All')">Edit</button>
+</div>
+
+<!-- Smart lists -->
+<div class="smart-grid" id="smart-grid"></div>
+
+<!-- My Lists -->
+<div class="lists-section">
+  <div class="section-hdr">My Lists</div>
+  <div id="lists-container"></div>
+  <button class="add-list-btn" onclick="addList()">＋ Add List</button>
+</div>
+
+<!-- Reminder list panel -->
+<div class="panel" id="panel">
+  <div class="panel-header">
+    <button onclick="closePanel()" style="background:none;border:none;color:#ff9500;font-size:16px;cursor:pointer">‹ Lists</button>
+    <h2 id="panel-title">Reminders</h2>
+    <button onclick="openAddReminder()" style="background:none;border:none;color:#ff9500;font-size:24px;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center">+</button>
+  </div>
+  <div class="panel-items" id="panel-items"></div>
+  <div class="add-reminder-area" id="add-area" style="display:none">
+    <div class="add-row">
+      <input class="add-input" id="new-title" placeholder="Title" onkeydown="if(event.key==='Enter')saveReminder()">
+      <button class="add-btn" onclick="saveReminder()">Add</button>
+    </div>
+    <div class="add-extra">
+      <input type="text" class="add-input" id="new-notes" placeholder="Notes (optional)" style="flex:1">
+      <input type="date" class="add-input" id="new-date" style="width:auto">
+      <input type="time" class="add-input" id="new-time" style="width:auto">
+    </div>
+  </div>
+</div>
+
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+
+const LIST_DEFS=[
+  {name:'Reminders',color:'#ff9500',icon:'📋'},
+  {name:'Shopping',color:'#30d158',icon:'🛒'},
+  {name:'Work',color:'#007aff',icon:'💼'},
+  {name:'Personal',color:'#ff2d55',icon:'🏠'},
+];
+let reminders=JSON.parse(localStorage.getItem('reminders')||'{"Reminders":[{"id":1,"title":"Call dentist","done":false,"date":"","time":"","notes":""},{"id":2,"title":"Buy groceries","done":false,"date":"","time":"","notes":"Milk, eggs, bread"},{"id":3,"title":"Review project","done":true,"date":"","time":"","notes":""}],"Shopping":[{"id":4,"title":"Milk","done":false},{"id":5,"title":"Eggs","done":false},{"id":6,"title":"Coffee","done":true}],"Work":[],"Personal":[{"id":7,"title":"Gym","done":false,"date":""}]}');
+let lists=JSON.parse(localStorage.getItem('reminderLists')||'["Reminders","Shopping","Work","Personal"]');
+let currentList='All';
+let nextId=parseInt(localStorage.getItem('reminderNextId')||'100');
+
+function save(){
+  localStorage.setItem('reminders',JSON.stringify(reminders));
+  localStorage.setItem('reminderLists',JSON.stringify(lists));
+  localStorage.setItem('reminderNextId',nextId);
+}
+
+function allReminders(){return lists.flatMap(l=>(reminders[l]||[]));}
+function todayReminders(){
+  const today=new Date().toISOString().slice(0,10);
+  return allReminders().filter(r=>!r.done&&r.date===today);
+}
+function scheduledReminders(){return allReminders().filter(r=>!r.done&&r.date);}
+function flaggedReminders(){return allReminders().filter(r=>r.flagged);}
+
+function renderHome(){
+  const all=allReminders();
+  const todo=all.filter(r=>!r.done);
+  const today=todayReminders();
+  const sched=scheduledReminders();
+  const sg=document.getElementById('smart-grid');
+  sg.innerHTML=[
+    {label:'Today',count:today.length,color:'#007aff',bg:'rgba(0,122,255,.15)',icon:'📅',list:'Today'},
+    {label:'Scheduled',count:sched.length,color:'#ff9500',bg:'rgba(255,149,0,.15)',icon:'📆',list:'Scheduled'},
+    {label:'All',count:todo.length,color:'#8e8e93',bg:'rgba(142,142,147,.15)',icon:'📋',list:'All'},
+    {label:'Flagged',count:flaggedReminders().length,color:'#ff9500',bg:'rgba(255,149,0,.15)',icon:'🚩',list:'Flagged'},
+  ].map(c=>`<div class="smart-card" style="background:${c.bg}" onclick="openList('${c.list}')">
+    <div class="sc-count" style="color:${c.color}">${c.count}</div>
+    <div class="sc-label">${c.icon} ${c.label}</div>
+  </div>`).join('');
+
+  const lc=document.getElementById('lists-container');
+  lc.innerHTML=lists.map(l=>{
+    const def=LIST_DEFS.find(d=>d.name===l)||{color:'#8e8e93',icon:'📋'};
+    const count=(reminders[l]||[]).filter(r=>!r.done).length;
+    return`<div class="list-item" onclick="openList('${l}')">
+      <div class="list-dot" style="background:${def.color}20;color:${def.color}">${def.icon}</div>
+      <div class="list-name">${l}</div>
+      <div class="list-count">${count||''}</div>
+      <div class="list-chevron">›</div>
+    </div>`;
+  }).join('');
+}
+
+function getListItems(name){
+  if(name==='All')return lists.flatMap(l=>(reminders[l]||[]).map(r=>({...r,_list:l})));
+  if(name==='Today'){const t=new Date().toISOString().slice(0,10);return lists.flatMap(l=>(reminders[l]||[]).filter(r=>r.date===t).map(r=>({...r,_list:l})));}
+  if(name==='Scheduled')return lists.flatMap(l=>(reminders[l]||[]).filter(r=>r.date).map(r=>({...r,_list:l})));
+  if(name==='Flagged')return lists.flatMap(l=>(reminders[l]||[]).filter(r=>r.flagged).map(r=>({...r,_list:l})));
+  return (reminders[name]||[]).map(r=>({...r,_list:name}));
+}
+
+function openList(name){
+  currentList=name;
+  document.getElementById('panel-title').textContent=name;
+  renderPanel();
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('add-area').style.display='none';
+}
+function closePanel(){document.getElementById('panel').classList.remove('open');}
+
+function renderPanel(){
+  const items=getListItems(currentList);
+  const todo=items.filter(r=>!r.done);
+  const done=items.filter(r=>r.done);
+  const today=new Date().toISOString().slice(0,10);
+  function rowHtml(r){
+    const def=LIST_DEFS.find(d=>d.name===r._list)||{color:'#ff9500'};
+    const overdue=r.date&&r.date<today&&!r.done;
+    const dateStr=r.date?`<span class="${overdue?'overdue':''}">${overdue?'⚠️ ':''} ${r.date}${r.time?' '+r.time:''}</span>`:'';
+    const notesStr=r.notes?`<span>${r.notes.slice(0,60)}</span>`:'';
+    return`<div class="reminder-row">
+      <div class="check-circle ${r.done?'done':''}" style="color:${def.color};border-color:${def.color}" onclick="toggleReminder('${r._list}',${r.id})"></div>
+      <div class="rem-body">
+        <div class="rem-title ${r.done?'done':''}">${r.title}</div>
+        ${dateStr||notesStr?`<div class="rem-meta">${dateStr}${notesStr}</div>`:''}
+      </div>
+      <button class="rem-del" onclick="deleteReminder('${r._list}',${r.id})">×</button>
+    </div>`;
+  }
+  document.getElementById('panel-items').innerHTML=
+    todo.map(rowHtml).join('')+
+    (done.length?`<div style="padding:10px 18px;font-size:13px;color:#8e8e93;font-weight:600">Completed</div>`+done.map(rowHtml).join(''):'');
+}
+
+function toggleReminder(list,id){
+  const arr=reminders[list]||[];
+  const r=arr.find(x=>x.id===id);
+  if(r){r.done=!r.done;save();renderPanel();renderHome();}
+}
+function deleteReminder(list,id){
+  if(reminders[list])reminders[list]=reminders[list].filter(x=>x.id!==id);
+  save();renderPanel();renderHome();
+}
+function openAddReminder(){
+  const area=document.getElementById('add-area');
+  area.style.display=area.style.display==='none'?'block':'none';
+  if(area.style.display!=='none')document.getElementById('new-title').focus();
+}
+function saveReminder(){
+  const title=document.getElementById('new-title').value.trim();
+  if(!title)return;
+  const target=LIST_DEFS.find(d=>d.name===currentList)?currentList:lists[0]||'Reminders';
+  if(!reminders[target])reminders[target]=[];
+  reminders[target].push({
+    id:nextId++,title,done:false,
+    notes:document.getElementById('new-notes').value.trim(),
+    date:document.getElementById('new-date').value,
+    time:document.getElementById('new-time').value,
+  });
+  save();
+  document.getElementById('new-title').value='';
+  document.getElementById('new-notes').value='';
+  document.getElementById('new-date').value='';
+  document.getElementById('new-time').value='';
+  renderPanel();renderHome();
+}
+function addList(){
+  const name=prompt('List name:');
+  if(!name||lists.includes(name))return;
+  lists.push(name);reminders[name]=[];save();renderHome();
+}
+renderHome();
+</script>
+</body>
+</html>

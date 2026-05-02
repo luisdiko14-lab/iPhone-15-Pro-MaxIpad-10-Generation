@@ -47,9 +47,22 @@ Preferred communication style: Simple, everyday language.
 - **HTML Files**: One per feature/page.
 - **CSS Files**: A mix of shared and page-specific stylesheets.
 - **JS Files**: One per page, plus `device-state.js` for cross-page shared state.
-- **Working Apps**: Includes `notes.html`, `calculator.html`, `call.html`, `camera.html`, `music.html`, `weather.html`, `siri.html`, and `game.html`.
+- **Working Apps**: `notes.html`, `calculator.html`, `call.html`, `camera.html`, `music.html`, `weather.html`, `siri.html`, `game.html`, `photos.html`, `safari.html`, `clock.html`, `maps.html`, `health.html`, `findmy.html`, `reminders.html`, `calendar.html`, `voicememos.html`, `contacts.html`, `translate.html`.
 - **Charging Flow**: Dedicated files for the charging animation.
 - **Python Stub**: `main.py` is a minimal placeholder.
+
+### New Apps (added in latest update)
+- **Photos** (`photos.html`): Full photo gallery with albums, grid view, search, favorites, local image import via FileReader API.
+- **Safari** (`safari.html`): In-app browser with tab management, bookmarks, history, URL bar with navigation controls.
+- **Clock** (`clock.html`): World clock with real-time display, Alarm manager, Stopwatch, Timer with Web Audio API beep.
+- **Maps** (`maps.html`): Interactive map via Leaflet.js + OpenStreetMap, search, directions, POI categories, current location.
+- **Health** (`health.html`): Health dashboard with activity rings, step count, heart rate history chart (Canvas), sleep tracking, nutrition logging.
+- **Find My** (`findmy.html`): Live map with People/Devices/Items tabs via Leaflet.js, detail sheets with Play Sound / Lost Mode / Directions actions.
+- **Reminders** (`reminders.html`): Smart lists (Today, Scheduled, All, Flagged), custom lists, due dates/times, notes, check-off, persistent via localStorage.
+- **Calendar** (`calendar.html`): Full month calendar with event grid, add/delete events with color coding, day view event list, seeded sample events.
+- **Voice Memos** (`voicememos.html`): Real microphone recording via MediaRecorder API, waveform visualizer, playback, rename/delete, simulated mode when mic denied.
+- **Contacts** (`contacts.html`): Full contact book with 20 seeded contacts, alphabetical grouping with side-nav, detail view, add/edit/delete, quick-action buttons.
+- **Translate** (`translate.html`): AI-powered translation via Groq (`llama-3.1-8b-instant`) through `/api/siri/groq`, 20 language pairs, swap, TTS via SpeechSynthesis, copy, translation history.
 
 ### Phone App (`call.html`)
 - Full iOS-style phone app with 5-tab navigation.

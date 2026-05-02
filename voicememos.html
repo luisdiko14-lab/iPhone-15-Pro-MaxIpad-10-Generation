@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Memos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1c1c1e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;min-height:100vh;max-width:480px;margin:0 auto}
+.status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600}
+.header{display:flex;justify-content:space-between;align-items:center;padding:8px 18px 12px}
+.header h1{font-size:28px;font-weight:700}
+.hbtn{background:none;border:none;color:#ff3b30;font-size:15px;cursor:pointer;padding:4px 8px}
+/* Waveform visualizer */
+.rec-area{display:flex;flex-direction:column;align-items:center;padding:20px 18px;background:#000;margin:0 14px 14px;border-radius:16px}
+.waveform{display:flex;align-items:center;gap:3px;height:60px;margin-bottom:16px;width:100%;justify-content:center}
+.wave-bar{width:4px;border-radius:2px;background:#ff3b30;transition:height .1s;min-height:4px}
+.rec-time{font-size:48px;font-weight:200;letter-spacing:2px;margin-bottom:12px}
+.rec-time.inactive{color:#8e8e93}
+.rec-btn{width:72px;height:72px;border-radius:50%;border:4px solid #ff3b30;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.rec-btn:active{transform:scale(.95)}
+.rec-btn .inner{width:52px;height:52px;border-radius:50%;background:#ff3b30;transition:border-radius .2s,width .2s,height .2s}
+.rec-btn.recording .inner{border-radius:8px;width:28px;height:28px}
+.rec-status{font-size:13px;color:#8e8e93;margin-top:10px}
+.rec-status.recording{color:#ff3b30}
+/* Memo list */
+.search-wrap{padding:0 14px 10px}
+.search-inner{display:flex;align-items:center;background:#2c2c2e;border-radius:10px;padding:0 12px;height:36px;gap:8px}
+.search-inner input{flex:1;background:none;border:none;color:#fff;font-size:14px;outline:none}
+.search-inner input::placeholder{color:#8e8e93}
+.memo-list{padding:0 14px}
+.memo-item{background:#2c2c2e;border-radius:14px;padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:background .15s}
+.memo-item:hover{background:#3a3a3c}
+.memo-item.playing{border:1px solid #ff3b30}
+.memo-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.memo-name{font-size:16px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.memo-dur{font-size:13px;color:#8e8e93}
+.memo-meta{display:flex;justify-content:space-between;align-items:center}
+.memo-date{font-size:12px;color:#8e8e93}
+.memo-actions{display:flex;gap:8px}
+.ma-btn{background:none;border:none;color:#8e8e93;font-size:16px;cursor:pointer;padding:2px 6px}
+.ma-btn:hover{color:#fff}
+.ma-btn.delete:hover{color:#ff3b30}
+.play-bar{height:3px;background:#3a3a3c;border-radius:2px;margin-top:10px;overflow:hidden}
+.play-fill{height:100%;background:#ff3b30;width:0%;border-radius:2px;transition:width .2s}
+.empty-state{text-align:center;padding:60px 20px;color:#8e8e93}
+.empty-state .icon{font-size:60px;margin-bottom:16px}
+.edit-name-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:flex-end;justify-content:center}
+.edit-name-modal.open{display:flex}
+.enm-inner{background:#2c2c2e;border-radius:14px;padding:18px;margin:14px;width:100%;max-width:452px}
+.enm-inner h3{font-size:18px;font-weight:600;margin-bottom:12px;text-align:center}
+.enm-input{width:100%;background:#3a3a3c;border:none;color:#fff;padding:10px 14px;border-radius:10px;font-size:16px;outline:none;margin-bottom:12px}
+.enm-btns{display:flex;gap:8px}
+.enm-btn{flex:1;padding:12px;border-radius:10px;border:none;font-size:16px;font-weight:600;cursor:pointer}
+.enm-btn.cancel{background:#3a3a3c;color:#fff}
+.enm-btn.save{background:#ff3b30;color:#fff}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#ff3b30;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+<div class="header">
+  <h1>Voice Memos</h1>
+  <button class="hbtn" id="edit-btn">Edit</button>
+</div>
+
+<div class="rec-area">
+  <div class="waveform" id="waveform"></div>
+  <div class="rec-time" id="rec-time">0:00</div>
+  <button class="rec-btn" id="rec-btn" onclick="toggleRecording()">
+    <div class="inner"></div>
+  </button>
+  <div class="rec-status" id="rec-status">Tap to record</div>
+</div>
+
+<div class="search-wrap">
+  <div class="search-inner">
+    <span style="color:#8e8e93">🔍</span>
+    <input type="text" placeholder="Search" oninput="renderMemos(this.value)">
+  </div>
+</div>
+
+<div class="memo-list" id="memo-list"></div>
+
+<div class="edit-name-modal" id="enm" onclick="if(event.target===this)closeNameModal()">
+  <div class="enm-inner">
+    <h3>Rename Recording</h3>
+    <input class="enm-input" id="enm-input" type="text" placeholder="Recording name">
+    <div class="enm-btns">
+      <button class="enm-btn cancel" onclick="closeNameModal()">Cancel</button>
+      <button class="enm-btn save" onclick="saveNameModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+
+// State
+let memos=JSON.parse(localStorage.getItem('voiceMemos')||'[]');
+// Seed placeholder memos
+if(!memos.length){
+  const now=Date.now();
+  memos=[
+    {id:now-3600000,name:'Meeting notes',date:new Date(now-3600000).toISOString(),duration:142,dataUrl:null},
+    {id:now-86400000,name:'Ideas for project',date:new Date(now-86400000).toISOString(),duration:67,dataUrl:null},
+    {id:now-172800000,name:'New Recording',date:new Date(now-172800000).toISOString(),duration:23,dataUrl:null},
+  ];
+  localStorage.setItem('voiceMemos',JSON.stringify(memos));
+}
+function saveMemos(){localStorage.setItem('voiceMemos',JSON.stringify(memos));}
+
+let isRecording=false,mediaRecorder=null,recordingChunks=[],recTimer=null,recSeconds=0;
+let analyser=null,animFrame=null,audioCtx=null;
+let playingId=null,playingAudio=null;
+let editingId=null;
+
+// Build waveform bars
+const waveform=document.getElementById('waveform');
+const NUM_BARS=40;
+for(let i=0;i<NUM_BARS;i++){const b=document.createElement('div');b.className='wave-bar';b.style.height='4px';waveform.appendChild(b);}
+
+function animateWave(){
+  if(!analyser){
+    // Idle animation
+    const bars=waveform.querySelectorAll('.wave-bar');
+    bars.forEach((b,i)=>{
+      const h=isRecording?4+Math.random()*50:4+Math.sin(Date.now()/500+i/3)*8+8;
+      b.style.height=h+'px';
+      b.style.background=isRecording?'#ff3b30':'#3a3a3c';
+    });
+    if(isRecording)animFrame=requestAnimationFrame(animateWave);
+    return;
+  }
+  const data=new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+  const bars=waveform.querySelectorAll('.wave-bar');
+  bars.forEach((b,i)=>{
+    const idx=Math.floor(i/NUM_BARS*data.length);
+    const h=4+data[idx]/255*56;
+    b.style.height=h+'px';
+    b.style.background='#ff3b30';
+  });
+  animFrame=requestAnimationFrame(animateWave);
+}
+
+async function toggleRecording(){
+  if(isRecording){stopRecording();}
+  else{await startRecording();}
+}
+
+async function startRecording(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    audioCtx=new AudioContext();
+    analyser=audioCtx.createAnalyser();
+    analyser.fftSize=128;
+    const src=audioCtx.createMediaStreamSource(stream);
+    src.connect(analyser);
+    mediaRecorder=new MediaRecorder(stream);
+    recordingChunks=[];
+    mediaRecorder.ondataavailable=e=>recordingChunks.push(e.data);
+    mediaRecorder.onstop=finalizeRecording;
+    mediaRecorder.start();
+    isRecording=true;recSeconds=0;
+    document.getElementById('rec-btn').classList.add('recording');
+    document.getElementById('rec-status').textContent='Recording…';
+    document.getElementById('rec-status').className='rec-status recording';
+    document.getElementById('rec-time').className='rec-time';
+    recTimer=setInterval(()=>{recSeconds++;updateRecTime();},1000);
+    animFrame=requestAnimationFrame(animateWave);
+  } catch(e){
+    // No mic permission — simulate
+    isRecording=true;recSeconds=0;
+    document.getElementById('rec-btn').classList.add('recording');
+    document.getElementById('rec-status').textContent='Recording (simulated)…';
+    document.getElementById('rec-status').className='rec-status recording';
+    recTimer=setInterval(()=>{recSeconds++;updateRecTime();},1000);
+    animFrame=requestAnimationFrame(animateWave);
+    // Auto-stop after 5s in sim mode
+    setTimeout(()=>{if(isRecording)stopRecording(true);},5000);
+  }
+}
+
+function stopRecording(sim=false){
+  isRecording=false;
+  clearInterval(recTimer);
+  cancelAnimationFrame(animFrame);
+  document.getElementById('rec-btn').classList.remove('recording');
+  document.getElementById('rec-status').textContent='Tap to record';
+  document.getElementById('rec-status').className='rec-status';
+  document.getElementById('rec-time').className='rec-time inactive';
+  // Reset bars
+  waveform.querySelectorAll('.wave-bar').forEach(b=>{b.style.height='4px';b.style.background='#3a3a3c';});
+  if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+  else if(sim)finalizeRecording(null,true);
+  if(audioCtx){audioCtx.close();audioCtx=null;analyser=null;}
+}
+
+function finalizeRecording(e,sim=false){
+  const dur=recSeconds;
+  let dataUrl=null;
+  if(!sim&&recordingChunks.length){
+    const blob=new Blob(recordingChunks,{type:'audio/webm'});
+    dataUrl=URL.createObjectURL(blob);
+  }
+  const now=Date.now();
+  const memo={id:now,name:`New Recording ${memos.length+1}`,date:new Date().toISOString(),duration:dur,dataUrl};
+  memos.unshift(memo);saveMemos();renderMemos();
+}
+
+function updateRecTime(){
+  const m=Math.floor(recSeconds/60),s=recSeconds%60;
+  document.getElementById('rec-time').textContent=`${m}:${String(s).padStart(2,'0')}`;
+}
+
+function fmtDur(s){const m=Math.floor(s/60);return`${m}:${String(s%60).padStart(2,'0')}`}
+function fmtDate(iso){
+  const d=new Date(iso);
+  const now=new Date();
+  const diff=now-d;
+  if(diff<86400000)return'Today '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  if(diff<172800000)return'Yesterday';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:d.getFullYear()!==now.getFullYear()?'numeric':undefined});
+}
+
+function renderMemos(filter=''){
+  const list=document.getElementById('memo-list');
+  const filtered=memos.filter(m=>m.name.toLowerCase().includes(filter.toLowerCase()));
+  if(!filtered.length){
+    list.innerHTML=`<div class="empty-state"><div class="icon">🎙️</div><p>${filter?'No memos match your search.':'Tap the record button to start.'}</p></div>`;
+    return;
+  }
+  list.innerHTML=filtered.map(m=>`<div class="memo-item${playingId===m.id?' playing':''}" id="memo-${m.id}">
+    <div class="memo-top">
+      <div class="memo-name">${m.name}</div>
+      <div class="memo-dur" id="dur-${m.id}">${fmtDur(m.duration)}</div>
+    </div>
+    <div class="memo-meta">
+      <div class="memo-date">${fmtDate(m.date)}</div>
+      <div class="memo-actions">
+        <button class="ma-btn" onclick="playMemo(${m.id})" title="${playingId===m.id?'Pause':'Play'}">
+          ${playingId===m.id?'⏸':'▶'}
+        </button>
+        <button class="ma-btn" onclick="renameMemo(${m.id})" title="Rename">✏️</button>
+        <button class="ma-btn delete" onclick="deleteMemo(${m.id})" title="Delete">🗑</button>
+      </div>
+    </div>
+    ${playingId===m.id?'<div class="play-bar"><div class="play-fill" id="pf-'+m.id+'"></div></div>':''}
+  </div>`).join('');
+}
+
+function playMemo(id){
+  if(playingId===id){
+    // pause
+    if(playingAudio){playingAudio.pause();playingAudio=null;}
+    playingId=null;renderMemos();return;
+  }
+  if(playingAudio){playingAudio.pause();playingAudio=null;}
+  const m=memos.find(x=>x.id===id);
+  if(!m)return;
+  playingId=id;
+  if(m.dataUrl){
+    playingAudio=new Audio(m.dataUrl);
+    playingAudio.play();
+    playingAudio.addEventListener('ended',()=>{playingId=null;renderMemos();});
+    playingAudio.addEventListener('timeupdate',()=>{
+      const pf=document.getElementById('pf-'+id);
+      if(pf&&playingAudio.duration)pf.style.width=(playingAudio.currentTime/playingAudio.duration*100)+'%';
+    });
+  } else {
+    // simulate playback
+    let elapsed=0;
+    const interval=setInterval(()=>{
+      elapsed++;
+      const pf=document.getElementById('pf-'+id);
+      if(pf)pf.style.width=(elapsed/m.duration*100)+'%';
+      const dur=document.getElementById('dur-'+id);
+      if(dur)dur.textContent=fmtDur(m.duration-elapsed);
+      if(elapsed>=m.duration){clearInterval(interval);playingId=null;renderMemos();}
+    },1000);
+    playingAudio={pause:()=>clearInterval(interval)};
+  }
+  renderMemos();
+}
+
+function deleteMemo(id){
+  if(!confirm('Delete this recording?'))return;
+  memos=memos.filter(m=>m.id!==id);
+  if(playingId===id){if(playingAudio)playingAudio.pause();playingId=null;}
+  saveMemos();renderMemos();
+}
+function renameMemo(id){
+  editingId=id;
+  const m=memos.find(x=>x.id===id);
+  document.getElementById('enm-input').value=m?m.name:'';
+  document.getElementById('enm').classList.add('open');
+  setTimeout(()=>document.getElementById('enm-input').focus(),100);
+}
+function closeNameModal(){document.getElementById('enm').classList.remove('open');}
+function saveNameModal(){
+  const name=document.getElementById('enm-input').value.trim();
+  if(!name)return;
+  const m=memos.find(x=>x.id===editingId);
+  if(m){m.name=name;saveMemos();renderMemos();}
+  closeNameModal();
+}
+renderMemos();
+</script>
+</body>
+</html>

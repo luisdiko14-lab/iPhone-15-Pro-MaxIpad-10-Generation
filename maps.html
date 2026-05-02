@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maps</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1c1c1e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;overflow:hidden}
+.status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600;flex-shrink:0;position:relative;z-index:1000;background:rgba(28,28,30,.9);backdrop-filter:blur(10px)}
+.search-bar{padding:8px 12px;position:relative;z-index:1000;background:rgba(28,28,30,.9);backdrop-filter:blur(10px)}
+.search-inner{display:flex;align-items:center;background:#2c2c2e;border-radius:12px;padding:0 12px;gap:8px;height:40px}
+.search-inner input{flex:1;background:none;border:none;color:#fff;font-size:15px;outline:none}
+.search-inner input::placeholder{color:#8e8e93}
+.search-icon{font-size:16px;color:#8e8e93}
+.clear-btn{background:none;border:none;color:#8e8e93;font-size:16px;cursor:pointer;padding:2px 4px}
+#map{flex:1}
+.bottom-sheet{position:absolute;bottom:0;left:0;right:0;background:#1c1c1e;border-radius:20px 20px 0 0;padding:16px;z-index:1000;transform:translateY(calc(100% - 60px));transition:transform .3s;max-width:480px;margin:0 auto}
+.bottom-sheet.open{transform:translateY(0)}
+.bs-handle{width:36px;height:4px;background:#3a3a3c;border-radius:2px;margin:0 auto 16px}
+.place-info h2{font-size:20px;font-weight:700;margin-bottom:4px}
+.place-info p{font-size:14px;color:#8e8e93;margin-bottom:14px}
+.place-actions{display:flex;gap:10px}
+.pa-btn{flex:1;background:#2c2c2e;border:none;color:#007aff;border-radius:12px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+.pa-btn .pai{font-size:20px}
+.map-controls{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:999}
+.mc-btn{width:40px;height:40px;background:rgba(28,28,30,.9);backdrop-filter:blur(8px);border:none;border-radius:10px;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.suggestions-list{position:absolute;top:56px;left:12px;right:12px;background:#2c2c2e;border-radius:12px;overflow:hidden;z-index:1001;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.sug-item{padding:12px 14px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:10px;border-bottom:1px solid #3a3a3c}
+.sug-item:last-child{border-bottom:none}
+.sug-item:hover{background:#3a3a3c}
+.sug-icon{font-size:18px}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#007aff;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+<div class="search-bar">
+  <div class="search-inner">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="Search Maps" oninput="handleSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+    <button class="clear-btn" onclick="clearSearch()">✕</button>
+  </div>
+  <div class="suggestions-list" id="sug-list" style="display:none"></div>
+</div>
+
+<div id="map"></div>
+
+<div class="map-controls">
+  <button class="mc-btn" onclick="locateMe()" title="My Location">📍</button>
+  <button class="mc-btn" id="map-type-btn" onclick="toggleMapType()" title="Map Type">🛰</button>
+  <button class="mc-btn" onclick="zoomIn()">+</button>
+  <button class="mc-btn" onclick="zoomOut()">−</button>
+</div>
+
+<div class="bottom-sheet" id="bottom-sheet">
+  <div class="bs-handle"></div>
+  <div class="place-info" id="place-info">
+    <h2 id="place-name">Select a location</h2>
+    <p id="place-addr">Tap anywhere on the map</p>
+    <div class="place-actions">
+      <button class="pa-btn" onclick="getDirections()"><span class="pai">🗺️</span><span>Directions</span></button>
+      <button class="pa-btn" onclick="openInMaps()"><span class="pai">🔗</span><span>Open</span></button>
+      <button class="pa-btn" onclick="shareLocation()"><span class="pai">⬆️</span><span>Share</span></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+
+const PLACES=[
+  {name:'Apple Park',addr:'1 Apple Park Way, Cupertino',lat:37.3346,lng:-122.0090,icon:'🍎'},
+  {name:'Golden Gate Bridge',addr:'San Francisco, CA',lat:37.8199,lng:-122.4783,icon:'🌉'},
+  {name:'Times Square',addr:'Manhattan, New York',lat:40.7580,lng:-73.9855,icon:'🗽'},
+  {name:'Eiffel Tower',addr:'Champ de Mars, Paris',lat:48.8584,lng:2.2945,icon:'🗼'},
+  {name:'Big Ben',addr:'Westminster, London',lat:51.5007,lng:-0.1246,icon:'🇬🇧'},
+  {name:'Tokyo Tower',addr:'4 Chome-2-8, Tokyo',lat:35.6586,lng:139.7454,icon:'🗾'},
+  {name:'Sydney Opera House',addr:'Bennelong Point, Sydney',lat:-33.8568,lng:151.2153,icon:'🎭'},
+  {name:'Colosseum',addr:'Piazza del Colosseo, Rome',lat:41.8902,lng:12.4922,icon:'🏛'},
+  {name:'Central Park',addr:'New York City, NY',lat:40.7851,lng:-73.9683,icon:'🌳'},
+  {name:'Burj Khalifa',addr:'Downtown Dubai, UAE',lat:25.1972,lng:55.2744,icon:'🏙'},
+];
+
+let map,marker,streetLayer,satLayer,isSat=false,selectedLat,selectedLng,selectedName;
+
+function initMap(){
+  map=L.map('map',{zoomControl:false,attributionControl:false}).setView([37.3346,-122.0090],13);
+  streetLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  satLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18});
+
+  // Apple Park marker
+  marker=L.marker([37.3346,-122.0090],{icon:createIcon('🍎')}).addTo(map);
+  selectedLat=37.3346;selectedLng=-122.0090;selectedName='Apple Park';
+  document.getElementById('place-name').textContent='Apple Park';
+  document.getElementById('place-addr').textContent='1 Apple Park Way, Cupertino, CA';
+
+  map.on('click',e=>selectLocation(e.latlng.lat,e.latlng.lng,'Selected Location',`${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`));
+  PLACES.forEach(p=>{
+    L.marker([p.lat,p.lng],{icon:createIcon(p.icon)}).addTo(map).on('click',()=>selectLocation(p.lat,p.lng,p.name,p.addr));
+  });
+}
+function createIcon(emoji){
+  return L.divIcon({html:`<div style="font-size:24px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))">${emoji}</div>`,className:'',iconSize:[30,30],iconAnchor:[15,15]});
+}
+function selectLocation(lat,lng,name,addr){
+  selectedLat=lat;selectedLng=lng;selectedName=name;
+  if(marker)map.removeLayer(marker);
+  marker=L.marker([lat,lng]).addTo(map);
+  document.getElementById('place-name').textContent=name;
+  document.getElementById('place-addr').textContent=addr;
+  document.getElementById('bottom-sheet').classList.add('open');
+  map.setView([lat,lng],14);
+}
+function locateMe(){
+  if(!navigator.geolocation){alert('Geolocation not available');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const{latitude:lat,longitude:lng}=pos.coords;
+    selectLocation(lat,lng,'My Location',`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+  },()=>selectLocation(37.3346,-122.0090,'Apple Park (simulated)','1 Apple Park Way, Cupertino'));
+}
+function toggleMapType(){
+  isSat=!isSat;
+  if(isSat){map.removeLayer(streetLayer);satLayer.addTo(map);}
+  else{map.removeLayer(satLayer);streetLayer.addTo(map);}
+  document.getElementById('map-type-btn').textContent=isSat?'🗺️':'🛰';
+}
+function zoomIn(){map.zoomIn();}
+function zoomOut(){map.zoomOut();}
+
+function handleSearch(){
+  const q=document.getElementById('search-input').value.trim().toLowerCase();
+  const sl=document.getElementById('sug-list');
+  if(!q){sl.style.display='none';return;}
+  const matches=PLACES.filter(p=>p.name.toLowerCase().includes(q)||p.addr.toLowerCase().includes(q));
+  if(!matches.length){sl.style.display='none';return;}
+  sl.style.display='block';
+  sl.innerHTML=matches.map(p=>`<div class="sug-item" onclick="selectPlace('${p.name}')"><span class="sug-icon">${p.icon}</span><div><div style="font-weight:600">${p.name}</div><div style="font-size:12px;color:#8e8e93">${p.addr}</div></div></div>`).join('');
+}
+function selectPlace(name){
+  const p=PLACES.find(x=>x.name===name);
+  if(!p)return;
+  document.getElementById('sug-list').style.display='none';
+  document.getElementById('search-input').value=p.name;
+  selectLocation(p.lat,p.lng,p.name,p.addr);
+}
+function doSearch(){
+  const q=document.getElementById('search-input').value.trim();
+  const p=PLACES.find(x=>x.name.toLowerCase().includes(q.toLowerCase()));
+  if(p)selectPlace(p.name);
+}
+function clearSearch(){document.getElementById('search-input').value='';document.getElementById('sug-list').style.display='none';}
+function getDirections(){if(selectedLat)window.open(`https://www.openstreetmap.org/directions?to=${selectedLat},${selectedLng}`,'_blank');}
+function openInMaps(){if(selectedLat)window.open(`https://www.openstreetmap.org/?mlat=${selectedLat}&mlon=${selectedLng}&zoom=15`,'_blank');}
+function shareLocation(){if(navigator.share&&selectedLat)navigator.share({title:selectedName,text:selectedName,url:`https://maps.apple.com/?ll=${selectedLat},${selectedLng}`});}
+
+document.addEventListener('click',e=>{if(!e.target.closest('#sug-list')&&!e.target.closest('#search-input'))document.getElementById('sug-list').style.display='none';});
+initMap();
+</script>
+</body>
+</html>

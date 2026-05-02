@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;min-height:100vh;max-width:480px;margin:0 auto}
+.status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600}
+.header{padding:8px 18px 12px;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:28px;font-weight:700}
+.summary-card{margin:0 14px 16px;background:linear-gradient(135deg,#ff2d55,#ff6b6b);border-radius:16px;padding:18px;display:flex;align-items:center;gap:16px}
+.summary-icon{font-size:44px}
+.summary-text h2{font-size:16px;font-weight:700;margin-bottom:4px}
+.summary-text p{font-size:13px;opacity:.85;line-height:1.4}
+.section-hdr{padding:8px 18px 6px;font-size:13px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px 16px}
+.metric-card{background:#1c1c1e;border-radius:16px;padding:16px;cursor:pointer;transition:transform .15s}
+.metric-card:active{transform:scale(.97)}
+.mc-icon{font-size:22px;margin-bottom:10px}
+.mc-cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.mc-val{font-size:32px;font-weight:700;line-height:1}
+.mc-unit{font-size:13px;font-weight:400;color:#8e8e93;margin-left:2px}
+.mc-sub{font-size:12px;color:#8e8e93;margin-top:6px}
+.mc-bar{height:4px;border-radius:2px;background:#2c2c2e;margin-top:10px;overflow:hidden}
+.mc-bar-fill{height:100%;border-radius:2px;transition:width 1s ease}
+.trend-card{background:#1c1c1e;border-radius:16px;margin:0 14px 16px;padding:16px}
+.trend-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.trend-hdr h3{font-size:17px;font-weight:600}
+.trend-hdr span{font-size:13px;color:#8e8e93}
+.chart{display:flex;align-items:flex-end;gap:4px;height:80px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height 1s ease;min-height:2px}
+.bar-label{font-size:10px;color:#8e8e93}
+.highlights{padding:0 14px 20px;display:flex;flex-direction:column;gap:8px}
+.hl-item{background:#1c1c1e;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+.hl-ico{font-size:28px;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hl-text h4{font-size:15px;font-weight:600;margin-bottom:3px}
+.hl-text p{font-size:13px;color:#8e8e93}
+.ring-container{display:flex;justify-content:center;padding:10px 14px 16px}
+.ring-wrap{position:relative;width:160px;height:160px}
+svg.rings{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ring-pct{font-size:28px;font-weight:700}
+.ring-lbl{font-size:11px;color:#8e8e93}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#ff2d55;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+<div class="header">
+  <div>
+    <h1>Health</h1>
+    <div style="font-size:13px;color:#8e8e93">Today, <span id="today-date"></span></div>
+  </div>
+  <div style="font-size:32px">👤</div>
+</div>
+
+<div class="summary-card">
+  <div class="summary-icon">❤️</div>
+  <div class="summary-text">
+    <h2>You're doing great!</h2>
+    <p>Activity, sleep and nutrition are all on track. Keep it up!</p>
+  </div>
+</div>
+
+<div class="section-hdr">Activity Rings</div>
+<div class="ring-container">
+  <div class="ring-wrap">
+    <svg class="rings" viewBox="0 0 160 160">
+      <!-- Move ring (red) -->
+      <circle cx="80" cy="80" r="70" fill="none" stroke="#2c2c2e" stroke-width="12"/>
+      <circle id="r-move" cx="80" cy="80" r="70" fill="none" stroke="#ff2d55" stroke-width="12" stroke-linecap="round" stroke-dasharray="439.82" stroke-dashoffset="439.82"/>
+      <!-- Exercise ring (green) -->
+      <circle cx="80" cy="80" r="56" fill="none" stroke="#2c2c2e" stroke-width="12"/>
+      <circle id="r-ex" cx="80" cy="80" r="56" fill="none" stroke="#30d158" stroke-width="12" stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="351.86"/>
+      <!-- Stand ring (blue) -->
+      <circle cx="80" cy="80" r="42" fill="none" stroke="#2c2c2e" stroke-width="12"/>
+      <circle id="r-stand" cx="80" cy="80" r="42" fill="none" stroke="#007aff" stroke-width="12" stroke-linecap="round" stroke-dasharray="263.89" stroke-dashoffset="263.89"/>
+    </svg>
+    <div class="ring-center">
+      <span class="ring-pct" id="ring-pct">0%</span>
+      <span class="ring-lbl">Daily Goal</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-hdr">Today's Summary</div>
+<div class="metric-grid">
+  <div class="metric-card" onclick="expandMetric('steps')">
+    <div class="mc-icon">🚶</div>
+    <div class="mc-cat" style="color:#ff9500">Steps</div>
+    <div class="mc-val" id="steps-val">0<span class="mc-unit">steps</span></div>
+    <div class="mc-sub" id="steps-goal"></div>
+    <div class="mc-bar"><div class="mc-bar-fill" id="steps-bar" style="background:#ff9500;width:0%"></div></div>
+  </div>
+  <div class="metric-card" onclick="expandMetric('heart')">
+    <div class="mc-icon">❤️</div>
+    <div class="mc-cat" style="color:#ff2d55">Heart Rate</div>
+    <div class="mc-val"><span id="hr-val">--</span><span class="mc-unit">BPM</span></div>
+    <div class="mc-sub" id="hr-range">Resting</div>
+    <div class="mc-bar"><div class="mc-bar-fill" id="hr-bar" style="background:#ff2d55;width:0%"></div></div>
+  </div>
+  <div class="metric-card" onclick="expandMetric('calories')">
+    <div class="mc-icon">🔥</div>
+    <div class="mc-cat" style="color:#ff6b00">Calories</div>
+    <div class="mc-val"><span id="cal-val">0</span><span class="mc-unit">kcal</span></div>
+    <div class="mc-sub" id="cal-goal"></div>
+    <div class="mc-bar"><div class="mc-bar-fill" id="cal-bar" style="background:#ff6b00;width:0%"></div></div>
+  </div>
+  <div class="metric-card" onclick="expandMetric('sleep')">
+    <div class="mc-icon">😴</div>
+    <div class="mc-cat" style="color:#5e5ce6">Sleep</div>
+    <div class="mc-val"><span id="sleep-val">0</span><span class="mc-unit">hr</span></div>
+    <div class="mc-sub" id="sleep-sub"></div>
+    <div class="mc-bar"><div class="mc-bar-fill" id="sleep-bar" style="background:#5e5ce6;width:0%"></div></div>
+  </div>
+  <div class="metric-card">
+    <div class="mc-icon">💧</div>
+    <div class="mc-cat" style="color:#30b0c7">Hydration</div>
+    <div class="mc-val"><span id="water-val">0</span><span class="mc-unit">ml</span></div>
+    <div class="mc-sub">Goal: 2,000ml</div>
+    <div class="mc-bar"><div class="mc-bar-fill" id="water-bar" style="background:#30b0c7;width:0%"></div></div>
+  </div>
+  <div class="metric-card">
+    <div class="mc-icon">🏃</div>
+    <div class="mc-cat" style="color:#30d158">Exercise</div>
+    <div class="mc-val"><span id="ex-val">0</span><span class="mc-unit">min</span></div>
+    <div class="mc-sub">Goal: 30 min</div>
+    <div class="mc-bar"><div class="mc-bar-fill" id="ex-bar" style="background:#30d158;width:0%"></div></div>
+  </div>
+</div>
+
+<div class="section-hdr">Weekly Steps</div>
+<div class="trend-card">
+  <div class="trend-hdr"><h3>Steps</h3><span>This week</span></div>
+  <div class="chart" id="steps-chart"></div>
+</div>
+
+<div class="section-hdr">Highlights</div>
+<div class="highlights">
+  <div class="hl-item">
+    <div class="hl-ico" style="background:#1c2840">🧘</div>
+    <div class="hl-text"><h4>Mindful Minutes</h4><p>You've been mindful for <strong id="mindful-val">0</strong> minutes today</p></div>
+  </div>
+  <div class="hl-item">
+    <div class="hl-ico" style="background:#1a2a1a">🏔️</div>
+    <div class="hl-text"><h4>Flights Climbed</h4><p><strong id="flights-val">0</strong> flights · <strong id="distance-val">0</strong> km walked</p></div>
+  </div>
+  <div class="hl-item">
+    <div class="hl-ico" style="background:#2a1a2a">🩸</div>
+    <div class="hl-text"><h4>Blood Oxygen</h4><p><strong id="spo2-val">98</strong>% · Measured 1 hour ago</p></div>
+  </div>
+</div>
+<div style="height:30px"></div>
+
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+document.getElementById('today-date').textContent=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric'});
+
+// Simulated data (seeded from current date for consistency)
+const seed=new Date().getDate();
+const data={
+  steps:6400+seed*210,
+  stepsGoal:10000,
+  hr:62+Math.round(Math.sin(seed)*8),
+  hrMin:55,hrMax:110,
+  cal:1420+seed*30,
+  calGoal:2200,
+  sleep:6+((seed%4)*0.5),
+  sleepGoal:8,
+  water:1200+seed*40,
+  exercise:22+seed%15,
+  mindful:8+seed%12,
+  flights:4+seed%8,
+  distance:(3.2+seed*0.15).toFixed(1),
+  spo2:97+seed%2,
+};
+
+function animateValue(id,target,dur=1200){
+  const el=document.getElementById(id);
+  const start=Date.now();
+  const tick=()=>{
+    const t=Math.min(1,(Date.now()-start)/dur);
+    const v=Math.round(target*t);
+    el.textContent=v.toLocaleString();
+    if(t<1)requestAnimationFrame(tick);
+  };requestAnimationFrame(tick);
+}
+function animateBar(id,pct,dur=1200){
+  setTimeout(()=>{
+    const el=document.getElementById(id);
+    if(el)el.style.width=Math.min(100,pct)+'%';
+  },100);
+}
+function animateRing(id,circ,pct,dur=1200){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const target=circ*(1-Math.min(1,pct/100));
+  setTimeout(()=>{el.style.transition=`stroke-dashoffset ${dur}ms ease`;el.style.strokeDashoffset=target;},100);
+}
+
+// Steps
+animateValue('steps-val',data.steps);
+const stepsPct=Math.round(data.steps/data.stepsGoal*100);
+document.getElementById('steps-goal').textContent=`Goal: ${data.stepsGoal.toLocaleString()} · ${stepsPct}%`;
+animateBar('steps-bar',stepsPct);
+
+// HR
+setTimeout(()=>{document.getElementById('hr-val').textContent=data.hr;},600);
+document.getElementById('hr-range').textContent=`Range: ${data.hrMin}–${data.hrMax} BPM`;
+animateBar('hr-bar',(data.hr-40)/(150-40)*100);
+
+// Calories
+animateValue('cal-val',data.cal);
+const calPct=Math.round(data.cal/data.calGoal*100);
+document.getElementById('cal-goal').textContent=`Goal: ${data.calGoal.toLocaleString()} · ${calPct}%`;
+animateBar('cal-bar',calPct);
+
+// Sleep
+setTimeout(()=>{document.getElementById('sleep-val').textContent=data.sleep.toFixed(1);},600);
+const sleepPct=Math.round(data.sleep/data.sleepGoal*100);
+document.getElementById('sleep-sub').textContent=`Goal: ${data.sleepGoal}hr · ${sleepPct}%`;
+animateBar('sleep-bar',sleepPct);
+
+// Water
+animateValue('water-val',data.water);
+animateBar('water-bar',data.water/2000*100);
+
+// Exercise
+animateValue('ex-val',data.exercise);
+animateBar('ex-bar',data.exercise/30*100);
+
+// Rings
+const movePct=Math.min(120,stepsPct);
+const exPct=Math.min(120,data.exercise/30*100);
+const standPct=Math.min(120,data.exercise>20?80:40);
+animateRing('r-move',439.82,movePct);
+animateRing('r-ex',351.86,exPct);
+animateRing('r-stand',263.89,standPct);
+const overall=Math.round((movePct+exPct+standPct)/3);
+setTimeout(()=>{document.getElementById('ring-pct').textContent=overall+'%';},1200);
+
+// Highlights
+document.getElementById('mindful-val').textContent=data.mindful;
+document.getElementById('flights-val').textContent=data.flights;
+document.getElementById('distance-val').textContent=data.distance;
+document.getElementById('spo2-val').textContent=data.spo2;
+
+// Weekly chart
+const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const weekSteps=[4200,7800,5600,9100,8300,data.steps,2100];
+const maxS=Math.max(...weekSteps);
+const chart=document.getElementById('steps-chart');
+chart.innerHTML=days.map((d,i)=>`<div class="bar-col">
+  <div class="bar-fill" style="background:${i===5?'#ff9500':'#3a3a3c'};height:0%;width:100%;transition:height 1s ease ${i*80}ms" data-h="${Math.round(weekSteps[i]/maxS*100)}"></div>
+  <span class="bar-label">${d}</span>
+</div>`).join('');
+setTimeout(()=>{chart.querySelectorAll('.bar-fill').forEach(b=>{b.style.height=b.dataset.h+'%';});},200);
+
+function expandMetric(m){
+  const msgs={steps:'📊 Steps detail: Daily average this week is '+Math.round(weekSteps.slice(0,6).reduce((a,b)=>a+b)/6).toLocaleString()+' steps.',heart:'❤️ Heart rate: Resting '+data.hr+' BPM. Cardio fitness: Good.',calories:'🔥 Active calories burned: '+data.cal.toLocaleString()+'kcal. Total (including resting): '+(data.cal+1800).toLocaleString()+'kcal.',sleep:'😴 Sleep analysis: '+data.sleep.toFixed(1)+'h total. Deep sleep: 1.8h. REM: 2.1h. Awake: 0.4h.'};
+  alert(msgs[m]||'No detail available');
+}
+</script>
+</body>
+</html>

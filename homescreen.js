@@ -141,17 +141,21 @@ class HomeScreen {
     this.setupAppClick('siri-app', `siri.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Siri', '🎙️');
     this.setupAppClick('discord-app', `discord_2.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Discord', '💬');
 
-    // Apps still showing "coming soon"
-    const comingSoonApps = ['photos-app', 'safari-app', 'clock-app', 'maps-app', 'health-app', 'find-my-app'];
+    // Previously "coming soon" — now real apps
+    this.setupAppClick('photos-app', `photos.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Photos', '🖼️');
+    this.setupAppClick('safari-app', `safari.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Safari', '🌐');
+    this.setupAppClick('clock-app', `clock.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Clock', '⏰');
+    this.setupAppClick('maps-app', `maps.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Maps', '🗺️');
+    this.setupAppClick('health-app', `health.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Health', '❤️');
+    this.setupAppClick('find-my-app', `findmy.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Find My', '📍');
 
-    comingSoonApps.forEach(appId => {
-      const appElement = document.getElementById(appId);
-      if (appElement) {
-        const appName = appElement.querySelector('span')?.textContent || 'App';
-        const appIcon = appElement.querySelector('.app-icon')?.textContent || '📱';
-        this.setupAppClick(appId, null, appName, appIcon);
-      }
-    });
+    // New apps
+    this.setupAppClick('reminders-app', `reminders.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Reminders', '☑️');
+    this.setupAppClick('calendar-app', `calendar.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Calendar', '📅');
+    this.setupAppClick('contacts-app', `contacts.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Contacts', '👤');
+    this.setupAppClick('translate-app', `translate.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Translate', '🌐');
+    this.setupAppClick('voicememos-app', `voicememos.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Voice Memos', '🎙️');
+    this.setupAppClick('files-app', `files.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Files', '📁');
   }
   
   setupAppClick(appId, url, appName, appIcon) {

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clock</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;overflow:hidden}
+.status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600;flex-shrink:0}
+.header{display:flex;justify-content:space-between;align-items:center;padding:8px 16px 4px;flex-shrink:0}
+.header h1{font-size:28px;font-weight:700}
+.header .add-btn{background:none;border:none;color:#ff9500;font-size:24px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.tab-bar{display:flex;border-bottom:1px solid #2c2c2e;flex-shrink:0}
+.tab{flex:1;text-align:center;padding:10px;font-size:13px;font-weight:500;color:#8e8e93;cursor:pointer;border-bottom:2px solid transparent}
+.tab.active{color:#ff9500;border-bottom-color:#ff9500}
+.view{flex:1;overflow-y:auto;display:none}
+.view.active{display:block}
+
+/* World Clock */
+.wc-item{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #2c2c2e}
+.wc-left .city{font-size:22px;font-weight:500}
+.wc-left .rel{font-size:13px;color:#8e8e93;margin-top:2px}
+.wc-time{text-align:right}
+.wc-ampm{font-size:16px;color:#8e8e93;margin-right:4px}
+.wc-hm{font-size:48px;font-weight:200;line-height:1}
+
+/* Alarm */
+.alarm-item{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #2c2c2e}
+.al-time{font-size:48px;font-weight:200;line-height:1}
+.al-label{font-size:13px;color:#8e8e93;margin-top:4px}
+.al-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.toggle{position:relative;width:51px;height:31px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:31px;background:#3a3a3c;transition:background .2s}
+.toggle input:checked~.toggle-track{background:#ff9500}
+.toggle-knob{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.toggle input:checked~.toggle-knob{transform:translateX(20px)}
+.add-alarm-btn{margin:20px auto;display:flex;align-items:center;justify-content:center;gap:8px;background:#ff9500;color:#000;border:none;border-radius:12px;padding:14px 32px;font-size:16px;font-weight:600;cursor:pointer;width:calc(100% - 36px)}
+
+/* Stopwatch */
+.sw-display{text-align:center;padding:30px 0 16px;font-size:80px;font-weight:200;letter-spacing:-2px;flex-shrink:0}
+.sw-ms{font-size:40px;font-weight:200;color:#8e8e93}
+.sw-btns{display:flex;justify-content:center;gap:30px;padding:10px 0 20px}
+.sw-btn{width:80px;height:80px;border-radius:50%;border:none;font-size:17px;font-weight:600;cursor:pointer;transition:opacity .1s}
+.sw-btn:active{opacity:.7}
+.sw-btn.green{background:#30d158;color:#000}
+.sw-btn.gray{background:#2c2c2e;color:#fff}
+.sw-btn.red{background:#ff3b30;color:#fff}
+.lap-list{overflow-y:auto;flex:1;padding:0 18px}
+.lap-item{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #2c2c2e;font-size:15px}
+.lap-best{color:#30d158}
+.lap-worst{color:#ff3b30}
+
+/* Timer */
+.timer-display{text-align:center;padding:20px 0 10px;font-size:80px;font-weight:200;letter-spacing:-2px}
+.timer-picker{display:flex;justify-content:center;gap:0;padding:10px 0 20px;height:200px;overflow:hidden}
+.picker-col{display:flex;flex-direction:column;align-items:center;width:80px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-ms-overflow-style:none}
+.picker-col::-webkit-scrollbar{display:none}
+.picker-col div{height:44px;line-height:44px;font-size:28px;font-weight:300;scroll-snap-align:center;cursor:pointer;color:#8e8e93;width:100%;text-align:center}
+.picker-col div.sel{color:#fff;font-size:32px;font-weight:400}
+.picker-label{font-size:13px;color:#8e8e93;margin-top:2px}
+.timer-btns{display:flex;justify-content:center;gap:30px;padding:10px 0}
+.timer-btn{width:80px;height:80px;border-radius:50%;border:none;font-size:17px;font-weight:600;cursor:pointer}
+.timer-btn.green{background:#30d158;color:#000}
+.timer-btn.gray{background:#2c2c2e;color:#fff}
+.timer-btn.red{background:#ff3b30;color:#fff}
+.timer-presets{display:flex;flex-wrap:wrap;gap:10px;padding:0 18px}
+.preset-btn{background:#2c2c2e;border:none;color:#fff;border-radius:20px;padding:8px 16px;font-size:14px;cursor:pointer}
+.preset-btn:active{opacity:.7}
+.sw-view-inner{display:flex;flex-direction:column;height:100%;padding:0}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+<div class="header">
+  <h1 id="page-hdr">World Clock</h1>
+  <button class="add-btn" id="hdr-add">+</button>
+</div>
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab(0)">World</div>
+  <div class="tab" onclick="switchTab(1)">Alarm</div>
+  <div class="tab" onclick="switchTab(2)">Stopwatch</div>
+  <div class="tab" onclick="switchTab(3)">Timer</div>
+</div>
+
+<!-- World Clock -->
+<div class="view active" id="view-0" style="overflow-y:auto"></div>
+
+<!-- Alarm -->
+<div class="view" id="view-1" style="overflow-y:auto">
+  <div id="alarm-list"></div>
+  <button class="add-alarm-btn" onclick="addAlarm()">+ Add Alarm</button>
+</div>
+
+<!-- Stopwatch -->
+<div class="view" id="view-2">
+  <div class="sw-view-inner">
+    <div class="sw-display" id="sw-display">00:00<span class="sw-ms">.00</span></div>
+    <div class="sw-btns">
+      <button class="sw-btn gray" id="sw-lap-reset" onclick="swLapReset()">Lap</button>
+      <button class="sw-btn green" id="sw-start-stop" onclick="swStartStop()">Start</button>
+    </div>
+    <div class="lap-list" id="lap-list"></div>
+  </div>
+</div>
+
+<!-- Timer -->
+<div class="view" id="view-3" style="overflow-y:auto;padding-bottom:40px">
+  <div class="timer-display" id="timer-display">00:00:00</div>
+  <div class="timer-picker" id="timer-picker">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="picker-col" id="pc-h"></div>
+      <div class="picker-label">hours</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="picker-col" id="pc-m"></div>
+      <div class="picker-label">min</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="picker-col" id="pc-s"></div>
+      <div class="picker-label">sec</div>
+    </div>
+  </div>
+  <div class="timer-btns">
+    <button class="timer-btn gray" onclick="timerCancel()">Cancel</button>
+    <button class="timer-btn green" id="timer-start-btn" onclick="timerStartStop()">Start</button>
+  </div>
+  <div style="padding:12px 18px 8px;font-size:13px;color:#8e8e93;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Quick Set</div>
+  <div class="timer-presets">
+    <button class="preset-btn" onclick="setPreset(1,0,0)">1 hr</button>
+    <button class="preset-btn" onclick="setPreset(0,30,0)">30 min</button>
+    <button class="preset-btn" onclick="setPreset(0,10,0)">10 min</button>
+    <button class="preset-btn" onclick="setPreset(0,5,0)">5 min</button>
+    <button class="preset-btn" onclick="setPreset(0,3,0)">3 min</button>
+    <button class="preset-btn" onclick="setPreset(0,1,0)">1 min</button>
+    <button class="preset-btn" onclick="setPreset(0,0,30)">30 sec</button>
+  </div>
+</div>
+
+<script>
+// Status bar
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+
+// Tabs
+const HDRS=['World Clock','Alarm','Stopwatch','Timer'];
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.view').forEach((v,j)=>v.classList.toggle('active',i===j));
+  document.getElementById('page-hdr').textContent=HDRS[i];
+  document.getElementById('hdr-add').style.display=(i===0||i===1)?'flex':'none';
+  document.getElementById('hdr-add').onclick=i===0?addCity:addAlarm;
+}
+
+// ====== World Clock ======
+const CITIES=[
+  {name:'Cupertino',tz:'America/Los_Angeles',flag:'🇺🇸'},
+  {name:'New York',tz:'America/New_York',flag:'🇺🇸'},
+  {name:'London',tz:'Europe/London',flag:'🇬🇧'},
+  {name:'Paris',tz:'Europe/Paris',flag:'🇫🇷'},
+  {name:'Tokyo',tz:'Asia/Tokyo',flag:'🇯🇵'},
+  {name:'Sydney',tz:'Australia/Sydney',flag:'🇦🇺'},
+  {name:'Dubai',tz:'Asia/Dubai',flag:'🇦🇪'},
+  {name:'Singapore',tz:'Asia/Singapore',flag:'🇸🇬'},
+];
+function cityTime(tz){
+  return new Date().toLocaleTimeString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:true});
+}
+function cityOffset(tz){
+  const local=new Date();
+  const remote=new Date(local.toLocaleString('en-US',{timeZone:tz}));
+  const diff=Math.round((remote-local)/3600000);
+  if(diff===0)return'Same time';
+  return`${diff>0?'+':''}${diff} hr${Math.abs(diff)!==1?'s':''}`;
+}
+function renderWorldClock(){
+  const v=document.getElementById('view-0');
+  v.innerHTML=CITIES.map(c=>{
+    const t=cityTime(c.tz);
+    const[hm,ap]=t.split(' ');
+    return`<div class="wc-item">
+      <div class="wc-left"><div class="city">${c.flag} ${c.name}</div><div class="rel">${cityOffset(c.tz)}</div></div>
+      <div class="wc-time"><span class="wc-ampm">${ap||''}</span><div class="wc-hm">${hm}</div></div>
+    </div>`;
+  }).join('');
+}
+renderWorldClock();
+setInterval(renderWorldClock,10000);
+function addCity(){alert('Add City\n\nAvailable: '+CITIES.map(c=>c.name).join(', '));}
+
+// ====== Alarm ======
+let alarms=JSON.parse(localStorage.getItem('alarms')||'[{"h":7,"m":0,"label":"Wake Up","on":true},{"h":8,"m":30,"label":"Work","on":false}]');
+function saveAlarms(){localStorage.setItem('alarms',JSON.stringify(alarms));}
+function renderAlarms(){
+  const list=document.getElementById('alarm-list');
+  list.innerHTML=alarms.map((a,i)=>{
+    const h=String(a.h).padStart(2,'0'),m=String(a.m).padStart(2,'0');
+    const ap=a.h>=12?'PM':'AM';
+    const h12=a.h%12||12;
+    return`<div class="alarm-item">
+      <div><div class="al-time">${h12}:${m}<span style="font-size:22px;color:#8e8e93"> ${ap}</span></div><div class="al-label">${a.label}</div></div>
+      <div class="al-right">
+        <label class="toggle"><input type="checkbox" ${a.on?'checked':''} onchange="alarms[${i}].on=this.checked;saveAlarms()"><div class="toggle-track"></div><div class="toggle-knob"></div></label>
+        <button onclick="deleteAlarm(${i})" style="background:none;border:none;color:#ff3b30;font-size:13px;cursor:pointer">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function deleteAlarm(i){alarms.splice(i,1);saveAlarms();renderAlarms();}
+function addAlarm(){
+  const h=parseInt(prompt('Hour (0-23):','7')||'7');
+  const m=parseInt(prompt('Minute (0-59):','0')||'0');
+  const label=prompt('Label:','Alarm')||'Alarm';
+  if(isNaN(h)||isNaN(m))return;
+  alarms.push({h:Math.max(0,Math.min(23,h)),m:Math.max(0,Math.min(59,m)),label,on:true});
+  saveAlarms();renderAlarms();
+}
+renderAlarms();
+
+// ====== Stopwatch ======
+let swRunning=false,swElapsed=0,swStart=0,swLaps=[],swRaf=null;
+function swFmt(ms){
+  const cs=Math.floor(ms/10)%100;
+  const s=Math.floor(ms/1000)%60;
+  const mn=Math.floor(ms/60000);
+  return`${String(mn).padStart(2,'0')}:${String(s).padStart(2,'0')}<span class="sw-ms">.${String(cs).padStart(2,'0')}</span>`;
+}
+function swTick(){
+  swElapsed=Date.now()-swStart;
+  document.getElementById('sw-display').innerHTML=swFmt(swElapsed);
+  swRaf=requestAnimationFrame(swTick);
+}
+function swStartStop(){
+  if(swRunning){
+    swRunning=false;cancelAnimationFrame(swRaf);
+    document.getElementById('sw-start-stop').textContent='Start';
+    document.getElementById('sw-start-stop').className='sw-btn green';
+    document.getElementById('sw-lap-reset').textContent='Reset';
+  } else {
+    swRunning=true;swStart=Date.now()-swElapsed;
+    document.getElementById('sw-start-stop').textContent='Stop';
+    document.getElementById('sw-start-stop').className='sw-btn red';
+    document.getElementById('sw-lap-reset').textContent='Lap';
+    swTick();
+  }
+}
+function swLapReset(){
+  if(swRunning){
+    swLaps.unshift({n:swLaps.length+1,t:swElapsed});
+    renderLaps();
+  } else {
+    swElapsed=0;swLaps=[];
+    document.getElementById('sw-display').innerHTML='00:00<span class="sw-ms">.00</span>';
+    document.getElementById('sw-lap-reset').textContent='Lap';
+    renderLaps();
+  }
+}
+function renderLaps(){
+  const list=document.getElementById('lap-list');
+  if(!swLaps.length){list.innerHTML='';return;}
+  const times=swLaps.map(l=>l.t-(swLaps[swLaps.indexOf(l)+1]?.t||0));
+  const min=Math.min(...times),max=Math.max(...times);
+  list.innerHTML=swLaps.map((l,i)=>{
+    const lapTime=l.t-(swLaps[i+1]?.t||0);
+    const cls=lapTime===min&&swLaps.length>1?'lap-best':lapTime===max&&swLaps.length>1?'lap-worst':'';
+    return`<div class="lap-item ${cls}"><span>Lap ${l.n}</span><span>${swFmt(lapTime).replace(/<[^>]+>/g,'').replace(/\.(\d+)/,'.$1')}</span><span>${swFmt(l.t).replace(/<[^>]+>/g,'')}</span></div>`;
+  }).join('');
+}
+
+// ====== Timer ======
+let timerRunning=false,timerRemaining=0,timerTotal=0,timerInterval=null;
+let pickerH=0,pickerM=5,pickerS=0;
+
+function buildPicker(id,max,val,setter){
+  const col=document.getElementById(id);
+  col.innerHTML='<div style="height:78px"></div>'+
+    Array.from({length:max},(_, i)=>`<div data-v="${i}" class="${i===val?'sel':''}">${String(i).padStart(2,'0')}</div>`).join('')+
+    '<div style="height:78px"></div>';
+  col.querySelectorAll('div[data-v]').forEach(d=>{
+    d.addEventListener('click',()=>{
+      setter(parseInt(d.dataset.v));
+      buildPicker(id,max,parseInt(d.dataset.v),setter);
+      updateTimerDisplay();
+    });
+  });
+  // scroll to value
+  const sel=col.querySelector('.sel');
+  if(sel)setTimeout(()=>sel.scrollIntoView({block:'center',behavior:'smooth'}),50);
+}
+function buildPickers(){
+  buildPicker('pc-h',24,pickerH,v=>{pickerH=v});
+  buildPicker('pc-m',60,pickerM,v=>{pickerM=v});
+  buildPicker('pc-s',60,pickerS,v=>{pickerS=v});
+}
+function updateTimerDisplay(){
+  const tot=pickerH*3600+pickerM*60+pickerS;
+  const h=Math.floor(tot/3600),m=Math.floor((tot%3600)/60),s=tot%60;
+  document.getElementById('timer-display').textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function setPreset(h,m,s){
+  pickerH=h;pickerM=m;pickerS=s;
+  buildPickers();updateTimerDisplay();
+}
+function timerStartStop(){
+  if(timerRunning){
+    timerRunning=false;clearInterval(timerInterval);
+    document.getElementById('timer-start-btn').textContent='Start';
+    document.getElementById('timer-start-btn').className='timer-btn green';
+    document.getElementById('timer-picker').style.display='flex';
+  } else {
+    timerTotal=pickerH*3600+pickerM*60+pickerS;
+    if(!timerTotal)return;
+    timerRemaining=timerTotal;timerRunning=true;
+    document.getElementById('timer-picker').style.display='none';
+    document.getElementById('timer-start-btn').textContent='Pause';
+    document.getElementById('timer-start-btn').className='timer-btn red';
+    timerInterval=setInterval(()=>{
+      timerRemaining--;
+      const h=Math.floor(timerRemaining/3600),m=Math.floor((timerRemaining%3600)/60),s=timerRemaining%60;
+      document.getElementById('timer-display').textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if(timerRemaining<=0){
+        clearInterval(timerInterval);timerRunning=false;
+        document.getElementById('timer-start-btn').textContent='Start';
+        document.getElementById('timer-start-btn').className='timer-btn green';
+        document.getElementById('timer-picker').style.display='flex';
+        // Buzz
+        try{const ctx=new AudioContext();const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.3,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1);o.start(ctx.currentTime);o.stop(ctx.currentTime+1);}catch(e){}
+        if(navigator.vibrate)navigator.vibrate([500,200,500]);
+        alert('Timer Done! ⏰');
+      }
+    },1000);
+  }
+}
+function timerCancel(){
+  timerRunning=false;clearInterval(timerInterval);
+  timerRemaining=0;
+  document.getElementById('timer-display').textContent='00:00:00';
+  document.getElementById('timer-start-btn').textContent='Start';
+  document.getElementById('timer-start-btn').className='timer-btn green';
+  document.getElementById('timer-picker').style.display='flex';
+  pickerH=0;pickerM=0;pickerS=0;buildPickers();
+}
+buildPickers();updateTimerDisplay();
+</script>
+</body>
+</html>
