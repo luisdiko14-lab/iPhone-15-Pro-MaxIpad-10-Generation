@@ -1,4 +1,4 @@
-name: Python Dev Server with Public URL
+name: Python Server (Fixed 502)
 
 on:
   workflow_dispatch:
@@ -11,15 +11,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Create .env file
+      - name: Create .env
         run: |
           echo "GROQ_SECRET=${{ secrets.GROQ_SECRET }}" >> .env
           echo "GROK_SECRET=${{ secrets.GROK_SECRET }}" >> .env
@@ -28,32 +27,43 @@ jobs:
           echo "DISCORD_CLIENT_SECRET=${{ secrets.DISCORD_CLIENT_SECRET }}" >> .env
           echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt || echo "No requirements.txt"
+      - name: Install deps
+        run: pip install -r requirements.txt || true
 
-      - name: Install Cloudflare Tunnel
+      - name: Install cloudflared
         run: |
           wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cloudflared
           chmod +x cloudflared
 
-      - name: Start Python server (background)
+      - name: Start server
         run: |
           python server.py > app.log 2>&1 &
+      
+      # ✅ WAIT UNTIL PORT IS READY
+      - name: Wait for server (port 3000)
+        run: |
+          for i in {1..20}; do
+            if nc -z localhost 3000; then
+              echo "✅ Server is up!"
+              break
+            fi
+            echo "⏳ Waiting for server..."
+            sleep 2
+          done
 
-      - name: Start Cloudflare Tunnel
+      - name: Start tunnel
         run: |
           ./cloudflared tunnel --url http://localhost:3000 > tunnel.log 2>&1 &
-          sleep 10
+          sleep 8
           echo "🌍 Public URL:"
-          cat tunnel.log | grep -o 'https://[-0-9a-z]*\.trycloudflare.com'
+          grep -o 'https://[-0-9a-z]*\.trycloudflare.com' tunnel.log
 
-      - name: Show logs (debug)
+      - name: Logs
         run: |
           echo "==== APP LOG ===="
           cat app.log || true
           echo "==== TUNNEL LOG ===="
           cat tunnel.log || true
 
-      - name: Keep alive (3 min)
-        run: sleep 180
+      - name: Keep alive
+        run: sleep 100000000000000
