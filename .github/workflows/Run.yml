@@ -1,0 +1,44 @@
+name: Dev Server with Public URL
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  run-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          echo "GROQ_SECRET=${{ secrets.GROQ_SECRET }}" >> .env
+          echo "GROK_SECRET=${{ secrets.GROK_SECRET }}" >> .env
+          echo "GEMINI_SECRET=${{ secrets.GEMINI_SECRET }}" >> .env
+          echo "DISCORD_CLIENT_ID=${{ secrets.DISCORD_CLIENT_ID }}" >> .env
+          echo "DISCORD_CLIENT_SECRET=${{ secrets.DISCORD_CLIENT_SECRET }}" >> .env
+          echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install ngrok
+        run: npm install -g ngrok
+
+      - name: Start app in background
+        run: npm run dev &
+
+      - name: Start ngrok tunnel
+        run: |
+          ngrok http 3000 > /dev/null &
+          sleep 6
+          curl -s http://127.0.0.1:4040/api/tunnels > tunnels.json
+          echo "🌍 Public URL:"
+          cat tunnels.json | grep -o 'https://[0-9a-z]*\.ngrok-free\.app'
+
+      - name: Keep alive for testing
+        run: sleep 180
