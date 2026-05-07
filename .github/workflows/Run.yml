@@ -1,4 +1,4 @@
-name: Dev Server with Public URL
+name: Python Dev Server with Public URL
 
 on:
   workflow_dispatch:
@@ -7,12 +7,17 @@ on:
       - main
 
 jobs:
-  run-dev:
+  run-server:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Create .env file
         run: |
@@ -24,21 +29,31 @@ jobs:
           echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
 
       - name: Install dependencies
-        run: npm install
-
-      - name: Install ngrok
-        run: npm install -g ngrok
-
-      - name: Start app in background
-        run: npm run dev &
-
-      - name: Start ngrok tunnel
         run: |
-          ngrok http 3000 > /dev/null &
-          sleep 6
-          curl -s http://127.0.0.1:4040/api/tunnels > tunnels.json
-          echo "🌍 Public URL:"
-          cat tunnels.json | grep -o 'https://[0-9a-z]*\.ngrok-free\.app'
+          pip install -r requirements.txt || echo "No requirements.txt"
 
-      - name: Keep alive for testing
+      - name: Install Cloudflare Tunnel
+        run: |
+          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cloudflared
+          chmod +x cloudflared
+
+      - name: Start Python server (background)
+        run: |
+          python server.py > app.log 2>&1 &
+
+      - name: Start Cloudflare Tunnel
+        run: |
+          ./cloudflared tunnel --url http://localhost:3000 > tunnel.log 2>&1 &
+          sleep 10
+          echo "🌍 Public URL:"
+          cat tunnel.log | grep -o 'https://[-0-9a-z]*\.trycloudflare.com'
+
+      - name: Show logs (debug)
+        run: |
+          echo "==== APP LOG ===="
+          cat app.log || true
+          echo "==== TUNNEL LOG ===="
+          cat tunnel.log || true
+
+      - name: Keep alive (3 min)
         run: sleep 180
