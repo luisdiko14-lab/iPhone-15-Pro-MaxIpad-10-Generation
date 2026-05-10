@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "discord.js": "^14.26.2",
-    "dotenv": "^17.3.1",
+    "discord.js": "^14.26.4",
+    "dotenv": "^17.4.2",
     "give": "^2.0.0",
     "terminal": "^0.1.4"
   }
