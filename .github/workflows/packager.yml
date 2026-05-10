@@ -1,0 +1,55 @@
+name: DependaUpdaterByLuis
+
+on:
+  schedule:
+    - cron: "0 3 * * 1" # Every Monday at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-packages:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install npm-check-updates
+        run: npm install -g npm-check-updates
+
+      - name: Update package.json dependencies
+        run: ncu -u
+
+      - name: Install updated packages
+        run: npm install
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Configure Git
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "DependaUpdaterByLuis"
+          git config user.email "robot@github.com"
+
+      - name: Commit Changes
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git add .
+          git commit -m "🤖 Auto-update JavaScript packages"
+
+      - name: Push Changes
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:${{ github.ref_name }}
