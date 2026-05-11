@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Save Database — Confirm</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        background: linear-gradient(135deg, #0078d4, #1a1d23);
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        overflow: hidden;
+    }
+    .card {
+        background: rgba(28, 30, 42, 0.92);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 36px 44px;
+        max-width: 520px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+        animation: fadeIn .4s cubic-bezier(.2, 1.1, .4, 1);
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px) scale(.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .icon {
+        font-size: 64px;
+        margin-bottom: 12px;
+        animation: bob 2s ease-in-out infinite;
+    }
+    @keyframes bob {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+    p { font-size: 14px; line-height: 1.55; opacity: .85; margin-bottom: 22px; }
+    .preview {
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 10px;
+        padding: 14px;
+        text-align: left;
+        font-family: Consolas, monospace;
+        font-size: 11px;
+        color: #8e9bff;
+        max-height: 160px;
+        overflow-y: auto;
+        margin-bottom: 22px;
+        line-height: 1.7;
+    }
+    .preview .k { color: #ffd166; }
+    .row { display: flex; gap: 10px; }
+    button {
+        flex: 1;
+        padding: 13px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .1s, filter .15s;
+    }
+    button:hover { filter: brightness(1.1); }
+    button:active { transform: scale(.97); }
+    .ok { background: linear-gradient(135deg, #0078d4, #3ba55d); color: white; }
+    .cancel { background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.12); }
+    .status { display: none; margin-top: 14px; padding: 10px; border-radius: 8px; font-size: 13px; }
+    .status.loading { display: block; background: rgba(0, 120, 212, 0.15); color: #6cb6ff; }
+    .status.error { display: block; background: rgba(239, 68, 68, 0.15); color: #ff6b6b; }
+    .spinner {
+        display: inline-block; width: 14px; height: 14px;
+        border: 2px solid rgba(108, 182, 255, 0.3);
+        border-top-color: #6cb6ff;
+        border-radius: 50%;
+        animation: spin .8s linear infinite;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">💾</div>
+        <h1>New tab opened</h1>
+        <p>Please press <strong>OK</strong> to save your whole data (account, settings, VM plan, IP, location, browser info, full localStorage) to <code style="background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;font-size:12px;">storage.json</code> on the server.</p>
+        <div class="preview" id="preview">Loading payload preview…</div>
+        <div class="row">
+            <button class="cancel" onclick="window.close()">Cancel</button>
+            <button class="ok" id="okBtn" onclick="confirmSave()">✓ OK, save it</button>
+        </div>
+        <div class="status" id="status"></div>
+    </div>
+<script>
+    // Read the pending payload that the desktop wrote into localStorage right before opening this tab
+    let payload = null;
+    try {
+        const raw = localStorage.getItem('__pending_save_payload');
+        if (raw) payload = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+
+    const previewBox = document.getElementById('preview');
+    if (!payload) {
+        previewBox.innerHTML = '<span style="color:#ff6b6b;">No pending save payload found. Close this tab and try again from the desktop.</span>';
+        document.getElementById('okBtn').disabled = true;
+        document.getElementById('okBtn').style.opacity = '0.5';
+    } else {
+        // Build a friendly preview
+        const lines = [];
+        const add = (k, v) => lines.push(`<span class="k">${k}:</span> ${v}`);
+        add('username', payload.username || '(none)');
+        add('email', payload.email || '(none)');
+        add('VM plan', payload.vmPlan?.plan || '(none)');
+        add('Discord', payload.discord?.username || '(not logged in)');
+        add('localStorage keys', Object.keys(payload.allLocalStorage || {}).length);
+        add('size', (JSON.stringify(payload).length / 1024).toFixed(1) + ' KB');
+        previewBox.innerHTML = lines.join('<br>');
+    }
+
+    async function confirmSave() {
+        const status = document.getElementById('status');
+        const okBtn = document.getElementById('okBtn');
+        okBtn.disabled = true; okBtn.style.opacity = '0.5';
+        status.className = 'status loading';
+        status.innerHTML = '<span class="spinner"></span>Saving to storage.json…';
+        try {
+            const r = await fetch('/api/save-storage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const out = await r.json();
+            if (!out.ok) throw new Error(out.error || 'Server returned an error');
+
+            // Clean up the pending payload
+            try { localStorage.removeItem('__pending_save_payload'); } catch (e) {}
+
+            // Build the redirect URL with the saved-data summary
+            const summary = {
+                recordNumber: out.recordNumber,
+                savedAt: out.savedAt,
+                ip: out.ip,
+                city: out.location?.city || '',
+                region: out.location?.regionName || '',
+                country: out.location?.country || '',
+                isp: out.location?.isp || '',
+                lat: out.location?.lat || '',
+                lon: out.location?.lon || '',
+                username: payload.username || '',
+                vmPlan: payload.vmPlan?.plan || '',
+                keys: Object.keys(payload.allLocalStorage || {}).length,
+                size: JSON.stringify(payload).length
+            };
+            const qs = new URLSearchParams(summary).toString();
+            window.location.href = '/saved.html?' + qs;
+        } catch (e) {
+            status.className = 'status error';
+            status.textContent = '✗ Save failed: ' + e.message;
+            okBtn.disabled = false; okBtn.style.opacity = '1';
+        }
+    }
+</script>
+</body>
+</html>
