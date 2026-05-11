@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Database Saved</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        background: linear-gradient(135deg, #16a34a, #0d9488, #1a1d23);
+        background-size: 400% 400%;
+        animation: gradient 12s ease infinite;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        color: white;
+    }
+    @keyframes gradient { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+    .card {
+        background: rgba(28, 30, 42, 0.94);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 36px;
+        max-width: 640px;
+        width: 100%;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+        animation: fadeIn .5s cubic-bezier(.2, 1.1, .4, 1);
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .header { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+    .check {
+        width: 56px; height: 56px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 30px;
+        box-shadow: 0 8px 28px rgba(34, 197, 94, 0.5);
+        animation: pop .5s cubic-bezier(.2, 1.5, .4, 1);
+    }
+    @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+    h1 { font-size: 24px; font-weight: 700; }
+    .sub { font-size: 13px; opacity: 0.7; margin-top: 2px; }
+    .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin: 20px 0;
+    }
+    .tile {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 14px;
+    }
+    .tile.full { grid-column: span 2; }
+    .tile .label {
+        font-size: 10px;
+        letter-spacing: 1.5px;
+        font-weight: 700;
+        color: #8e9bff;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .tile .value {
+        font-size: 15px;
+        font-weight: 600;
+        word-break: break-word;
+    }
+    .row { display: flex; gap: 10px; margin-top: 16px; }
+    button {
+        flex: 1; padding: 12px;
+        border: none; border-radius: 8px;
+        font-size: 13px; font-weight: 700;
+        cursor: pointer;
+        transition: filter .15s;
+    }
+    button:hover { filter: brightness(1.1); }
+    .primary { background: linear-gradient(135deg, #0078d4, #3ba55d); color: white; }
+    .ghost { background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.12); }
+    .map {
+        background: rgba(255,255,255,0.03);
+        border-radius: 10px;
+        height: 180px;
+        margin-top: 14px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .map iframe { width: 100%; height: 100%; border: 0; filter: invert(1) hue-rotate(180deg) saturate(.8); }
+    .empty { padding: 20px; text-align: center; opacity: .5; font-size: 13px; }
+</style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <div class="check">✓</div>
+            <div>
+                <h1>Database saved successfully!</h1>
+                <div class="sub" id="sub">Loading…</div>
+            </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+        <div id="mapBox"></div>
+
+        <div class="row">
+            <button class="ghost" onclick="window.close()">Close tab</button>
+            <button class="primary" onclick="window.location.href='/'">Back to desktop</button>
+        </div>
+    </div>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const get = (k) => params.get(k) || '';
+    const escape = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    const recordNumber = get('recordNumber');
+    const savedAt = get('savedAt');
+    document.getElementById('sub').textContent = recordNumber
+        ? `Record #${recordNumber} • ${new Date(savedAt || Date.now()).toLocaleString()}`
+        : 'No record info found.';
+
+    const tiles = [
+        { label: 'Username',     value: get('username') || '(none)',          full: false },
+        { label: 'VM Plan',      value: (get('vmPlan') || 'none').toUpperCase(), full: false },
+        { label: 'IP Address',   value: get('ip') || '(unknown)',             full: false },
+        { label: 'ISP',          value: get('isp') || '(unknown)',            full: false },
+        { label: 'Location',     value: [get('city'), get('region'), get('country')].filter(Boolean).join(', ') || 'Unknown',  full: true },
+        { label: 'localStorage', value: get('keys') + ' keys',                full: false },
+        { label: 'Payload size', value: ((+get('size') || 0) / 1024).toFixed(1) + ' KB', full: false },
+    ];
+    document.getElementById('grid').innerHTML = tiles.map(t =>
+        `<div class="tile ${t.full ? 'full' : ''}"><div class="label">${escape(t.label)}</div><div class="value">${escape(t.value)}</div></div>`
+    ).join('');
+
+    // Embed an OpenStreetMap if we have coords
+    const lat = parseFloat(get('lat')), lon = parseFloat(get('lon'));
+    if (!isNaN(lat) && !isNaN(lon)) {
+        const bbox = [lon - 0.05, lat - 0.05, lon + 0.05, lat + 0.05].join(',');
+        document.getElementById('mapBox').innerHTML = `
+            <div class="map"><iframe src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"></iframe></div>
+        `;
+    }
+</script>
+</body>
+</html>
