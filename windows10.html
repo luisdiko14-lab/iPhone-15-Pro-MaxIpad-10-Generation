@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Windows 10 || Desktop</title>
     <link rel="icon" type="image/png" href="icon.png">
-    <link rel="stylesheet" href="stylewin.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="sound-container" style="display: none; position: absolute; left: -9999px;">
@@ -129,6 +129,18 @@
                     <div class="icon-img">🌤️</div>
                     <div class="icon-label">Weather</div>
                 </div>
+                <div class="desktop-icon" ondblclick="openApp('imagegen')">
+                    <div class="icon-img">🎨</div>
+                    <div class="icon-label">AI Image Gen</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('bluetooth')">
+                    <div class="icon-img">📡</div>
+                    <div class="icon-label">Bluetooth</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('settings')">
+                    <div class="icon-img">⚙️</div>
+                    <div class="icon-label">Settings</div>
+                </div>
                 <div class="desktop-icon" ondblclick="openApp('solitaire')">
                     <div class="icon-img">🃏</div>
                     <div class="icon-label">Solitaire</div>
@@ -169,6 +181,46 @@
                     <div class="icon-img">⚙️</div>
                     <div class="icon-label">Advanced</div>
                 </div>
+                <div class="desktop-icon" ondblclick="saveDatabaseToServer()" title="Save all your data (account, settings, VM plan, IP, location) to storage.json on the server">
+                    <div class="icon-img">💾</div>
+                    <div class="icon-label">Save Database</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('camera')">
+                    <div class="icon-img">📷</div>
+                    <div class="icon-label">Camera</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('qrcode')">
+                    <div class="icon-img" style="font-family:monospace;font-size:32px;">▦</div>
+                    <div class="icon-label">QR Generator</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('snake')">
+                    <div class="icon-img">🐍</div>
+                    <div class="icon-label">Snake</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('minesweeper')">
+                    <div class="icon-img">💣</div>
+                    <div class="icon-label">Minesweeper</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('recorder')">
+                    <div class="icon-img">🎙️</div>
+                    <div class="icon-label">Voice Recorder</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('todo')">
+                    <div class="icon-img">✅</div>
+                    <div class="icon-label">To-Do</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('maps')">
+                    <div class="icon-img">🗺️</div>
+                    <div class="icon-label">Maps</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('clock')">
+                    <div class="icon-img">⏰</div>
+                    <div class="icon-label">Clock</div>
+                </div>
+                <div class="desktop-icon" ondblclick="openApp('music')">
+                    <div class="icon-img">🎵</div>
+                    <div class="icon-label">Groove Music</div>
+                </div>
             </div>
 
             <div class="taskbar">
@@ -199,12 +251,14 @@
                 <div class="taskbar-center" id="taskbar-apps"></div>
                 <div class="taskbar-right">
                     <div class="system-tray">
+                        <span class="tray-icon" id="autosave-status" onclick="toggleAutoSave()" title="Click to toggle auto-save" style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;background:rgba(255,255,255,0.06);color:#9ca3af;cursor:pointer;user-select:none;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:6px;"></span>Auto-save off</span>
+                        <span class="tray-icon plan-badge" id="plan-badge" onclick="openPlanPopup()" title="Active VM plan" style="display:none;font-size:11px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;color:white;background:linear-gradient(135deg,#3ba55d,#22c55e);"></span>
                         <span class="tray-icon" onclick="openApp('taskmgr')">📊</span>
                         <span class="tray-icon" onclick="toggleVolumeMenu()">🔊</span>
                         <span class="tray-icon" onclick="toggleWifiMenu()">📶</span>
                         <span class="tray-icon" onclick="toggleBatteryPopup()">🔋</span>
                         <div class="clock" id="taskbar-clock">12:00 PM<br>1/1/2024</div>
-                        <button class="notification-button" onclick="toggleNotifications()">💬</button>
+                        <button class="notification-button" onclick="toggleActionCenter()" title="Action Center">💬</button>
                     </div>
                 </div>
             </div>
@@ -253,6 +307,54 @@
                             <div class="app-item" onclick="openApp('weather'); toggleStartMenu()">
                                 <span class="app-icon">🌤️</span>
                                 <span>Weather</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('imagegen'); toggleStartMenu()">
+                                <span class="app-icon">🎨</span>
+                                <span>AI Image Generator</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('bluetooth'); toggleStartMenu()">
+                                <span class="app-icon">📡</span>
+                                <span>Bluetooth &amp; Devices</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('camera'); toggleStartMenu()">
+                                <span class="app-icon">📷</span>
+                                <span>Camera</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('qrcode'); toggleStartMenu()">
+                                <span class="app-icon" style="font-family:monospace;">▦</span>
+                                <span>QR Code Generator</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('snake'); toggleStartMenu()">
+                                <span class="app-icon">🐍</span>
+                                <span>Snake</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('minesweeper'); toggleStartMenu()">
+                                <span class="app-icon">💣</span>
+                                <span>Minesweeper</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('recorder'); toggleStartMenu()">
+                                <span class="app-icon">🎙️</span>
+                                <span>Voice Recorder</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('todo'); toggleStartMenu()">
+                                <span class="app-icon">✅</span>
+                                <span>To-Do</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('maps'); toggleStartMenu()">
+                                <span class="app-icon">🗺️</span>
+                                <span>Maps</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('clock'); toggleStartMenu()">
+                                <span class="app-icon">⏰</span>
+                                <span>Alarms &amp; Clock</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('music'); toggleStartMenu()">
+                                <span class="app-icon">🎵</span>
+                                <span>Groove Music</span>
+                            </div>
+                            <div class="app-item" onclick="openApp('solitaire'); toggleStartMenu()">
+                                <span class="app-icon">🃏</span>
+                                <span>Solitaire</span>
                             </div>
                             <div class="app-item" onclick="openApp('snipping'); toggleStartMenu()">
                                 <span class="app-icon">✂️</span>
@@ -568,6 +670,56 @@
         <div style="width: 100%; height: 100%; background: #000;"></div>
     </div>
 
-    <script src="win_1script.js"></script>
+    <!-- Desktop right-click context menu -->
+    <div id="desktop-ctx-menu">
+        <div class="ctx-item" onclick="ctxRefresh()"><span>🔄</span> Refresh</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" onclick="ctxView('large')"><span>🔲</span> View → Large icons</div>
+        <div class="ctx-item" onclick="ctxView('medium')"><span>▫️</span> View → Medium icons</div>
+        <div class="ctx-item" onclick="ctxView('small')"><span>·</span> View → Small icons</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" onclick="ctxSort('name')"><span>🔤</span> Sort by name</div>
+        <div class="ctx-item" onclick="ctxSort('type')"><span>📂</span> Sort by type</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" onclick="openApp('notepad');ctxClose()"><span>📝</span> New text document</div>
+        <div class="ctx-item" onclick="openApp('explorer');ctxClose()"><span>📁</span> New folder</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" onclick="openApp('settings');ctxClose()"><span>⚙️</span> Display settings</div>
+        <div class="ctx-item" onclick="openApp('settings');ctxClose()"><span>🎨</span> Personalize</div>
+        <div class="ctx-item" onclick="openApp('taskmgr');ctxClose()"><span>📊</span> Task Manager</div>
+    </div>
+
+    <!-- Action Center panel -->
+    <div id="action-center">
+        <div style="padding:16px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.08);">
+            <span style="font-size:16px;font-weight:700;">Quick Settings</span>
+            <button onclick="toggleActionCenter()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:0 4px;">✕</button>
+        </div>
+        <div style="padding:14px 18px;">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;" id="ac-tiles">
+                <!-- tiles rendered by JS -->
+            </div>
+            <div style="margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:.8px;opacity:.5;text-transform:uppercase;margin-bottom:8px;">Brightness</div>
+                <input type="range" min="20" max="100" value="100" oninput="changeBrightness(this.value)" style="width:100%;accent-color:#60a5fa;">
+            </div>
+            <div>
+                <div style="font-size:11px;font-weight:700;letter-spacing:.8px;opacity:.5;text-transform:uppercase;margin-bottom:8px;">Volume</div>
+                <input type="range" min="0" max="100" value="80" oninput="window._music&&(window._music.volume=+this.value)" style="width:100%;accent-color:#60a5fa;">
+            </div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.08);padding:14px 18px;">
+            <div style="font-size:13px;font-weight:700;opacity:.6;margin-bottom:10px;">Notifications</div>
+            <div id="ac-notifications" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;">
+                <div style="text-align:center;padding:20px;opacity:.4;font-size:13px;">No new notifications</div>
+            </div>
+        </div>
+        <div style="padding:10px 18px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:11px;opacity:.5;" id="ac-clock"></div>
+            <button onclick="openApp('settings');toggleActionCenter()" style="background:none;border:none;color:#60a5fa;font-size:12px;cursor:pointer;">All settings →</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
