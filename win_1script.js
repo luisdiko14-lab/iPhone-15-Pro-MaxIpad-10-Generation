@@ -434,9 +434,209 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateClock, 1000);
     
     startPerformanceMonitoring();
+    updatePlanBadge();
     
     checkUrlParams();
 });
+
+// ── Build the payload that gets saved to storage.json ──
+async function buildSavePayload(includeGeolocation = false) {
+    const allLocalStorage = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k === '__pending_save_payload') continue; // don't include the in-flight payload itself
+        const raw = localStorage.getItem(k);
+        try { allLocalStorage[k] = JSON.parse(raw); } catch { allLocalStorage[k] = raw; }
+    }
+    const ud          = allLocalStorage.windowsUserData || null;
+    const vmSpecs     = allLocalStorage.vmSpecs || window._vmSpecs || null;
+    const discordUser = allLocalStorage.discord_user_data || null;
+    const installed   = allLocalStorage.windowsInstalledDate || null;
+
+    const browserInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        languages: navigator.languages,
+        cookieEnabled: navigator.cookieEnabled,
+        onLine: navigator.onLine,
+        screen: { width: screen.width, height: screen.height, colorDepth: screen.colorDepth, pixelRatio: window.devicePixelRatio },
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezoneOffset: new Date().getTimezoneOffset()
+    };
+
+    let browserGeo = { status: 'skipped' };
+    if (includeGeolocation && navigator.geolocation) {
+        browserGeo = await new Promise(resolve => {
+            const timer = setTimeout(() => resolve({ status: 'timeout' }), 4500);
+            navigator.geolocation.getCurrentPosition(
+                pos => { clearTimeout(timer); resolve({ status: 'ok', latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }); },
+                err => { clearTimeout(timer); resolve({ status: 'denied', error: err.message }); },
+                { timeout: 4000, maximumAge: 60000 }
+            );
+        });
+    }
+
+    return {
+        username: ud?.username || ud?.name || discordUser?.username || 'unknown',
+        email: ud?.email || discordUser?.email || null,
+        createdAt: installed || ud?.createdAt || null,
+        account: ud,
+        vmPlan: vmSpecs,
+        discord: discordUser,
+        browserGeolocation: browserGeo,
+        browser: browserInfo,
+        settings: {
+            theme: ud?.theme || null,
+            accent: ud?.accent || null,
+            timezone: ud?.timezone || null,
+            cortana: ud?.cortana || null,
+            findDevice: ud?.findDevice || null,
+            privacy: ud ? Object.fromEntries(Object.entries(ud).filter(([k]) => k.startsWith('privacy'))) : null
+        },
+        allLocalStorage
+    };
+}
+
+// ── Save Database: opens save_data.html in a new tab → user confirms → posts → redirects to saved.html ──
+async function saveDatabaseToServer() {
+    const payload = await buildSavePayload(true);
+    payload._savedFrom = 'manual';
+    try { localStorage.setItem('__pending_save_payload', JSON.stringify(payload)); }
+    catch (e) { addNotification('💾','Save Database','Payload too large for storage'); return; }
+    const win = window.open('/save_data.html', '_blank');
+    if (!win) {
+        addNotification('💾','Save Database','Popup blocked — allow popups and try again.');
+    } else {
+        addNotification('💾','Save Database','Confirm in the new tab to save your data.');
+    }
+}
+
+// ── AUTO-SAVE every 5 seconds in the background, with bottom status indicator ──
+window._autoSaveTimer = null;
+window._autoSaveLast = null;
+window._autoSaveCount = 0;
+window._autoSaveEnabled = (localStorage.getItem('autoSaveEnabled') !== 'false'); // on by default
+window._autoSaveInterval = parseInt(localStorage.getItem('autoSaveInterval') || '5000', 10);
+
+async function autoSaveTick() {
+    if (!window._autoSaveEnabled) return;
+    setAutoSaveStatus('saving');
+    try {
+        const payload = await buildSavePayload(false); // skip GPS (no permission popup loop)
+        payload._savedFrom = 'auto';
+        const r = await fetch('/api/save-storage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            keepalive: true
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const out = await r.json();
+        if (!out.ok) throw new Error(out.error || 'server error');
+        window._autoSaveLast = Date.now();
+        window._autoSaveCount = out.recordNumber;
+        setAutoSaveStatus('saved');
+    } catch (e) {
+        setAutoSaveStatus('error', e.message);
+    }
+}
+
+function setAutoSaveStatus(state, errorMsg) {
+    const el = document.getElementById('autosave-status');
+    if (!el) return;
+    const cnt = window._autoSaveCount || 0;
+    if (state === 'saving') {
+        el.style.background = 'rgba(245,158,11,0.18)';
+        el.style.color = '#fbbf24';
+        el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24;margin-right:6px;animation:asPulse 1s ease-in-out infinite;"></span>Auto-saving…`;
+    } else if (state === 'saved') {
+        el.style.background = 'rgba(34,197,94,0.16)';
+        el.style.color = '#86efac';
+        el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;"></span>Auto-saved · #${cnt}`;
+    } else if (state === 'error') {
+        el.style.background = 'rgba(239,68,68,0.18)';
+        el.style.color = '#fca5a5';
+        el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;"></span>Save failed`;
+        el.title = errorMsg || '';
+    } else if (state === 'paused') {
+        el.style.background = 'rgba(255,255,255,0.06)';
+        el.style.color = '#9ca3af';
+        el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:6px;"></span>Auto-save off`;
+    }
+}
+
+function startAutoSave() {
+    if (window._autoSaveTimer) clearInterval(window._autoSaveTimer);
+    if (!window._autoSaveEnabled) { setAutoSaveStatus('paused'); return; }
+    autoSaveTick(); // run once immediately
+    window._autoSaveTimer = setInterval(autoSaveTick, window._autoSaveInterval);
+}
+
+function toggleAutoSave() {
+    window._autoSaveEnabled = !window._autoSaveEnabled;
+    localStorage.setItem('autoSaveEnabled', window._autoSaveEnabled);
+    if (window._autoSaveEnabled) startAutoSave();
+    else { clearInterval(window._autoSaveTimer); setAutoSaveStatus('paused'); }
+    addNotification('💾','Auto-save', window._autoSaveEnabled ? 'Enabled — saving every ' + (window._autoSaveInterval/1000) + 's' : 'Disabled');
+}
+
+// Kick off auto-save 3s after load (give the page time to settle)
+setTimeout(() => { if (document.getElementById('autosave-status')) startAutoSave(); }, 3000);
+
+
+
+// ── Plan badge in the system tray (shows current VM plan, click for popup) ──
+function updatePlanBadge() {
+    const badge = document.getElementById('plan-badge');
+    if (!badge) return;
+    const s = window._vmSpecs || {};
+    if (!s.plan) { badge.style.display = 'none'; return; }
+    const meta = (typeof getPlanMeta === 'function') ? getPlanMeta(s.plan) : { name:s.plan, icon:'💻', color1:'#3ba55d', color2:'#22c55e' };
+    badge.style.display = 'inline-block';
+    badge.textContent = meta.icon + ' ' + meta.name.toUpperCase();
+    badge.style.background = `linear-gradient(135deg, ${meta.color1}, ${meta.color2})`;
+}
+
+// ── Click the plan badge → cool popup with current specs + switch button ──
+function openPlanPopup() {
+    document.getElementById('plan-popup')?.remove();
+    const s = window._vmSpecs || {};
+    const meta = getPlanMeta(s.plan);
+    const ramStr     = s.ram     ? `${s.ram} GB DDR5`             : '500 GB DDR5';
+    const cpuStr     = s.cpu     ? `${s.cpu} GHz`                 : '8.0 GHz';
+    const gpuStr     = s.gpu     ? `NVIDIA ${s.gpu}`              : 'NVIDIA RTX 4090 24GB';
+    const storageStr = s.storage ? (s.storage >= 1000 ? (s.storage/1000).toFixed(0)+' TB' : s.storage+' GB') : '100 TB';
+    const popup = document.createElement('div');
+    popup.id = 'plan-popup';
+    popup.style.cssText = 'position:fixed;bottom:54px;right:14px;width:300px;background:rgba(28,30,42,0.96);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:0;z-index:99999;color:white;font-family:Segoe UI,sans-serif;box-shadow:0 16px 40px rgba(0,0,0,0.5);animation:planPopupIn .25s cubic-bezier(.2,1.1,.4,1);overflow:hidden;';
+    popup.innerHTML = `
+        <style>
+            @keyframes planPopupIn { from { opacity:0; transform:translateY(10px) scale(.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+        </style>
+        <div style="padding:16px 18px;background:linear-gradient(135deg,${meta.color1},${meta.color2});">
+            <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.85;font-weight:700;">Active VM Plan</div>
+            <div style="font-size:20px;font-weight:700;margin-top:4px;">${meta.icon} ${meta.name}</div>
+            <div style="font-size:11px;opacity:.85;margin-top:2px;">${meta.tagline}</div>
+        </div>
+        <div style="padding:14px 18px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+            <div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;"><div style="font-size:10px;color:#8e9bff;letter-spacing:1px;font-weight:700;">CPU</div><div style="font-size:13px;font-weight:600;margin-top:2px;">${cpuStr}</div></div>
+            <div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;"><div style="font-size:10px;color:#8e9bff;letter-spacing:1px;font-weight:700;">RAM</div><div style="font-size:13px;font-weight:600;margin-top:2px;">${ramStr}</div></div>
+            <div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;grid-column:span 2;"><div style="font-size:10px;color:#8e9bff;letter-spacing:1px;font-weight:700;">GPU</div><div style="font-size:13px;font-weight:600;margin-top:2px;">${gpuStr}</div></div>
+            <div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;grid-column:span 2;"><div style="font-size:10px;color:#8e9bff;letter-spacing:1px;font-weight:700;">Storage</div><div style="font-size:13px;font-weight:600;margin-top:2px;">${storageStr} NVMe SSD</div></div>
+        </div>
+        <div style="padding:0 18px 16px;display:flex;gap:8px;">
+            <button onclick="openApp('settings');setTimeout(()=>{document.querySelectorAll('.settings-menu-item').forEach(m=>{if(m.textContent.trim()==='About') m.click();});},150);document.getElementById('plan-popup').remove();" style="flex:1;padding:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:white;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">View details</button>
+            <button onclick="window.location.href='/run_vm_on.html'" style="flex:1;padding:10px;border:none;background:linear-gradient(135deg,${meta.color1},${meta.color2});color:white;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;">Switch plan</button>
+        </div>
+    `;
+    document.body.appendChild(popup);
+    // Click outside to close
+    setTimeout(() => {
+        const close = (e) => { if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', close); } };
+        document.addEventListener('click', close);
+    }, 100);
+}
 
 function checkUrlParams() {
     const params = new URLSearchParams(window.location.search);
@@ -748,7 +948,14 @@ function createWindow(appName) {
         wordpad: { w: 700, h: 500 },
         code: { w: 800, h: 550 },
         stickynotes: { w: 300, h: 300 },
-        calculator: { w: 320, h: 430 }
+        calculator:  { w: 320, h: 430 },
+        clock:       { w: 620, h: 480 },
+        maps:        { w: 800, h: 560 },
+        music:       { w: 720, h: 480 },
+        solitaire:   { w: 760, h: 520 },
+        minesweeper: { w: 560, h: 520 },
+        recorder:    { w: 520, h: 500 },
+        todo:        { w: 540, h: 560 },
     };
     const size = defaultSizes[appName] || { w: 700, h: 480 };
     windowEl.style.width = size.w + 'px';
@@ -796,6 +1003,13 @@ function createWindow(appName) {
         mail:         () => ({ title: '📧 Mail',                  content: createMail() }),
         xbox:         () => ({ title: '🎮 Xbox',                  content: createXbox() }),
         imagegen:     () => ({ title: '🎨 AI Image Generator',    content: createImageGenerator() }),
+        bluetooth:    () => ({ title: '📡 Bluetooth & Devices',   content: createBluetooth() }),
+        camera:       () => ({ title: '📷 Camera',                content: createCamera() }),
+        qrcode:       () => ({ title: '▦ QR Code Generator',      content: createQRGenerator() }),
+        snake:        () => ({ title: '🐍 Snake',                 content: createSnake() }),
+        minesweeper:  () => ({ title: '💣 Minesweeper',           content: createMinesweeper() }),
+        recorder:     () => ({ title: '🎙️ Voice Recorder',        content: createVoiceRecorder() }),
+        todo:         () => ({ title: '✅ To-Do',                  content: createToDo() }),
     };
 
     const appData = (appFactories[appName] || (() => ({ title: '🪟 Window', content: '<div style="padding:20px;color:#666;">App not found: ' + appName + '</div>' })))();
@@ -1251,7 +1465,249 @@ function updateCalculatorDisplay() {
 }
 
 function createNotepad() {
-    return '<textarea class="notepad-textarea" placeholder="Start typing..."></textarea>';
+    setTimeout(() => initNotepad(), 100);
+    return `
+    <div style="display:flex;flex-direction:column;height:100%;background:white;font-family:Segoe UI,sans-serif;">
+      <!-- Menu bar -->
+      <div style="background:#f3f3f3;border-bottom:1px solid #ddd;padding:2px 8px;display:flex;gap:0;font-size:13px;user-select:none;">
+        ${['File','Edit','Format','View','Help'].map(m => `
+          <div class="np-menu" data-menu="${m}" onclick="npMenu('${m}',event)" style="padding:5px 12px;cursor:pointer;border-radius:3px;" onmouseover="this.style.background='#e5f1fb'" onmouseout="this.style.background='transparent'">${m}</div>`).join('')}
+      </div>
+
+      <!-- Toolbar -->
+      <div style="background:#fafafa;border-bottom:1px solid #eee;padding:6px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button onclick="npNew()" style="padding:5px 10px;background:white;border:1px solid #ccc;border-radius:3px;cursor:pointer;font-size:12px;">📄 New</button>
+        <button onclick="npOpen()" style="padding:5px 10px;background:white;border:1px solid #ccc;border-radius:3px;cursor:pointer;font-size:12px;">📂 Open</button>
+        <button onclick="npSave()" style="padding:5px 10px;background:#0078d4;color:white;border:none;border-radius:3px;cursor:pointer;font-size:12px;">💾 Save</button>
+        <button onclick="npFindShow()" style="padding:5px 10px;background:white;border:1px solid #ccc;border-radius:3px;cursor:pointer;font-size:12px;">🔍 Find</button>
+        <button onclick="npReplaceShow()" style="padding:5px 10px;background:white;border:1px solid #ccc;border-radius:3px;cursor:pointer;font-size:12px;">🔁 Replace</button>
+        <button onclick="npDateTime()" style="padding:5px 10px;background:white;border:1px solid #ccc;border-radius:3px;cursor:pointer;font-size:12px;">📅 Date/Time</button>
+        <span style="width:1px;height:20px;background:#ddd;"></span>
+        <label style="font-size:12px;color:#444;">Font:</label>
+        <select id="np-font" onchange="npApplyStyle()" style="padding:4px 6px;font-size:12px;border:1px solid #ccc;border-radius:3px;">
+          <option>Consolas</option><option>Segoe UI</option><option>Arial</option><option>Calibri</option>
+          <option>Courier New</option><option>Times New Roman</option><option>Verdana</option><option>Comic Sans MS</option>
+          <option>Georgia</option><option>Trebuchet MS</option>
+        </select>
+        <label style="font-size:12px;color:#444;">Size:</label>
+        <select id="np-size" onchange="npApplyStyle()" style="padding:4px 6px;font-size:12px;border:1px solid #ccc;border-radius:3px;">
+          ${[10,11,12,14,16,18,20,24,28,32,40,48].map(s => `<option ${s===14?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <button onclick="document.getElementById('np-area').style.fontWeight=document.getElementById('np-area').style.fontWeight==='bold'?'normal':'bold'" style="padding:5px 10px;background:white;border:1px solid #ccc;border-radius:3px;cursor:pointer;font-size:12px;font-weight:bold;">B</button>
+        <button onclick="document.getElementById('np-area').style.fontStyle=document.getElementById('np-area').style.fontStyle==='italic'?'normal':'italic'" style="padding:5px 10px;background:white;border:1px solid #ccc;border-radius:3px;cursor:pointer;font-size:12px;font-style:italic;">I</button>
+        <input type="color" value="#000000" onchange="document.getElementById('np-area').style.color=this.value" style="width:28px;height:24px;border:1px solid #ccc;cursor:pointer;padding:0;" title="Text color">
+        <label style="font-size:12px;color:#444;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="np-wrap" checked onchange="document.getElementById('np-area').style.whiteSpace=this.checked?'pre-wrap':'pre';document.getElementById('np-area').style.wordWrap=this.checked?'break-word':'normal'"> Word wrap</label>
+      </div>
+
+      <!-- Find/Replace bar (hidden) -->
+      <div id="np-find-bar" style="display:none;background:#fff8dc;border-bottom:1px solid #e8d97a;padding:6px 10px;align-items:center;gap:6px;flex-wrap:wrap;">
+        <input id="np-find-input" placeholder="Find..." onkeydown="if(event.key==='Enter')npFindNext()" style="padding:5px 8px;border:1px solid #ccc;border-radius:3px;font-size:12px;width:160px;">
+        <input id="np-replace-input" placeholder="Replace with..." onkeydown="if(event.key==='Enter')npReplaceOne()" style="padding:5px 8px;border:1px solid #ccc;border-radius:3px;font-size:12px;width:160px;">
+        <button onclick="npFindNext()" style="padding:4px 10px;font-size:12px;cursor:pointer;background:white;border:1px solid #ccc;border-radius:3px;">▼ Next</button>
+        <button onclick="npFindPrev()" style="padding:4px 10px;font-size:12px;cursor:pointer;background:white;border:1px solid #ccc;border-radius:3px;">▲ Prev</button>
+        <button onclick="npReplaceOne()" style="padding:4px 10px;font-size:12px;cursor:pointer;background:white;border:1px solid #ccc;border-radius:3px;">Replace</button>
+        <button onclick="npReplaceAll()" style="padding:4px 10px;font-size:12px;cursor:pointer;background:#0078d4;color:white;border:none;border-radius:3px;">Replace all</button>
+        <label style="font-size:11px;display:flex;align-items:center;gap:3px;"><input type="checkbox" id="np-find-case"> Match case</label>
+        <span id="np-find-status" style="font-size:11px;color:#666;margin-left:auto;"></span>
+        <button onclick="document.getElementById('np-find-bar').style.display='none'" style="padding:2px 8px;cursor:pointer;background:transparent;border:none;font-size:14px;">✕</button>
+      </div>
+
+      <!-- Text area -->
+      <textarea id="np-area" class="notepad-textarea" placeholder="Start typing..."
+        style="flex:1;border:none;outline:none;resize:none;padding:14px 18px;font-family:Consolas,monospace;font-size:14px;line-height:1.5;color:#000;background:white;width:100%;box-sizing:border-box;"
+        oninput="npUpdateStats()"></textarea>
+
+      <!-- Status bar -->
+      <div style="background:#0078d4;color:white;padding:4px 14px;font-size:11px;display:flex;gap:18px;">
+        <span id="np-pos">Ln 1, Col 1</span>
+        <span id="np-words">0 words</span>
+        <span id="np-chars">0 chars (0 selected)</span>
+        <span id="np-lines">1 line</span>
+        <span style="margin-left:auto;">UTF-8 · CRLF · 100%</span>
+      </div>
+    </div>`;
+}
+
+function initNotepad() {
+    const a = document.getElementById('np-area');
+    if (!a) return;
+    a.addEventListener('keyup', npUpdateStats);
+    a.addEventListener('click', npUpdateStats);
+    a.addEventListener('select', npUpdateStats);
+    npUpdateStats();
+}
+
+function npUpdateStats() {
+    const a = document.getElementById('np-area');
+    if (!a) return;
+    const text = a.value;
+    const sel = text.substring(a.selectionStart, a.selectionEnd);
+    const words = (text.match(/\S+/g) || []).length;
+    const lines = text.split(/\r\n|\r|\n/).length;
+    const before = text.substring(0, a.selectionStart);
+    const ln = before.split(/\r\n|\r|\n/).length;
+    const col = before.length - before.lastIndexOf('\n');
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('np-pos', `Ln ${ln}, Col ${col}`);
+    set('np-words', `${words} words`);
+    set('np-chars', `${text.length} chars (${sel.length} selected)`);
+    set('np-lines', `${lines} line${lines!==1?'s':''}`);
+}
+
+function npApplyStyle() {
+    const a = document.getElementById('np-area');
+    const f = document.getElementById('np-font')?.value;
+    const s = document.getElementById('np-size')?.value;
+    if (a) {
+        if (f) a.style.fontFamily = f + ',monospace';
+        if (s) a.style.fontSize = s + 'px';
+    }
+}
+
+function npNew() {
+    const a = document.getElementById('np-area');
+    if (!a) return;
+    if (a.value && !confirm('Discard current document?')) return;
+    a.value = '';
+    npUpdateStats();
+}
+
+function npOpen() {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.txt,.md,.log,.json,.js,.css,.html,.csv,text/*';
+    inp.onchange = (e) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = (ev) => {
+            const a = document.getElementById('np-area');
+            if (a) { a.value = ev.target.result; npUpdateStats(); }
+        };
+        r.readAsText(f);
+    };
+    inp.click();
+}
+
+function npSave() {
+    const a = document.getElementById('np-area');
+    if (!a) return;
+    const blob = new Blob([a.value], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'untitled.txt';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 200);
+    if (typeof addNotification === 'function') addNotification('📝', 'Notepad', 'Saved as untitled.txt');
+}
+
+function npFindShow() {
+    const bar = document.getElementById('np-find-bar');
+    if (bar) { bar.style.display = 'flex'; document.getElementById('np-find-input')?.focus(); }
+}
+
+function npReplaceShow() {
+    npFindShow();
+    document.getElementById('np-replace-input')?.focus();
+}
+
+function npFindNext(reverse) {
+    const a = document.getElementById('np-area');
+    const q = document.getElementById('np-find-input')?.value;
+    const cs = document.getElementById('np-find-case')?.checked;
+    if (!a || !q) return;
+    const hay = cs ? a.value : a.value.toLowerCase();
+    const needle = cs ? q : q.toLowerCase();
+    const start = a.selectionEnd;
+    let idx = reverse ? hay.lastIndexOf(needle, a.selectionStart - 1) : hay.indexOf(needle, start);
+    if (idx === -1) idx = reverse ? hay.lastIndexOf(needle) : hay.indexOf(needle); // wrap
+    const status = document.getElementById('np-find-status');
+    if (idx === -1) { if (status) status.textContent = 'Not found'; return; }
+    a.focus();
+    a.setSelectionRange(idx, idx + q.length);
+    if (status) status.textContent = `Found at ${idx + 1}`;
+    npUpdateStats();
+}
+
+function npFindPrev() { npFindNext(true); }
+
+function npReplaceOne() {
+    const a = document.getElementById('np-area');
+    const q = document.getElementById('np-find-input')?.value;
+    const r = document.getElementById('np-replace-input')?.value || '';
+    if (!a || !q) return;
+    const sel = a.value.substring(a.selectionStart, a.selectionEnd);
+    const cs = document.getElementById('np-find-case')?.checked;
+    if ((cs && sel === q) || (!cs && sel.toLowerCase() === q.toLowerCase())) {
+        a.setRangeText(r, a.selectionStart, a.selectionEnd, 'end');
+        npUpdateStats();
+    }
+    npFindNext();
+}
+
+function npReplaceAll() {
+    const a = document.getElementById('np-area');
+    const q = document.getElementById('np-find-input')?.value;
+    const r = document.getElementById('np-replace-input')?.value || '';
+    const cs = document.getElementById('np-find-case')?.checked;
+    if (!a || !q) return;
+    const flags = cs ? 'g' : 'gi';
+    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+    const before = a.value;
+    a.value = before.replace(re, r);
+    const n = (before.match(re) || []).length;
+    const status = document.getElementById('np-find-status');
+    if (status) status.textContent = `Replaced ${n} occurrence${n!==1?'s':''}`;
+    npUpdateStats();
+}
+
+function npDateTime() {
+    const a = document.getElementById('np-area');
+    if (!a) return;
+    const now = new Date();
+    const stamp = now.toLocaleString();
+    const start = a.selectionStart;
+    a.value = a.value.slice(0, start) + stamp + a.value.slice(a.selectionEnd);
+    a.selectionStart = a.selectionEnd = start + stamp.length;
+    npUpdateStats();
+}
+
+function npMenu(menu, evt) {
+    const items = {
+        File:    [['📄 New','npNew()'],['📂 Open...','npOpen()'],['💾 Save','npSave()'],['—',null],['🖨 Print','window.print()']],
+        Edit:    [['↶ Undo','document.execCommand(\'undo\')'],['↷ Redo','document.execCommand(\'redo\')'],['—',null],['✂ Cut','document.execCommand(\'cut\')'],['📋 Copy','document.execCommand(\'copy\')'],['📥 Paste','document.execCommand(\'paste\')'],['—',null],['🔍 Find','npFindShow()'],['🔁 Replace','npReplaceShow()'],['—',null],['🅰 Select All','document.getElementById(\'np-area\').select()'],['📅 Date/Time','npDateTime()']],
+        Format:  [['📐 Word Wrap','document.getElementById(\'np-wrap\').click()'],['🔤 Font...','document.getElementById(\'np-font\').focus()']],
+        View:    [['📊 Status Bar','']],
+        Help:    [['ℹ️ About Notepad','alert(\'Notepad\\nWindows 10 Simulator\\nVersion 10.0\')']]
+    };
+    document.querySelectorAll('.np-popup').forEach(p => p.remove());
+    const list = items[menu] || [];
+    const pop = document.createElement('div');
+    pop.className = 'np-popup';
+    pop.style.cssText = 'position:fixed;background:white;border:1px solid #999;box-shadow:2px 2px 8px rgba(0,0,0,0.2);min-width:200px;z-index:9999;padding:4px 0;font-size:13px;';
+    const r = evt.target.getBoundingClientRect();
+    pop.style.left = r.left + 'px';
+    pop.style.top = (r.bottom + 2) + 'px';
+    list.forEach(([label, action]) => {
+        if (label === '—') {
+            const sep = document.createElement('div');
+            sep.style.cssText = 'border-top:1px solid #eee;margin:4px 0;';
+            pop.appendChild(sep);
+        } else {
+            const it = document.createElement('div');
+            it.textContent = label;
+            it.style.cssText = 'padding:6px 16px;cursor:pointer;';
+            it.onmouseover = () => it.style.background = '#e5f1fb';
+            it.onmouseout = () => it.style.background = 'transparent';
+            it.onclick = () => { try { eval(action); } catch(e){} pop.remove(); };
+            pop.appendChild(it);
+        }
+    });
+    document.body.appendChild(pop);
+    setTimeout(() => {
+        const close = (e) => { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', close); } };
+        document.addEventListener('click', close);
+    }, 50);
 }
 
 let explorerPath = 'This PC';
@@ -1919,6 +2375,57 @@ function createSettings() {
                             </div>
                         `;
                         break;
+                    case 'Devices':
+                        content = settingsRenderDevices();
+                        break;
+                    case 'Network & Internet':
+                        content = settingsRenderNetwork();
+                        break;
+                    case 'Phone':
+                        content = settingsRenderPhone();
+                        break;
+                    case 'Ease of Access':
+                        content = settingsRenderAccess();
+                        break;
+                    case 'Search':
+                        content = settingsRenderSearch();
+                        break;
+                    case 'Cortana':
+                        content = settingsRenderCortana();
+                        break;
+                    case 'Themes':
+                        content = settingsRenderThemes();
+                        break;
+                    case 'Lock screen':
+                        content = settingsRenderLockScreen();
+                        break;
+                    case 'Display':
+                        content = settingsRenderDisplay();
+                        break;
+                    case 'Sound':
+                        content = settingsRenderSound();
+                        break;
+                    case 'Notifications':
+                        content = settingsRenderNotifications();
+                        break;
+                    case 'Power & Sleep':
+                        content = settingsRenderPower();
+                        break;
+                    case 'Storage':
+                        content = settingsRenderStorage();
+                        break;
+                    case 'Mouse':
+                        content = settingsRenderMouse();
+                        break;
+                    case 'Keyboard':
+                        content = settingsRenderKeyboard();
+                        break;
+                    case 'Mixed reality':
+                        content = settingsRenderMR();
+                        break;
+                    case 'About':
+                        content = settingsRenderAbout();
+                        break;
                 }
                 
                 contentArea.innerHTML = content;
@@ -1928,15 +2435,32 @@ function createSettings() {
     
     return `
         <div style="display: flex; height: 100%;">
-            <div class="settings-sidebar">
+            <div class="settings-sidebar" style="overflow-y:auto;">
                 <div class="settings-menu-item active">System</div>
+                <div class="settings-menu-item">Display</div>
+                <div class="settings-menu-item">Sound</div>
+                <div class="settings-menu-item">Notifications</div>
+                <div class="settings-menu-item">Power & Sleep</div>
+                <div class="settings-menu-item">Storage</div>
+                <div class="settings-menu-item">Devices</div>
+                <div class="settings-menu-item">Mouse</div>
+                <div class="settings-menu-item">Keyboard</div>
+                <div class="settings-menu-item">Phone</div>
+                <div class="settings-menu-item">Network & Internet</div>
                 <div class="settings-menu-item">Personalization</div>
+                <div class="settings-menu-item">Themes</div>
+                <div class="settings-menu-item">Lock screen</div>
                 <div class="settings-menu-item">Apps</div>
                 <div class="settings-menu-item">Accounts</div>
                 <div class="settings-menu-item">Time & Language</div>
                 <div class="settings-menu-item">Gaming</div>
+                <div class="settings-menu-item">Ease of Access</div>
+                <div class="settings-menu-item">Search</div>
+                <div class="settings-menu-item">Cortana</div>
                 <div class="settings-menu-item">Privacy</div>
                 <div class="settings-menu-item">Update & Security</div>
+                <div class="settings-menu-item">Mixed reality</div>
+                <div class="settings-menu-item">About</div>
             </div>
             <div class="settings-content">
                 <h2>⚙️ System</h2>
@@ -1976,6 +2500,490 @@ function createSettings() {
             </div>
         </div>
     `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SETTINGS SECTION RENDERERS — extend the 8 built-in sections to 25+
+// ═══════════════════════════════════════════════════════════════════════════
+function settingsToggle(name, desc, checked) {
+    return `<div class="setting-item"><div><div class="setting-label">${name}</div><div class="setting-description">${desc}</div></div>
+        <label class="toggle-switch"><input type="checkbox" ${checked?'checked':''}><span class="toggle-slider"></span></label></div>`;
+}
+function settingsSlider(name, desc, val, min=0, max=100) {
+    const id = 'sl_'+Math.random().toString(36).slice(2,8);
+    return `<div class="setting-item"><div><div class="setting-label">${name}</div><div class="setting-description">${desc}</div></div>
+        <div style="display:flex;align-items:center;gap:10px;"><input type="range" min="${min}" max="${max}" value="${val}" style="width:200px" oninput="document.getElementById('${id}').textContent=this.value">
+        <span id="${id}" style="min-width:30px;text-align:right;">${val}</span></div></div>`;
+}
+function settingsButton(name, desc, btnLabel, action) {
+    return `<div class="setting-item"><div><div class="setting-label">${name}</div><div class="setting-description">${desc}</div></div>
+        <button onclick="${action}" style="padding:8px 16px;border-radius:4px;background:#0078d4;color:white;border:none;cursor:pointer;">${btnLabel}</button></div>`;
+}
+
+function settingsRenderDevices() {
+    return `<h2>📱 Devices</h2>
+        <div style="background:#f0f8ff;padding:14px;border-radius:8px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+            <div><div style="font-weight:500;">Bluetooth</div><div style="color:#666;font-size:12px;">Discoverable as "DESKTOP-WIN10"</div></div>
+            <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+        </div>
+        <button onclick="openApp('bluetooth')" style="padding:10px 18px;background:#0078d4;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:14px;">+ Add Bluetooth or other device</button>
+        <h3 style="margin:14px 0 8px;">Mouse, keyboard, & pen</h3>
+        ${settingsToggle('Logitech MX Master 3', 'Connected • Battery 64%', true)}
+        ${settingsToggle('Logitech K380 Keyboard', 'Connected • Battery 45%', true)}
+        <h3 style="margin:14px 0 8px;">Audio</h3>
+        ${settingsToggle('Sony WH-1000XM5', 'Paired', true)}
+        ${settingsToggle('AirPods Pro', 'Paired • Battery 88%', false)}
+        <h3 style="margin:14px 0 8px;">Other devices</h3>
+        ${settingsToggle('iPhone 15 Pro', 'Paired', true)}
+        ${settingsToggle('Xbox Wireless Controller', 'Paired', false)}
+        ${settingsButton('Default save locations', 'New apps will save to', 'Change', "alert('Open Storage settings to change default save location.')")}`;
+}
+
+function settingsRenderNetwork() {
+    return `<h2>🌐 Network & Internet</h2>
+        ${settingsButton('Open full network settings', 'Wi-Fi, Ethernet, VPN, Mobile hotspot, Proxy', 'Open', "openApp('wifi')")}
+        ${settingsToggle('Wi-Fi',  'Connected to Home_WiFi_5G', true)}
+        ${settingsToggle('Bluetooth', 'On — 4 devices paired', true)}
+        ${settingsToggle('Airplane mode', 'Turn off all wireless communication', false)}
+        ${settingsToggle('Mobile hotspot', 'Share your internet connection', false)}
+        ${settingsToggle('VPN', 'Add and manage VPN connections', false)}
+        <div class="setting-item"><div><div class="setting-label">Data usage</div><div class="setting-description">This month: 24.6 GB / 100 GB</div></div>
+            <div style="width:200px;height:8px;background:#e0e0e0;border-radius:4px;"><div style="width:24.6%;height:100%;background:#0078d4;border-radius:4px;"></div></div></div>
+        ${settingsButton('Network reset', 'Reinstall all network adapters', 'Reset now', "alert('Network would be reset. (Simulation)')")}`;
+}
+
+function settingsRenderPhone() {
+    return `<h2>📱 Your Phone</h2>
+        <div style="background:linear-gradient(135deg,#0078d4,#00bcf2);color:white;padding:24px;border-radius:10px;margin-bottom:16px;">
+            <div style="font-size:20px;font-weight:300;">Link your Android or iPhone</div>
+            <div style="opacity:.85;margin:8px 0 16px;font-size:13px;">Get instant access to texts, photos, calls, and more.</div>
+            <button onclick="alert('Phone Link app would launch.')" style="padding:10px 22px;background:white;color:#0078d4;border:none;border-radius:4px;cursor:pointer;font-weight:500;">+ Add a phone</button>
+        </div>
+        <h3 style="margin:14px 0 8px;">Linked phones</h3>
+        ${settingsToggle('iPhone 15 Pro', 'Last seen: 2 minutes ago', true)}
+        ${settingsToggle('Sync notifications', 'Send phone notifications to this PC', true)}
+        ${settingsToggle('Send texts from this PC', 'Reply to messages from your computer', true)}
+        ${settingsToggle('Make and receive calls', 'Use your PC for phone calls', false)}
+        ${settingsToggle('Photo transfer', 'Copy recent photos automatically', true)}`;
+}
+
+function settingsRenderAccess() {
+    return `<h2>♿ Ease of Access</h2>
+        <h3 style="margin:14px 0 8px;">Vision</h3>
+        ${settingsSlider('Text size', 'Make text larger', 100, 100, 225)}
+        ${settingsToggle('Magnifier', 'Press Win + Plus to zoom in', false)}
+        ${settingsToggle('High contrast', 'Easier to see content', false)}
+        ${settingsToggle('Color filters', 'For colorblindness', false)}
+        ${settingsToggle('Narrator', 'Screen reader reads everything aloud', false)}
+        <h3 style="margin:14px 0 8px;">Hearing</h3>
+        ${settingsToggle('Mono audio', 'Combine left and right channels', false)}
+        ${settingsToggle('Closed captions', 'Show captions for video', true)}
+        ${settingsToggle('Visual notifications for sound', 'Flash the screen for alerts', false)}
+        <h3 style="margin:14px 0 8px;">Interaction</h3>
+        ${settingsToggle('Sticky keys', 'Press one key at a time for shortcuts', false)}
+        ${settingsToggle('Toggle keys', 'Hear a tone when caps/num lock toggled', false)}
+        ${settingsToggle('Filter keys', 'Ignore brief or repeated keystrokes', false)}
+        ${settingsToggle('On-screen keyboard', 'Type without a physical keyboard', false)}
+        ${settingsToggle('Eye control', 'Use eye-tracking technology', false)}`;
+}
+
+function settingsRenderSearch() {
+    return `<h2>🔍 Search</h2>
+        ${settingsToggle('Show search box on taskbar', 'Quick access to search', true)}
+        ${settingsToggle('Show search highlights', 'Trending content from the web', true)}
+        ${settingsToggle('Cloud content search', 'Get results from OneDrive, Bing, Outlook', true)}
+        ${settingsToggle('SafeSearch — Strict', 'Filter adult content from web results', true)}
+        ${settingsToggle('History on this device', 'Personalize search results', true)}
+        ${settingsButton('Clear my device search history', 'Remove searches stored on this PC', 'Clear', "alert('Search history cleared.')")}
+        <h3 style="margin:14px 0 8px;">Indexing</h3>
+        <div class="setting-item"><div><div class="setting-label">Indexing status</div><div class="setting-description">3,847 items indexed • Indexing complete</div></div>
+            <span style="color:#107c10;">✓ Up to date</span></div>
+        ${settingsToggle('Enhanced indexing', 'Index entire PC instead of just libraries', false)}`;
+}
+
+function settingsRenderCortana() {
+    return `<h2>🎙️ Cortana</h2>
+        <div style="background:radial-gradient(circle at top,#00bcf2,#0078d4);color:white;padding:24px;border-radius:10px;margin-bottom:16px;text-align:center;">
+            <div style="font-size:54px;margin-bottom:8px;">🎙️</div>
+            <div style="font-size:18px;font-weight:300;">Hi, I'm Cortana. How can I help?</div>
+        </div>
+        ${settingsToggle('Let Cortana respond to "Hey Cortana"', 'Wake-word detection', true)}
+        ${settingsToggle('Use Cortana even when locked', 'Voice control on lock screen', false)}
+        ${settingsToggle('Keyboard shortcut', 'Win + C opens Cortana', true)}
+        <div class="setting-item"><div><div class="setting-label">Cortana voice</div><div class="setting-description">Choose a voice persona</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Aria (US, Female)</option><option>Davis (US, Male)</option><option>Jenny (UK, Female)</option><option>Ryan (UK, Male)</option></select></div>
+        ${settingsToggle('Microphone access', 'Allow Cortana to use your mic', true)}
+        ${settingsButton('Sign in to personalize', 'Use across devices with your Microsoft account', 'Sign in', "alert('Microsoft sign-in would open.')")}`;
+}
+
+function settingsRenderThemes() {
+    const themes = [
+        { name: 'Windows (light)', g: 'linear-gradient(135deg,#0078d4,#00bcf2)' },
+        { name: 'Windows (dark)',  g: 'linear-gradient(135deg,#1a1a2e,#16213e)' },
+        { name: 'Flowers',         g: 'linear-gradient(135deg,#ff9a9e,#fad0c4)' },
+        { name: 'Mountains',       g: 'linear-gradient(135deg,#667eea,#764ba2)' },
+        { name: 'Auroras',         g: 'linear-gradient(135deg,#43cea2,#185a9d)' },
+        { name: 'Sunset',          g: 'linear-gradient(135deg,#ee0979,#ff6a00)' },
+        { name: 'Ocean',           g: 'linear-gradient(135deg,#2193b0,#6dd5ed)' },
+        { name: 'Galaxy',          g: 'radial-gradient(ellipse at center,#1d2671,#c33764)' }
+    ];
+    return `<h2>🎨 Themes</h2>
+        <p style="color:#666;margin-bottom:16px;">A theme contains a desktop background, accent color, sounds, and mouse cursor.</p>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px;">
+            ${themes.map(t => `<div onclick="alert('Theme &quot;${t.name}&quot; applied!')" style="cursor:pointer;border:2px solid transparent;border-radius:8px;padding:8px;transition:.2s;" onmouseover="this.style.borderColor='#0078d4'" onmouseout="this.style.borderColor='transparent'">
+                <div style="height:100px;background:${t.g};border-radius:6px;margin-bottom:6px;"></div>
+                <div style="font-size:13px;color:#333;">${t.name}</div></div>`).join('')}
+        </div>
+        ${settingsButton('Get more themes in Microsoft Store', 'Hundreds of themes to choose from', 'Browse', "openApp('store')")}
+        <h3 style="margin:14px 0 8px;">Sounds</h3>
+        <div class="setting-item"><div><div class="setting-label">Sound scheme</div><div class="setting-description">Notification and event sounds</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Windows Default</option><option>Calligraphy</option><option>Characters</option><option>Cityscape</option><option>Delta</option><option>Festival</option><option>Garden</option><option>Heritage</option><option>Landscape</option><option>Quirky</option><option>Raga</option><option>Savannah</option><option>Sonata</option></select></div>`;
+}
+
+function settingsRenderLockScreen() {
+    return `<h2>🔒 Lock screen</h2>
+        <div style="height:200px;background:linear-gradient(135deg,#0078d4,#00bcf2);border-radius:10px;margin-bottom:16px;display:flex;align-items:flex-end;padding:20px;color:white;">
+            <div><div style="font-size:48px;font-weight:200;">9:41</div><div style="font-size:14px;opacity:.85;">Wednesday, October 15</div></div>
+        </div>
+        <div class="setting-item"><div><div class="setting-label">Background</div><div class="setting-description">Choose lock screen wallpaper</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Windows spotlight</option><option>Picture</option><option>Slideshow</option></select></div>
+        ${settingsToggle('Show fun facts, tips, tricks on lock screen', 'Microsoft serves daily content', true)}
+        ${settingsToggle('Show weather details on lock screen', 'Quick glance at the forecast', true)}
+        <h3 style="margin:14px 0 8px;">Apps with detailed status</h3>
+        ${settingsToggle('Calendar', 'Show upcoming events', true)}
+        ${settingsToggle('Mail', 'Show email count', false)}
+        ${settingsToggle('Weather', 'Show current conditions', true)}
+        <h3 style="margin:14px 0 8px;">Screen saver</h3>
+        <div class="setting-item"><div><div class="setting-label">Screen saver</div><div class="setting-description">Activate after 10 minutes of inactivity</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>(None)</option><option>3D Text</option><option>Blank</option><option>Bubbles</option><option>Mystify</option><option>Photos</option><option>Ribbons</option></select></div>`;
+}
+
+function settingsRenderDisplay() {
+    return `<h2>🖥️ Display</h2>
+        ${settingsSlider('Brightness', 'Adjust screen brightness', 80)}
+        ${settingsToggle('Night light', 'Reduce blue light for better sleep', false)}
+        ${settingsSlider('Night light strength', 'Color temperature', 48)}
+        ${settingsToggle('Auto-adjust at sunset/sunrise', 'Schedule night light', true)}
+        <div class="setting-item"><div><div class="setting-label">Display resolution</div><div class="setting-description">Native: 3840 × 2160</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>3840 × 2160 (Recommended)</option><option>2560 × 1440</option><option>1920 × 1080</option><option>1680 × 1050</option><option>1280 × 720</option></select></div>
+        <div class="setting-item"><div><div class="setting-label">Display orientation</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Landscape</option><option>Portrait</option><option>Landscape (flipped)</option><option>Portrait (flipped)</option></select></div>
+        <div class="setting-item"><div><div class="setting-label">Scale & layout</div><div class="setting-description">Make text and apps bigger</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>100% (Recommended)</option><option>125%</option><option>150%</option><option>175%</option><option>200%</option></select></div>
+        <div class="setting-item"><div><div class="setting-label">Refresh rate</div><div class="setting-description">Higher = smoother motion</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>240 Hz</option><option>165 Hz</option><option>144 Hz</option><option>120 Hz</option><option>60 Hz</option></select></div>
+        ${settingsToggle('HDR', 'High Dynamic Range for compatible displays', true)}
+        ${settingsButton('Multiple displays', 'Detect or arrange external monitors', 'Detect', "alert('No additional displays detected.')")}`;
+}
+
+function settingsRenderSound() {
+    return `<h2>🔊 Sound</h2>
+        <h3 style="margin:14px 0 8px;">Output</h3>
+        <div class="setting-item"><div><div class="setting-label">Output device</div><div class="setting-description">Speakers (Realtek Audio)</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Speakers (Realtek)</option><option>Headphones</option><option>HDMI Audio</option><option>Sony WH-1000XM5</option></select></div>
+        ${settingsSlider('Master volume', '', 75)}
+        ${settingsSlider('Balance — Left', '', 100)}
+        ${settingsSlider('Balance — Right', '', 100)}
+        <h3 style="margin:14px 0 8px;">Input</h3>
+        <div class="setting-item"><div><div class="setting-label">Input device</div><div class="setting-description">Microphone (Realtek)</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Microphone (Realtek)</option><option>Headset Mic</option><option>USB Mic</option></select></div>
+        ${settingsSlider('Microphone volume', '', 80)}
+        ${settingsToggle('Microphone boost (+20 dB)', 'Increase mic sensitivity', false)}
+        ${settingsButton('Test microphone', 'Speak to see input level', 'Start test', "alert('🎤 Listening... mic is working.')")}
+        <h3 style="margin:14px 0 8px;">Advanced</h3>
+        ${settingsToggle('Spatial sound (Dolby Atmos)', '3D audio for movies & games', true)}
+        ${settingsToggle('Mono audio', 'Combine left and right', false)}
+        ${settingsButton('App volume mixer', 'Set volume per application', 'Open', "alert('Volume mixer would open.')")}`;
+}
+
+function settingsRenderNotifications() {
+    return `<h2>🔔 Notifications & actions</h2>
+        ${settingsToggle('Notifications', 'Get notifications from apps and other senders', true)}
+        ${settingsToggle('Notification sound', 'Play a sound when notifications arrive', true)}
+        ${settingsToggle('Show notifications on lock screen', 'See alerts before signing in', false)}
+        ${settingsToggle('Show reminders and incoming VoIP calls on lock screen', '', true)}
+        ${settingsToggle('Hide content of sensitive notifications', 'Until you sign in', true)}
+        ${settingsToggle('Allow notifications to play sounds', '', true)}
+        <h3 style="margin:14px 0 8px;">Focus assist</h3>
+        <div class="setting-item"><div><div class="setting-label">Focus assist</div><div class="setting-description">Hide notifications during certain times</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Off</option><option>Priority only</option><option>Alarms only</option></select></div>
+        ${settingsToggle('Automatic rule: When using full-screen apps', 'Like games or movies', true)}
+        ${settingsToggle('Automatic rule: When duplicating my display', 'Useful during presentations', true)}
+        ${settingsToggle('Automatic rule: During these hours', '10:00 PM – 7:00 AM', true)}
+        <h3 style="margin:14px 0 8px;">Notifications from these senders</h3>
+        ${settingsToggle('Mail', '', true)}
+        ${settingsToggle('Calendar', '', true)}
+        ${settingsToggle('Microsoft Edge', '', true)}
+        ${settingsToggle('Discord', '', true)}
+        ${settingsToggle('Microsoft Store', '', false)}`;
+}
+
+function settingsRenderPower() {
+    return `<h2>🔋 Power & sleep</h2>
+        <h3 style="margin:14px 0 8px;">Screen</h3>
+        <div class="setting-item"><div><div class="setting-label">On battery, turn off after</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>1 minute</option><option>3 minutes</option><option>5 minutes</option><option selected>10 minutes</option><option>15 minutes</option><option>30 minutes</option><option>Never</option></select></div>
+        <div class="setting-item"><div><div class="setting-label">When plugged in, turn off after</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>5 minutes</option><option>10 minutes</option><option selected>15 minutes</option><option>30 minutes</option><option>1 hour</option><option>Never</option></select></div>
+        <h3 style="margin:14px 0 8px;">Sleep</h3>
+        <div class="setting-item"><div><div class="setting-label">On battery, sleep after</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option selected>15 minutes</option><option>30 minutes</option><option>1 hour</option><option>Never</option></select></div>
+        <div class="setting-item"><div><div class="setting-label">When plugged in, sleep after</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>30 minutes</option><option selected>1 hour</option><option>3 hours</option><option>Never</option></select></div>
+        <h3 style="margin:14px 0 8px;">Battery</h3>
+        <div class="setting-item"><div><div class="setting-label">Battery level</div><div class="setting-description">87% — 4h 32m remaining</div></div>
+            <div style="width:200px;height:14px;background:#e0e0e0;border-radius:7px;overflow:hidden;"><div style="width:87%;height:100%;background:linear-gradient(90deg,#107c10,#4caf50);"></div></div></div>
+        ${settingsToggle('Battery saver', 'Automatically turn on at 20%', true)}
+        ${settingsToggle('Lower screen brightness while in battery saver', '', true)}
+        <div class="setting-item"><div><div class="setting-label">Power mode</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Best battery life</option><option selected>Balanced</option><option>Best performance</option></select></div>`;
+}
+
+function settingsRenderStorage() {
+    return `<h2>💾 Storage</h2>
+        <div style="background:#f5f5f5;padding:18px;border-radius:8px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong>Local Disk (C:)</strong><span style="color:#666;">237 GB free of 476 GB</span></div>
+            <div style="height:14px;background:#e0e0e0;border-radius:7px;overflow:hidden;display:flex;">
+                <div style="width:25%;background:#0078d4;" title="Apps"></div>
+                <div style="width:8%;background:#00bcf2;" title="Documents"></div>
+                <div style="width:6%;background:#107c10;" title="Pictures"></div>
+                <div style="width:5%;background:#ff8c00;" title="Music"></div>
+                <div style="width:6%;background:#e81123;" title="Videos"></div>
+            </div>
+            <div style="display:flex;gap:14px;margin-top:8px;font-size:11px;color:#666;flex-wrap:wrap;">
+                <span><span style="display:inline-block;width:10px;height:10px;background:#0078d4;border-radius:2px;"></span> Apps 119 GB</span>
+                <span><span style="display:inline-block;width:10px;height:10px;background:#00bcf2;border-radius:2px;"></span> Docs 38 GB</span>
+                <span><span style="display:inline-block;width:10px;height:10px;background:#107c10;border-radius:2px;"></span> Pics 28 GB</span>
+                <span><span style="display:inline-block;width:10px;height:10px;background:#ff8c00;border-radius:2px;"></span> Music 24 GB</span>
+                <span><span style="display:inline-block;width:10px;height:10px;background:#e81123;border-radius:2px;"></span> Video 30 GB</span>
+            </div>
+        </div>
+        ${settingsToggle('Storage Sense', 'Automatically free up space', true)}
+        ${settingsToggle('Delete temporary files', "Files apps don't use", true)}
+        ${settingsToggle('Delete files in Recycle Bin after 30 days', '', true)}
+        ${settingsToggle('Delete files in Downloads after 60 days', '', false)}
+        ${settingsButton('Clean up recommendations', 'Free up space now', 'Run cleanup', "alert('Storage cleanup would free 4.2 GB.')")}
+        <h3 style="margin:14px 0 8px;">More storage settings</h3>
+        ${settingsButton('Change where new content is saved', 'Apps, documents, pictures location', 'Change', "alert('Default save locations dialog.')")}
+        ${settingsButton('Manage Storage Spaces', 'Combine drives into pools', 'Manage', "alert('Storage Spaces would open.')")}
+        ${settingsButton('Optimize drives', 'Defragment and trim drives', 'Optimize', "alert('Drive optimization would start.')")}`;
+}
+
+function settingsRenderMouse() {
+    return `<h2>🖱️ Mouse</h2>
+        <div class="setting-item"><div><div class="setting-label">Primary button</div><div class="setting-description">Choose your main mouse button</div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option selected>Left</option><option>Right</option></select></div>
+        ${settingsSlider('Cursor speed', 'How fast your pointer moves', 10, 1, 20)}
+        ${settingsSlider('Scroll wheel speed', '', 3, 1, 10)}
+        <div class="setting-item"><div><div class="setting-label">Roll the mouse wheel to scroll</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option selected>Multiple lines at a time</option><option>One screen at a time</option></select></div>
+        ${settingsToggle('Scroll inactive windows when hovering', 'Wheel-scroll any window under cursor', true)}
+        <h3 style="margin:14px 0 8px;">Pointer</h3>
+        <div class="setting-item"><div><div class="setting-label">Cursor scheme</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Windows Default</option><option>Windows Black</option><option>Windows Inverted</option><option>Windows Standard (large)</option><option>Magnified</option></select></div>
+        ${settingsSlider('Cursor size', '', 1, 1, 15)}
+        ${settingsToggle('Show pointer trails', 'Visible trail when moving', false)}
+        ${settingsToggle('Hide pointer while typing', '', true)}
+        ${settingsToggle('Show pointer location when I press Ctrl', 'Animated circle reveals cursor', true)}`;
+}
+
+function settingsRenderKeyboard() {
+    return `<h2>⌨️ Keyboard</h2>
+        ${settingsSlider('Repeat delay', 'Long → short', 2, 0, 4)}
+        ${settingsSlider('Repeat rate', 'Slow → fast', 25, 0, 30)}
+        ${settingsSlider('Cursor blink rate', '', 5, 0, 10)}
+        <h3 style="margin:14px 0 8px;">Input</h3>
+        <div class="setting-item"><div><div class="setting-label">Default input language</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>English (US) — US keyboard</option><option>English (UK)</option><option>Español</option><option>Français</option><option>Deutsch</option><option>日本語</option></select></div>
+        ${settingsToggle('Autocorrect misspelled words', '', true)}
+        ${settingsToggle('Highlight misspelled words', '', true)}
+        ${settingsToggle('Show text suggestions as I type', '', true)}
+        ${settingsToggle('Multilingual text suggestions', '', false)}
+        <h3 style="margin:14px 0 8px;">Advanced</h3>
+        ${settingsToggle('Use the desktop language bar when available', '', false)}
+        ${settingsToggle('Let me set a different input method for each app window', '', false)}
+        ${settingsButton('Keyboard shortcuts', 'Customize hotkeys', 'Customize', "alert('Keyboard shortcut customization.')")}`;
+}
+
+function settingsRenderMR() {
+    return `<h2>🥽 Mixed reality</h2>
+        <div style="background:linear-gradient(135deg,#5c2d91,#1a1a2e);color:white;padding:24px;border-radius:10px;margin-bottom:16px;text-align:center;">
+            <div style="font-size:54px;margin-bottom:8px;">🥽</div>
+            <div style="font-size:18px;font-weight:300;">Windows Mixed Reality</div>
+            <div style="opacity:.85;font-size:13px;margin-top:6px;">No mixed reality headset detected</div>
+        </div>
+        ${settingsToggle('Run Mixed Reality on this PC', '', true)}
+        ${settingsToggle('Use boundary', 'Set a play area for safe movement', true)}
+        ${settingsSlider('Boundary tracker range', 'meters', 3, 1, 10)}
+        <div class="setting-item"><div><div class="setting-label">Headset display</div><div class="setting-description"></div></div>
+            <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Auto</option><option>60 Hz</option><option>90 Hz</option></select></div>
+        ${settingsToggle('Audio and speech', 'Use headset audio when worn', true)}
+        ${settingsToggle('Allow apps to access spatial mapping', '', false)}
+        ${settingsButton('Set up a mixed reality headset', 'Pair a Meta Quest, HoloLens, or other', 'Set up', "alert('Headset pairing wizard would launch.')")}`;
+}
+
+function settingsRenderAbout() {
+    const s = window._vmSpecs || {};
+    const planMeta = getPlanMeta(s.plan);
+    const cpuStr  = s.cpu     ? `Intel® Core™ @ ${s.cpu} GHz` : 'Intel® Core™ i9-14900K @ 8.0 GHz (24-core)';
+    const ramStr  = s.ram     ? `${s.ram} GB DDR5` : '500 GB DDR5';
+    const gpuStr  = s.gpu     ? `NVIDIA ${s.gpu}` : 'NVIDIA RTX 4090 24GB';
+    const diskStr = s.storage ? (s.storage >= 1000 ? (s.storage/1000).toFixed(0)+' TB' : s.storage+' GB') + ' NVMe SSD' : '100 TB Samsung NVMe SSD';
+    return `<h2>ℹ️ About</h2>
+        <div style="background:linear-gradient(135deg,${planMeta.color1},${planMeta.color2});color:white;padding:18px 22px;border-radius:10px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 6px 20px ${planMeta.shadow};">
+            <div>
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.85;font-weight:700;">Active VM Plan</div>
+                <div style="font-size:24px;font-weight:700;margin-top:2px;">${planMeta.icon} ${planMeta.name}</div>
+                <div style="font-size:12px;opacity:.85;margin-top:4px;">${planMeta.tagline}</div>
+            </div>
+            <button onclick="window.location.href='/run_vm_on.html'" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(8px);">Switch plan →</button>
+        </div>
+        <div style="background:#f5f5f5;padding:20px;border-radius:8px;margin-bottom:14px;">
+            <h3 style="margin-bottom:14px;">Device specifications</h3>
+            <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 14px;font-size:13px;">
+                <div style="color:#666;">Device name</div><div><strong>DESKTOP-${(userData.username||'WIN10').toUpperCase().slice(0,8)}</strong></div>
+                <div style="color:#666;">Processor</div><div>${cpuStr}</div>
+                <div style="color:#666;">Installed RAM</div><div>${ramStr}</div>
+                <div style="color:#666;">Graphics</div><div>${gpuStr}</div>
+                <div style="color:#666;">Storage</div><div>${diskStr}</div>
+                <div style="color:#666;">Device ID</div><div>A8F2B1C9-44E7-4D8A-9C32-6E5F8D3A1B7C</div>
+                <div style="color:#666;">Product ID</div><div>00330-80000-00000-AA420</div>
+                <div style="color:#666;">System type</div><div>64-bit operating system, x64-based processor</div>
+                <div style="color:#666;">Pen and touch</div><div>No pen or touch input is available for this display</div>
+            </div>
+        </div>
+        <div style="background:#f5f5f5;padding:20px;border-radius:8px;margin-bottom:14px;">
+            <h3 style="margin-bottom:14px;">Windows specifications</h3>
+            <div style="display:grid;grid-template-columns:140px 1fr;gap:6px 14px;font-size:13px;">
+                <div style="color:#666;">Edition</div><div>Windows 10 Pro</div>
+                <div style="color:#666;">Version</div><div>22H2</div>
+                <div style="color:#666;">Installed on</div><div>${new Date().toLocaleDateString()}</div>
+                <div style="color:#666;">OS build</div><div>19045.3803</div>
+                <div style="color:#666;">Experience</div><div>Windows Feature Experience Pack 1000.19053.1000.0</div>
+            </div>
+        </div>
+        ${settingsButton('Copy', 'Copy specs to clipboard', 'Copy', `navigator.clipboard.writeText('Windows 10 Pro 22H2 — ${planMeta.name} VM\\n${cpuStr}\\n${ramStr}\\n${gpuStr}\\n${diskStr}'); alert('Specs copied!')`)}
+        ${settingsButton('Rename this PC', 'Change your computer name', 'Rename', "const n=prompt('New PC name:'); if(n) alert('PC will be renamed to: '+n+' (after restart)')")}
+        ${settingsButton('Reset VM plan', 'Choose a different VM plan', 'Choose plan', "if(confirm('Pick a new VM plan? Your apps & data stay.')){localStorage.removeItem('vmSpecs');window.location.href='/run_vm_on.html';}")}`;
+}
+
+// ── VM plan metadata (shared by About, taskbar badge, etc.) ──
+function getPlanMeta(plan) {
+    const plans = {
+        free:      { name:'Free',      icon:'💻', tagline:'Standard VM for everyday use',         color1:'#3ba55d', color2:'#22c55e', shadow:'rgba(59,165,93,0.35)' },
+        pro:       { name:'Pro',       icon:'🚀', tagline:'High-performance VM for power users',  color1:'#5865f2', color2:'#7289da', shadow:'rgba(88,101,242,0.35)' },
+        master:    { name:'Master',    icon:'⚡', tagline:'Beast-tier hardware for serious work', color1:'#e67e22', color2:'#e91e8c', shadow:'rgba(230,126,34,0.35)' },
+        exclusive: { name:'Exclusive', icon:'💎', tagline:'The ultimate VM — no compromises',     color1:'#9b59b6', color2:'#e91e8c', shadow:'rgba(155,89,182,0.45)' }
+    };
+    return plans[plan] || plans.free;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BLUETOOTH APP
+// ═══════════════════════════════════════════════════════════════════════════
+let _btDevices = [
+    { name:'Sony WH-1000XM5',     icon:'🎧', type:'Audio',      paired:true,  connected:true,  batt:76 },
+    { name:'Logitech MX Master 3', icon:'🖱️', type:'Mouse',      paired:true,  connected:true,  batt:64 },
+    { name:'Logitech K380',        icon:'⌨️', type:'Keyboard',   paired:true,  connected:true,  batt:45 },
+    { name:'iPhone 15 Pro',        icon:'📱', type:'Phone',      paired:true,  connected:false, batt:92 },
+    { name:'AirPods Pro',          icon:'🎧', type:'Audio',      paired:true,  connected:false, batt:88 },
+    { name:'Xbox Wireless Ctrl',   icon:'🎮', type:'Controller', paired:true,  connected:false, batt:50 }
+];
+let _btScanning = false;
+
+function createBluetooth() {
+    setTimeout(renderBluetoothDevices, 50);
+    return `<div style="height:100%;background:#f5f5f5;display:flex;flex-direction:column;">
+        <div style="padding:18px 22px;background:#fff;border-bottom:1px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h2 style="margin:0;font-weight:400;">📡 Bluetooth & other devices</h2>
+                <div style="color:#666;font-size:13px;margin-top:4px;">Discoverable as "DESKTOP-${(userData.username||'WIN10').toUpperCase().slice(0,8)}"</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="bt-master" checked onchange="btToggleMaster(this.checked)"><span class="toggle-slider"></span></label>
+        </div>
+        <div style="padding:18px 22px;border-bottom:1px solid #e0e0e0;background:#fff;">
+            <button onclick="btScanForDevices()" style="padding:10px 20px;background:#0078d4;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">+ Add Bluetooth or other device</button>
+        </div>
+        <div id="bt-scanning" style="display:none;padding:14px 22px;background:#fff8e1;border-bottom:1px solid #ffe082;color:#5d4037;font-size:13px;">
+            🔍 Scanning for nearby devices... <span id="bt-found-count">0</span> found
+        </div>
+        <div id="bt-list" style="flex:1;overflow-y:auto;padding:0 22px;"></div>
+    </div>`;
+}
+
+function renderBluetoothDevices() {
+    const list = document.getElementById('bt-list');
+    if (!list) return;
+    const groups = {};
+    _btDevices.forEach(d => { (groups[d.type] = groups[d.type] || []).push(d); });
+    list.innerHTML = Object.keys(groups).map(type => {
+        const items = groups[type].map((d,gi) => {
+            const idx = _btDevices.indexOf(d);
+            const battColor = d.batt > 50 ? '#4caf50' : d.batt > 20 ? '#ff9800' : '#f44336';
+            return `<div style="display:flex;align-items:center;gap:14px;padding:14px;background:white;border-radius:8px;margin-bottom:8px;">
+                <div style="font-size:32px;">${d.icon}</div>
+                <div style="flex:1;">
+                    <div style="font-weight:500;font-size:14px;">${d.name}</div>
+                    <div style="color:${d.connected?'#107c10':'#666'};font-size:12px;">
+                        ${d.connected ? '● Connected' : (d.paired ? '○ Paired' : 'Available')} • Battery <span style="color:${battColor};font-weight:500;">${d.batt}%</span>
+                    </div>
+                </div>
+                <button onclick="btToggleConnect(${idx})" style="padding:6px 14px;border-radius:4px;border:1px solid ${d.connected?'#e81123':'#0078d4'};background:white;color:${d.connected?'#e81123':'#0078d4'};cursor:pointer;font-size:13px;">
+                    ${d.connected ? 'Disconnect' : 'Connect'}
+                </button>
+                <button onclick="btRemoveDevice(${idx})" style="padding:6px 10px;border-radius:4px;border:1px solid #ccc;background:white;color:#666;cursor:pointer;font-size:13px;">Remove</button>
+            </div>`;
+        }).join('');
+        return `<h3 style="margin:18px 0 10px;color:#444;font-size:14px;text-transform:uppercase;letter-spacing:.5px;">${type}</h3>${items}`;
+    }).join('');
+}
+
+function btToggleMaster(on) {
+    const list = document.getElementById('bt-list');
+    if (list) { list.style.opacity = on?'1':'0.4'; list.style.pointerEvents = on?'auto':'none'; }
+}
+
+function btToggleConnect(idx) {
+    const d = _btDevices[idx];
+    d.connected = !d.connected;
+    renderBluetoothDevices();
+    if (typeof playSound === 'function') playSound('notification');
+}
+
+function btRemoveDevice(idx) {
+    if (!confirm('Remove ' + _btDevices[idx].name + '?')) return;
+    _btDevices.splice(idx, 1);
+    renderBluetoothDevices();
+}
+
+function btScanForDevices() {
+    if (_btScanning) return;
+    _btScanning = true;
+    const banner = document.getElementById('bt-scanning');
+    const cnt    = document.getElementById('bt-found-count');
+    if (banner) banner.style.display = 'block';
+    let found = 0;
+    const candidates = [
+        { name:'JBL Flip 6',           icon:'🔊', type:'Audio',      batt:Math.floor(60+Math.random()*30) },
+        { name:'Magic Trackpad',       icon:'🖱️', type:'Mouse',      batt:Math.floor(60+Math.random()*30) },
+        { name:'Apple Watch Series 9', icon:'⌚', type:'Other',      batt:Math.floor(60+Math.random()*30) },
+        { name:'Samsung Galaxy Buds',  icon:'🎧', type:'Audio',      batt:Math.floor(60+Math.random()*30) }
+    ];
+    const t = setInterval(() => {
+        if (found >= candidates.length) {
+            clearInterval(t);
+            _btScanning = false;
+            if (banner) setTimeout(() => banner.style.display='none', 1500);
+            return;
+        }
+        const c = candidates[found];
+        if (!_btDevices.find(d => d.name === c.name)) {
+            _btDevices.push({ ...c, paired:false, connected:false });
+            renderBluetoothDevices();
+        }
+        found++;
+        if (cnt) cnt.textContent = found;
+    }, 800);
 }
 
 function createTaskManager() {
@@ -2597,72 +3605,20 @@ function edgeLoadUrl(url) {
     const siteName = hostname.replace('www.','');
     const isHttps = url.startsWith('https');
 
+    // Route through our server-side proxy so X-Frame-Options/CSP can't block it
+    const proxiedSrc = '/proxy?url=' + encodeURIComponent(url);
+
     content.innerHTML = `
         <div style="position:relative;width:100%;height:100%;display:flex;flex-direction:column;background:#f3f3f3;">
-          <div id="edge-load-bar" style="background:linear-gradient(90deg,#0078d4,#50a0ff);height:3px;width:0%;transition:width 1s ease;"></div>
-          <iframe id="edge-iframe" src="${url}"
+          <div id="edge-load-bar" style="background:linear-gradient(90deg,#0078d4,#50a0ff);height:3px;width:0%;transition:width 0.6s ease;"></div>
+          <iframe id="edge-iframe" src="${proxiedSrc}"
             style="flex:1;border:none;width:100%;background:white;"
             referrerpolicy="no-referrer"
-            onload="edgeIframeLoaded(this,'${url.replace(/'/g,"\\'")}')">
+            onload="var lb=document.getElementById('edge-load-bar');if(lb){lb.style.width='100%';setTimeout(()=>{if(lb)lb.style.display='none';},400);}">
           </iframe>
-          <div id="edge-blocked-overlay" style="display:none;position:absolute;inset:0;top:3px;background:white;flex-direction:column;align-items:center;justify-content:center;z-index:10;">
-            <div style="text-align:center;max-width:500px;padding:40px;">
-              <div style="font-size:64px;margin-bottom:20px;">🌐</div>
-              <h2 style="font-size:22px;color:#1a1a1a;margin-bottom:8px;">${siteName}</h2>
-              <p style="color:#666;font-size:14px;margin-bottom:6px;">${url}</p>
-              <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 20px;margin:20px 0;text-align:left;font-size:13px;">
-                <strong>⚠️ This page can't be shown here</strong><br>
-                <span style="color:#666;font-size:12px;">${siteName} has a security policy that prevents it from being embedded inside other windows. This is normal behaviour for most major websites.</span>
-              </div>
-              <button onclick="window.open('${url}','_blank')" style="background:#0078d4;color:white;border:none;border-radius:6px;padding:12px 28px;font-size:15px;cursor:pointer;font-weight:600;margin-right:10px;">🔗 Open ${siteName} in browser</button>
-              <button onclick="document.getElementById('edge-blocked-overlay').style.display='none';document.getElementById('edge-iframe').style.display='flex';" style="background:#f3f3f3;border:1px solid #ccc;border-radius:6px;padding:12px 20px;font-size:14px;cursor:pointer;">Try anyway</button>
-            </div>
-          </div>
         </div>`;
 
-    // animate the loading bar
-    setTimeout(() => {
-        const lb = document.getElementById('edge-load-bar');
-        if (lb) lb.style.width = '80%';
-    }, 50);
-    setTimeout(() => {
-        const lb = document.getElementById('edge-load-bar');
-        if (lb) { lb.style.width = '100%'; setTimeout(() => { if(lb) lb.style.display = 'none'; }, 400); }
-        // Check if iframe actually loaded content (many sites block with X-Frame-Options)
-        const iframe = document.getElementById('edge-iframe');
-        if (iframe) {
-            try {
-                // If we can access contentDocument and it has body, it loaded fine
-                const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                if (!doc || doc.body === null || (doc.body && doc.body.innerHTML === '')) {
-                    showEdgeBlockedOverlay();
-                }
-            } catch(e) {
-                // Cross-origin means it loaded (browser enforces same-origin, not X-Frame-Options here)
-                // so do nothing - the content is there
-            }
-        }
-    }, 2000);
-}
-
-function edgeIframeLoaded(iframe, url) {
-    try {
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc || !doc.body || doc.body.innerHTML.trim() === '') {
-            showEdgeBlockedOverlay();
-        }
-    } catch(e) {
-        // Cross-origin means site actually loaded — that's fine
-    }
-}
-
-function showEdgeBlockedOverlay() {
-    const overlay = document.getElementById('edge-blocked-overlay');
-    if (overlay) {
-        overlay.style.display = 'flex';
-        const iframe = document.getElementById('edge-iframe');
-        if (iframe) iframe.style.display = 'none';
-    }
+    setTimeout(() => { const lb = document.getElementById('edge-load-bar'); if (lb) lb.style.width = '70%'; }, 60);
 }
 
 function edgeNav(action) {
@@ -3022,43 +3978,20 @@ function chromeLoadUrl(url) {
     try { hostname = new URL(url).hostname; } catch(e) { hostname = url; }
     const siteName = hostname.replace('www.','');
 
+    // Route through proxy to bypass X-Frame-Options/CSP
+    const proxiedSrc = '/proxy?url=' + encodeURIComponent(url);
+
     content.innerHTML = `
         <div style="position:relative;width:100%;height:100%;display:flex;flex-direction:column;background:#f1f3f4;">
-          <div id="chrome-load-bar" style="background:linear-gradient(90deg,#4285f4,#34a853);height:3px;width:0%;transition:width 1s ease;position:absolute;top:0;left:0;z-index:5;"></div>
-          <iframe id="chrome-iframe" src="${url}"
+          <div id="chrome-load-bar" style="background:linear-gradient(90deg,#4285f4,#34a853);height:3px;width:0%;transition:width 0.6s ease;position:absolute;top:0;left:0;z-index:5;"></div>
+          <iframe id="chrome-iframe" src="${proxiedSrc}"
             style="flex:1;border:none;width:100%;height:100%;background:white;"
             referrerpolicy="no-referrer"
-            onload="chromeIframeLoaded(this,'${url.replace(/'/g,"\\'")}')">
+            onload="var lb=document.getElementById('chrome-load-bar');if(lb){lb.style.width='100%';setTimeout(()=>{if(lb)lb.style.display='none';},400);}">
           </iframe>
-          <div id="chrome-blocked-overlay" style="display:none;position:absolute;inset:0;background:white;flex-direction:column;align-items:center;justify-content:center;z-index:10;">
-            <div style="text-align:center;max-width:500px;padding:40px;">
-              <div style="font-size:64px;margin-bottom:20px;">🌐</div>
-              <h2 style="font-size:22px;color:#202124;margin-bottom:8px;">${siteName}</h2>
-              <p style="color:#5f6368;font-size:14px;margin-bottom:6px;">${url}</p>
-              <div style="background:#fef7e0;border:1px solid #fbbc04;border-radius:8px;padding:14px 20px;margin:20px 0;text-align:left;font-size:13px;">
-                <strong>⚠️ This page can't be shown here</strong><br>
-                <span style="color:#5f6368;font-size:12px;">${siteName} has a security policy that prevents it from being embedded. This is normal for most major websites.</span>
-              </div>
-              <button onclick="window.open('${url}','_blank')" style="background:#4285f4;color:white;border:none;border-radius:6px;padding:12px 28px;font-size:15px;cursor:pointer;font-weight:600;margin-right:10px;">🔗 Open ${siteName} in browser</button>
-              <button onclick="document.getElementById('chrome-blocked-overlay').style.display='none';document.getElementById('chrome-iframe').style.display='block';" style="background:#f1f3f4;border:1px solid #dadce0;border-radius:6px;padding:12px 20px;font-size:14px;cursor:pointer;">Try anyway</button>
-            </div>
-          </div>
         </div>`;
 
-    setTimeout(() => { const lb = document.getElementById('chrome-load-bar'); if(lb) lb.style.width = '80%'; }, 50);
-    setTimeout(() => {
-        const lb = document.getElementById('chrome-load-bar');
-        if (lb) { lb.style.width = '100%'; setTimeout(() => { if(lb) lb.style.display='none'; }, 300); }
-        const iframe = document.getElementById('chrome-iframe');
-        if (iframe) {
-            try {
-                const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                if (!doc || doc.body === null || (doc.body && doc.body.innerHTML.trim() === '')) {
-                    showChromeBlockedOverlay();
-                }
-            } catch(e) { /* cross-origin = actually loaded */ }
-        }
-    }, 2000);
+    setTimeout(() => { const lb = document.getElementById('chrome-load-bar'); if(lb) lb.style.width = '70%'; }, 60);
 }
 
 function chromeIframeLoaded(iframe, url) {
@@ -3526,118 +4459,545 @@ let isDrawing = false;
 
 function createPaint() {
     setTimeout(() => initPaintCanvas(), 100);
-    
+    const palette = [
+        '#000000','#7f7f7f','#880015','#ed1c24','#ff7f27','#fff200','#22b14c','#00a2e8','#3f48cc','#a349a4',
+        '#ffffff','#c3c3c3','#b97a57','#ffaec9','#ffc90e','#efe4b0','#b5e61d','#99d9ea','#7092be','#c8bfe7'
+    ];
     return `
-        <div class="paint-app" style="height: 100%; display: flex; flex-direction: column; background: #f0f0f0;">
-            <div class="paint-toolbar" style="padding: 10px; background: white; border-bottom: 1px solid #ccc; display: flex; gap: 15px; align-items: center;">
-                <div class="paint-colors" style="display: flex; gap: 5px;">
-                    <div class="paint-color active" style="width: 20px; height: 20px; background:#000; cursor: pointer; border: 1px solid #999;" onclick="setPaintColor('#000', this)"></div>
-                    <div class="paint-color" style="width: 20px; height: 20px; background:#fff; cursor: pointer; border: 1px solid #999;" onclick="setPaintColor('#fff', this)"></div>
-                    <div class="paint-color" style="width: 20px; height: 20px; background:#ff0000; cursor: pointer; border: 1px solid #999;" onclick="setPaintColor('#ff0000', this)"></div>
-                    <div class="paint-color" style="width: 20px; height: 20px; background:#00ff00; cursor: pointer; border: 1px solid #999;" onclick="setPaintColor('#00ff00', this)"></div>
-                    <div class="paint-color" style="width: 20px; height: 20px; background:#0000ff; cursor: pointer; border: 1px solid #999;" onclick="setPaintColor('#0000ff', this)"></div>
-                </div>
-                <div class="paint-tools" style="display: flex; gap: 5px;">
-                    <button class="paint-tool active" onclick="setPaintTool('brush', this)" style="padding: 5px 10px; cursor: pointer;">🖌️ Brush</button>
-                    <button class="paint-tool" onclick="setPaintTool('eraser', this)" style="padding: 5px 10px; cursor: pointer;">🧹 Eraser</button>
-                    <button class="paint-tool" onclick="clearCanvas()" style="padding: 5px 10px; cursor: pointer;">🗑️ Clear</button>
-                </div>
-                <label style="display: flex; align-items: center; gap: 5px;">Size: <input type="range" class="paint-size" min="1" max="50" value="5" oninput="paintSize=this.value"></label>
-            </div>
-            <div class="paint-canvas-container" style="flex: 1; overflow: auto; padding: 20px; background: #adb5bd; display: flex; justify-content: center; align-items: center;">
-                <canvas id="paint-canvas" width="600" height="400" style="background: white; box-shadow: 0 0 10px rgba(0,0,0,0.2); cursor: crosshair;"></canvas>
-            </div>
+    <div class="paint-app" style="height:100%;display:flex;flex-direction:column;background:#f0f0f0;font-family:Segoe UI,sans-serif;">
+      <!-- Ribbon -->
+      <div style="background:white;border-bottom:1px solid #d0d0d0;padding:8px 12px;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;">
+
+        <!-- Tools group -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;">
+            <button class="paint-tool active" data-tool="brush"  onclick="setPaintTool('brush',this)"  title="Brush"     style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">🖌️</button>
+            <button class="paint-tool"        data-tool="pencil" onclick="setPaintTool('pencil',this)" title="Pencil"    style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">✏️</button>
+            <button class="paint-tool"        data-tool="eraser" onclick="setPaintTool('eraser',this)" title="Eraser"    style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">🧹</button>
+            <button class="paint-tool"        data-tool="fill"   onclick="setPaintTool('fill',this)"   title="Fill"      style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">🪣</button>
+            <button class="paint-tool"        data-tool="picker" onclick="setPaintTool('picker',this)" title="Color picker" style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">💧</button>
+            <button class="paint-tool"        data-tool="text"   onclick="setPaintTool('text',this)"   title="Text"      style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">🅰️</button>
+            <button class="paint-tool"        data-tool="line"   onclick="setPaintTool('line',this)"   title="Line"      style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">📏</button>
+            <button class="paint-tool"        data-tool="spray"  onclick="setPaintTool('spray',this)"  title="Airbrush"  style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">💨</button>
+          </div>
+          <div style="font-size:10px;color:#666;">Tools</div>
         </div>
-    `;
+
+        <!-- Shapes group -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display:grid;grid-template-columns:repeat(4,32px);gap:2px;">
+            <button class="paint-tool" data-tool="rect"      onclick="setPaintTool('rect',this)"      title="Rectangle" style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">▭</button>
+            <button class="paint-tool" data-tool="circle"    onclick="setPaintTool('circle',this)"    title="Ellipse"   style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">⬭</button>
+            <button class="paint-tool" data-tool="triangle"  onclick="setPaintTool('triangle',this)"  title="Triangle"  style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">△</button>
+            <button class="paint-tool" data-tool="star"      onclick="setPaintTool('star',this)"      title="Star"      style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">★</button>
+            <button class="paint-tool" data-tool="heart"     onclick="setPaintTool('heart',this)"     title="Heart"     style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">♥</button>
+            <button class="paint-tool" data-tool="arrow"     onclick="setPaintTool('arrow',this)"     title="Arrow"     style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">→</button>
+            <button class="paint-tool" data-tool="diamond"   onclick="setPaintTool('diamond',this)"   title="Diamond"   style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">◆</button>
+            <button class="paint-tool" data-tool="hexagon"   onclick="setPaintTool('hexagon',this)"   title="Hexagon"   style="padding:6px;font-size:14px;cursor:pointer;border:1px solid transparent;background:transparent;border-radius:3px;">⬡</button>
+          </div>
+          <div style="font-size:10px;color:#666;">Shapes</div>
+        </div>
+
+        <!-- Size + colors -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display:flex;gap:4px;align-items:center;">
+            <label style="font-size:11px;">Size</label>
+            <input type="range" class="paint-size" min="1" max="60" value="5" oninput="paintSize=parseInt(this.value);document.getElementById('paint-size-num').textContent=this.value">
+            <span id="paint-size-num" style="font-size:11px;width:18px;color:#444;">5</span>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="color" id="paint-custom-color" value="#000000" onchange="setPaintColor(this.value)" style="width:30px;height:22px;border:1px solid #ccc;cursor:pointer;padding:0;">
+            <label style="font-size:11px;">Fill</label>
+            <input type="checkbox" id="paint-fill-shape" checked> 
+          </div>
+          <div style="font-size:10px;color:#666;">Style</div>
+        </div>
+
+        <!-- Color palette -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="display:grid;grid-template-columns:repeat(10,18px);gap:2px;">
+            ${palette.map((c,i) => `<div class="paint-color${i===0?' active':''}" style="width:18px;height:18px;background:${c};cursor:pointer;border:1px solid ${i===0?'#0078d4':'#999'};" onclick="setPaintColor('${c}',this)" title="${c}"></div>`).join('')}
+          </div>
+          <div style="font-size:10px;color:#666;">Colors</div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;margin-left:auto;">
+          <div style="display:grid;grid-template-columns:repeat(3,auto);gap:4px;">
+            <button onclick="paintUndo()" title="Undo (Ctrl+Z)" style="padding:6px 10px;font-size:13px;cursor:pointer;background:#f0f0f0;border:1px solid #ccc;border-radius:3px;">↶ Undo</button>
+            <button onclick="paintRedo()" title="Redo (Ctrl+Y)" style="padding:6px 10px;font-size:13px;cursor:pointer;background:#f0f0f0;border:1px solid #ccc;border-radius:3px;">↷ Redo</button>
+            <button onclick="clearCanvas()" title="Clear" style="padding:6px 10px;font-size:13px;cursor:pointer;background:#f0f0f0;border:1px solid #ccc;border-radius:3px;">🗑️ Clear</button>
+            <button onclick="paintDownload()" title="Save as PNG" style="padding:6px 10px;font-size:13px;cursor:pointer;background:#0078d4;color:white;border:none;border-radius:3px;">💾 Save</button>
+            <button onclick="paintLoadImage()" title="Open image" style="padding:6px 10px;font-size:13px;cursor:pointer;background:#f0f0f0;border:1px solid #ccc;border-radius:3px;">📂 Open</button>
+            <button onclick="paintFillAll()" title="Fill canvas with current color" style="padding:6px 10px;font-size:13px;cursor:pointer;background:#f0f0f0;border:1px solid #ccc;border-radius:3px;">🎨 Fill all</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas area -->
+      <div class="paint-canvas-container" style="flex:1;overflow:auto;padding:20px;background:#adb5bd;display:flex;justify-content:center;align-items:flex-start;position:relative;">
+        <canvas id="paint-canvas" width="800" height="500" style="background:white;box-shadow:0 0 12px rgba(0,0,0,0.25);cursor:crosshair;"></canvas>
+        <canvas id="paint-overlay" width="800" height="500" style="position:absolute;background:transparent;pointer-events:none;box-shadow:0 0 12px rgba(0,0,0,0);"></canvas>
+      </div>
+
+      <!-- Status bar -->
+      <div style="background:#0078d4;color:white;padding:4px 14px;font-size:11px;display:flex;gap:18px;">
+        <span id="paint-pos">📍 0, 0</span>
+        <span id="paint-canvas-info">📐 800 × 500 px</span>
+        <span id="paint-tool-info">🖌️ Brush</span>
+        <span id="paint-color-info">🎨 #000000</span>
+      </div>
+    </div>`;
 }
+
+let paintIsDrawing = false;
+let paintStartX = 0, paintStartY = 0;
+let paintLastX = 0, paintLastY = 0;
+let paintHistory = [];
+let paintHistoryIdx = -1;
+let paintSavedSnapshot = null;
 
 function initPaintCanvas() {
     const canvas = document.getElementById('paint-canvas');
-    if (!canvas) return;
-    
+    const overlay = document.getElementById('paint-overlay');
+    if (!canvas || !overlay) return;
+
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    let paintIsDrawing = false;
+    paintHistory = [canvas.toDataURL()];
+    paintHistoryIdx = 0;
+    paintIsDrawing = false;
+
+    // Position overlay exactly over the canvas
+    overlay.style.left = canvas.offsetLeft + 'px';
+    overlay.style.top = canvas.offsetTop + 'px';
+
+    const getPos = (e) => {
+        const r = canvas.getBoundingClientRect();
+        return [e.clientX - r.left, e.clientY - r.top];
+    };
 
     canvas.addEventListener('mousedown', (e) => {
+        const [x, y] = getPos(e);
         paintIsDrawing = true;
-        drawPaint(e);
-    });
-    canvas.addEventListener('mousemove', drawPaint);
-    canvas.addEventListener('mouseup', () => paintIsDrawing = false);
-    canvas.addEventListener('mouseout', () => paintIsDrawing = false);
+        paintStartX = x; paintStartY = y;
+        paintLastX = x; paintLastY = y;
+        paintSavedSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    function drawPaint(e) {
+        if (paintTool === 'brush' || paintTool === 'pencil' || paintTool === 'eraser' || paintTool === 'spray') {
+            drawPoint(ctx, x, y);
+        } else if (paintTool === 'fill') {
+            floodFill(ctx, Math.floor(x), Math.floor(y), paintColor);
+            paintIsDrawing = false;
+            paintCommit();
+        } else if (paintTool === 'picker') {
+            const px = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+            const hex = '#' + [px[0],px[1],px[2]].map(n => n.toString(16).padStart(2,'0')).join('');
+            setPaintColor(hex);
+            const ci = document.getElementById('paint-custom-color');
+            if (ci) ci.value = hex;
+            paintIsDrawing = false;
+        } else if (paintTool === 'text') {
+            const txt = prompt('Enter text:');
+            if (txt) {
+                ctx.fillStyle = paintColor;
+                ctx.font = (paintSize * 3) + 'px Segoe UI';
+                ctx.fillText(txt, x, y);
+                paintCommit();
+            }
+            paintIsDrawing = false;
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const [x, y] = getPos(e);
+        const posEl = document.getElementById('paint-pos');
+        if (posEl) posEl.textContent = `📍 ${Math.floor(x)}, ${Math.floor(y)}`;
+
         if (!paintIsDrawing) return;
-        const rect = canvas.getBoundingClientRect();
-        
+
+        if (paintTool === 'brush' || paintTool === 'pencil' || paintTool === 'eraser') {
+            ctx.strokeStyle = paintTool === 'eraser' ? 'white' : paintColor;
+            ctx.lineWidth = paintTool === 'pencil' ? Math.max(1, paintSize/3) : paintSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(paintLastX, paintLastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            paintLastX = x; paintLastY = y;
+        } else if (paintTool === 'spray') {
+            ctx.fillStyle = paintColor;
+            for (let i = 0; i < 20; i++) {
+                const ox = (Math.random() - 0.5) * paintSize * 2;
+                const oy = (Math.random() - 0.5) * paintSize * 2;
+                if (ox*ox + oy*oy <= paintSize*paintSize) {
+                    ctx.fillRect(x + ox, y + oy, 1, 1);
+                }
+            }
+        } else if (['rect','circle','triangle','star','heart','arrow','line','diamond','hexagon'].includes(paintTool)) {
+            // Preview shape on overlay
+            ctx.putImageData(paintSavedSnapshot, 0, 0);
+            drawShape(ctx, paintTool, paintStartX, paintStartY, x, y);
+        }
+    });
+
+    const stopDrawing = () => {
+        if (paintIsDrawing) {
+            paintIsDrawing = false;
+            paintCommit();
+        }
+    };
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+}
+
+function drawPoint(ctx, x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, paintSize/2, 0, Math.PI * 2);
+    ctx.fillStyle = paintTool === 'eraser' ? 'white' : paintColor;
+    ctx.fill();
+}
+
+function drawShape(ctx, tool, x1, y1, x2, y2) {
+    const fill = document.getElementById('paint-fill-shape')?.checked;
+    ctx.strokeStyle = paintColor;
+    ctx.fillStyle = paintColor;
+    ctx.lineWidth = Math.max(1, paintSize/2);
+    ctx.beginPath();
+
+    const w = x2 - x1, h = y2 - y1;
+    const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+    const rx = Math.abs(w/2), ry = Math.abs(h/2);
+
+    if (tool === 'rect') {
+        if (fill) ctx.fillRect(Math.min(x1,x2), Math.min(y1,y2), Math.abs(w), Math.abs(h));
+        else ctx.strokeRect(Math.min(x1,x2), Math.min(y1,y2), Math.abs(w), Math.abs(h));
+    } else if (tool === 'circle') {
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        fill ? ctx.fill() : ctx.stroke();
+    } else if (tool === 'line') {
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineWidth = paintSize; ctx.lineCap = 'round'; ctx.stroke();
+    } else if (tool === 'triangle') {
+        ctx.moveTo(cx, y1); ctx.lineTo(x1, y2); ctx.lineTo(x2, y2); ctx.closePath();
+        fill ? ctx.fill() : ctx.stroke();
+    } else if (tool === 'diamond') {
+        ctx.moveTo(cx, y1); ctx.lineTo(x2, cy); ctx.lineTo(cx, y2); ctx.lineTo(x1, cy); ctx.closePath();
+        fill ? ctx.fill() : ctx.stroke();
+    } else if (tool === 'star') {
+        const spikes = 5, outer = Math.min(rx, ry), inner = outer / 2.5;
+        for (let i = 0; i < spikes * 2; i++) {
+            const r = i % 2 === 0 ? outer : inner;
+            const a = (Math.PI / spikes) * i - Math.PI/2;
+            const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r;
+            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        fill ? ctx.fill() : ctx.stroke();
+    } else if (tool === 'heart') {
+        const s = Math.min(Math.abs(w), Math.abs(h));
+        ctx.moveTo(cx, y1 + s * 0.3);
+        ctx.bezierCurveTo(cx, y1, x1, y1, x1, y1 + s * 0.3);
+        ctx.bezierCurveTo(x1, y1 + s * 0.6, cx, y2, cx, y2);
+        ctx.bezierCurveTo(cx, y2, x2, y1 + s * 0.6, x2, y1 + s * 0.3);
+        ctx.bezierCurveTo(x2, y1, cx, y1, cx, y1 + s * 0.3);
+        fill ? ctx.fill() : ctx.stroke();
+    } else if (tool === 'arrow') {
+        ctx.lineWidth = paintSize;
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        // arrowhead
+        const ang = Math.atan2(y2 - y1, x2 - x1), len = paintSize * 3;
         ctx.beginPath();
-        ctx.arc(e.clientX - rect.left, e.clientY - rect.top, paintSize/2, 0, Math.PI * 2);
-        ctx.fillStyle = paintTool === 'eraser' ? 'white' : paintColor;
-        ctx.fill();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - len * Math.cos(ang - Math.PI/6), y2 - len * Math.sin(ang - Math.PI/6));
+        ctx.lineTo(x2 - len * Math.cos(ang + Math.PI/6), y2 - len * Math.sin(ang + Math.PI/6));
+        ctx.closePath(); ctx.fill();
+    } else if (tool === 'hexagon') {
+        for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i;
+            const px = cx + Math.cos(a) * rx, py = cy + Math.sin(a) * ry;
+            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        fill ? ctx.fill() : ctx.stroke();
     }
+}
+
+function floodFill(ctx, x, y, hex) {
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+    const img = ctx.getImageData(0, 0, w, h);
+    const data = img.data;
+    const idx = (x, y) => (y * w + x) * 4;
+    const target = [data[idx(x,y)], data[idx(x,y)+1], data[idx(x,y)+2], data[idx(x,y)+3]];
+    const r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
+    if (target[0] === r && target[1] === g && target[2] === b) return;
+    const stack = [[x,y]];
+    let visited = 0;
+    while (stack.length && visited < w * h) {
+        const [cx, cy] = stack.pop();
+        if (cx < 0 || cy < 0 || cx >= w || cy >= h) continue;
+        const i = idx(cx, cy);
+        if (data[i] !== target[0] || data[i+1] !== target[1] || data[i+2] !== target[2] || data[i+3] !== target[3]) continue;
+        data[i] = r; data[i+1] = g; data[i+2] = b; data[i+3] = 255;
+        stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+        visited++;
+    }
+    ctx.putImageData(img, 0, 0);
+}
+
+function paintCommit() {
+    const canvas = document.getElementById('paint-canvas');
+    if (!canvas) return;
+    paintHistory = paintHistory.slice(0, paintHistoryIdx + 1);
+    paintHistory.push(canvas.toDataURL());
+    if (paintHistory.length > 30) paintHistory.shift();
+    paintHistoryIdx = paintHistory.length - 1;
+}
+
+function paintUndo() {
+    if (paintHistoryIdx <= 0) return;
+    paintHistoryIdx--;
+    paintLoadFromHistory();
+}
+
+function paintRedo() {
+    if (paintHistoryIdx >= paintHistory.length - 1) return;
+    paintHistoryIdx++;
+    paintLoadFromHistory();
+}
+
+function paintLoadFromHistory() {
+    const canvas = document.getElementById('paint-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => { ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img, 0, 0); };
+    img.src = paintHistory[paintHistoryIdx];
 }
 
 function setPaintColor(color, el) {
     paintColor = color;
     document.querySelectorAll('.paint-color').forEach(c => c.style.border = '1px solid #999');
     if (el) el.style.border = '2px solid #0078d4';
+    const ci = document.getElementById('paint-color-info');
+    if (ci) ci.textContent = '🎨 ' + color;
+    const cc = document.getElementById('paint-custom-color');
+    if (cc && /^#[0-9a-f]{6}$/i.test(color)) cc.value = color;
 }
 
 function setPaintTool(tool, el) {
     paintTool = tool;
-    document.querySelectorAll('.paint-tool').forEach(t => t.classList.remove('active'));
-    if (el) el.classList.add('active');
+    document.querySelectorAll('.paint-tool').forEach(t => {
+        t.classList.remove('active');
+        t.style.background = 'transparent';
+        t.style.border = '1px solid transparent';
+    });
+    if (el) {
+        el.classList.add('active');
+        el.style.background = '#cce4f7';
+        el.style.border = '1px solid #0078d4';
+    }
+    const labels = { brush:'🖌️ Brush', pencil:'✏️ Pencil', eraser:'🧹 Eraser', fill:'🪣 Fill', picker:'💧 Picker', text:'🅰️ Text', line:'📏 Line', spray:'💨 Airbrush', rect:'▭ Rectangle', circle:'⬭ Ellipse', triangle:'△ Triangle', star:'★ Star', heart:'♥ Heart', arrow:'→ Arrow', diamond:'◆ Diamond', hexagon:'⬡ Hexagon' };
+    const ti = document.getElementById('paint-tool-info');
+    if (ti) ti.textContent = labels[tool] || tool;
+    const canvas = document.getElementById('paint-canvas');
+    if (canvas) canvas.style.cursor = (tool === 'picker' || tool === 'fill') ? 'cell' : (tool === 'text' ? 'text' : 'crosshair');
 }
 
 function clearCanvas() {
     const canvas = document.getElementById('paint-canvas');
-    if (canvas) {
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    paintCommit();
+}
+
+function paintFillAll() {
+    const canvas = document.getElementById('paint-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = paintColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    paintCommit();
+}
+
+function paintDownload() {
+    const canvas = document.getElementById('paint-canvas');
+    if (!canvas) return;
+    const a = document.createElement('a');
+    a.download = 'paint-' + Date.now() + '.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    if (typeof addNotification === 'function') addNotification('🎨', 'Paint', 'Image saved as PNG');
+}
+
+function paintLoadImage() {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById('paint-canvas');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                const r = Math.min(canvas.width / img.width, canvas.height / img.height);
+                ctx.drawImage(img, 0, 0, img.width * r, img.height * r);
+                paintCommit();
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    inp.click();
 }
 
 // Weather App
+const _weatherCities = [
+    { name: 'New York',    country: 'US', temp: 72, cond: 'Partly Cloudy', icon: '⛅', hi: 78, lo: 64, humidity: 58, wind: 8,  uv: 5, feels: 74, vis: 10, pressure: 1014, dew: 56, sunrise: '6:21 AM', sunset: '7:48 PM', aqi: 42 },
+    { name: 'Tokyo',       country: 'JP', temp: 86, cond: 'Sunny',          icon: '☀️', hi: 91, lo: 75, humidity: 67, wind: 6,  uv: 9, feels: 92, vis: 9,  pressure: 1009, dew: 73, sunrise: '4:48 AM', sunset: '6:54 PM', aqi: 35 },
+    { name: 'London',      country: 'UK', temp: 58, cond: 'Light Rain',     icon: '🌧️', hi: 64, lo: 52, humidity: 82, wind: 12, uv: 2, feels: 55, vis: 6,  pressure: 1003, dew: 52, sunrise: '5:12 AM', sunset: '8:33 PM', aqi: 28 },
+    { name: 'Sydney',      country: 'AU', temp: 64, cond: 'Clear',          icon: '🌤️', hi: 70, lo: 58, humidity: 60, wind: 14, uv: 4, feels: 64, vis: 10, pressure: 1018, dew: 50, sunrise: '7:01 AM', sunset: '5:02 PM', aqi: 18 },
+    { name: 'Dubai',       country: 'AE', temp: 105, cond: 'Hot & Dry',     icon: '🔥', hi: 112, lo: 89, humidity: 25, wind: 9,  uv: 11,feels: 110,vis: 7,  pressure: 1006, dew: 64, sunrise: '5:36 AM', sunset: '7:08 PM', aqi: 78 },
+    { name: 'Reykjavik',   country: 'IS', temp: 41, cond: 'Snow',           icon: '❄️', hi: 45, lo: 32, humidity: 88, wind: 22, uv: 1, feels: 28, vis: 4,  pressure: 998,  dew: 36, sunrise: '4:02 AM', sunset: '11:04 PM', aqi: 12 },
+    { name: 'Rio de Janeiro', country: 'BR', temp: 80, cond: 'Thunderstorms', icon: '⛈️', hi: 84, lo: 73, humidity: 78, wind: 11, uv: 7, feels: 88, vis: 5,  pressure: 1011, dew: 72, sunrise: '6:32 AM', sunset: '5:48 PM', aqi: 51 }
+];
+let _weatherCityIdx = 0;
+
 function createWeather() {
-    const temps = [68, 72, 65, 70, 75, 62, 78];
-    const conditions = ['☀️', '⛅', '☁️', '🌧️', '⛈️'];
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    
+    setTimeout(() => renderWeather(), 50);
     return `
-        <div class="weather-app">
-            <h2>📍 Current Location</h2>
-            <div class="weather-icon">☀️</div>
-            <div class="weather-temp">72°F</div>
-            <p>Sunny</p>
-            <div class="weather-details">
-                <div class="weather-detail">
-                    <div class="weather-detail-value">💨 8 mph</div>
-                    <div>Wind</div>
-                </div>
-                <div class="weather-detail">
-                    <div class="weather-detail-value">💧 45%</div>
-                    <div>Humidity</div>
-                </div>
-                <div class="weather-detail">
-                    <div class="weather-detail-value">👁️ 10 mi</div>
-                    <div>Visibility</div>
-                </div>
-            </div>
-            <div class="weather-forecast">
-                ${days.map((day, i) => `
-                    <div class="forecast-day">
-                        <div>${day}</div>
-                        <div style="font-size: 24px">${conditions[i % conditions.length]}</div>
-                        <div>${temps[i]}°</div>
-                    </div>
-                `).join('')}
-            </div>
+    <div id="weather-root" style="height:100%;display:flex;flex-direction:column;background:linear-gradient(180deg,#4a90e2,#357abd);color:white;font-family:Segoe UI,sans-serif;overflow-y:auto;">
+      <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.15);">
+        <span style="font-size:20px;">📍</span>
+        <select id="weather-city" onchange="_weatherCityIdx=this.value;renderWeather()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:4px;padding:6px 10px;font-size:14px;cursor:pointer;">
+          ${_weatherCities.map((c,i) => `<option value="${i}" style="color:#000;">${c.name}, ${c.country}</option>`).join('')}
+        </select>
+        <span style="margin-left:auto;font-size:13px;opacity:0.85;" id="weather-clock">--:--</span>
+      </div>
+      <div id="weather-body" style="flex:1;"></div>
+    </div>`;
+}
+
+function renderWeather() {
+    const root = document.getElementById('weather-root');
+    const body = document.getElementById('weather-body');
+    if (!body) return;
+    const c = _weatherCities[_weatherCityIdx];
+    const clock = document.getElementById('weather-clock');
+    if (clock) clock.textContent = new Date().toLocaleString();
+
+    // Background based on condition
+    const bgs = {
+        'Sunny':           'linear-gradient(180deg,#ff9966,#ff5e62)',
+        'Hot & Dry':       'linear-gradient(180deg,#f12711,#f5af19)',
+        'Clear':           'linear-gradient(180deg,#56ccf2,#2f80ed)',
+        'Partly Cloudy':   'linear-gradient(180deg,#4a90e2,#357abd)',
+        'Light Rain':      'linear-gradient(180deg,#536976,#292e49)',
+        'Thunderstorms':   'linear-gradient(180deg,#373b44,#4286f4)',
+        'Snow':            'linear-gradient(180deg,#83a4d4,#b6fbff)'
+    };
+    if (root) root.style.background = bgs[c.cond] || bgs['Partly Cloudy'];
+
+    // Hourly forecast (next 24h)
+    const hourIcons = ['☀️','☀️','⛅','⛅','☁️','🌧️','⛈️','🌤️'];
+    const hours = Array.from({length: 12}).map((_, i) => {
+        const h = (new Date().getHours() + i) % 24;
+        const t = c.temp + Math.floor(Math.sin(i / 2) * 6 - 2);
+        const hi = hourIcons[(i + _weatherCityIdx) % hourIcons.length];
+        return { h: h === 0 ? '12 AM' : (h < 12 ? h + ' AM' : (h === 12 ? '12 PM' : (h - 12) + ' PM')), t, icon: hi };
+    });
+
+    const days = ['Today','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const dayIcons = ['☀️','⛅','☁️','🌧️','⛈️','🌤️','❄️'];
+    const dayTemps = days.map((_, i) => ({ hi: c.hi + Math.floor(Math.sin(i)*4), lo: c.lo + Math.floor(Math.cos(i)*3), icon: dayIcons[(i + _weatherCityIdx) % dayIcons.length] }));
+
+    const aqiColor = c.aqi < 50 ? '#00e676' : c.aqi < 100 ? '#ffeb3b' : c.aqi < 150 ? '#ff9800' : '#f44336';
+    const aqiLabel = c.aqi < 50 ? 'Good' : c.aqi < 100 ? 'Moderate' : c.aqi < 150 ? 'Unhealthy' : 'Very Unhealthy';
+    const uvLabel = c.uv <= 2 ? 'Low' : c.uv <= 5 ? 'Moderate' : c.uv <= 7 ? 'High' : c.uv <= 10 ? 'Very High' : 'Extreme';
+    const uvColor = c.uv <= 2 ? '#4caf50' : c.uv <= 5 ? '#ffeb3b' : c.uv <= 7 ? '#ff9800' : '#f44336';
+
+    body.innerHTML = `
+      <div style="padding:30px 20px;text-align:center;">
+        <div style="font-size:96px;line-height:1;">${c.icon}</div>
+        <div style="font-size:80px;font-weight:200;letter-spacing:-2px;">${c.temp}°<span style="font-size:32px;vertical-align:top;opacity:0.7;">F</span></div>
+        <div style="font-size:20px;opacity:0.95;">${c.cond}</div>
+        <div style="font-size:14px;opacity:0.85;margin-top:4px;">Feels like ${c.feels}° · H ${c.hi}° · L ${c.lo}°</div>
+      </div>
+
+      <!-- Hourly -->
+      <div style="background:rgba(255,255,255,0.12);margin:0 16px;border-radius:12px;padding:14px;">
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:0.85;margin-bottom:10px;">⏱ Hourly forecast</div>
+        <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:4px;">
+          ${hours.map((h, i) => `
+            <div style="text-align:center;min-width:54px;${i===0?'background:rgba(255,255,255,0.18);border-radius:8px;padding:6px 4px;':''}">
+              <div style="font-size:12px;opacity:0.85;">${i===0?'Now':h.h}</div>
+              <div style="font-size:24px;margin:4px 0;">${h.icon}</div>
+              <div style="font-size:14px;font-weight:600;">${h.t}°</div>
+            </div>`).join('')}
         </div>
-    `;
+      </div>
+
+      <!-- 7-day -->
+      <div style="background:rgba(255,255,255,0.12);margin:14px 16px 0;border-radius:12px;padding:14px;">
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:0.85;margin-bottom:10px;">📅 7-day forecast</div>
+        ${days.map((d, i) => {
+          const t = dayTemps[i];
+          const lowPct = ((t.lo - c.lo) / Math.max(1, c.hi - c.lo)) * 100;
+          const hiPct = ((t.hi - c.lo) / Math.max(1, c.hi - c.lo)) * 100;
+          return `
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:${i===days.length-1?'none':'1px solid rgba(255,255,255,0.1)'};">
+            <div style="width:60px;font-size:14px;font-weight:${i===0?600:400};">${d}</div>
+            <div style="font-size:22px;width:30px;text-align:center;">${t.icon}</div>
+            <div style="font-size:13px;opacity:0.7;width:30px;text-align:right;">${t.lo}°</div>
+            <div style="flex:1;height:6px;background:rgba(255,255,255,0.2);border-radius:3px;position:relative;">
+              <div style="position:absolute;left:${Math.max(0,Math.min(100,lowPct))}%;width:${Math.max(10,hiPct - lowPct)}%;height:100%;background:linear-gradient(90deg,#5fbff9,#fce96a,#ff9966);border-radius:3px;"></div>
+            </div>
+            <div style="font-size:13px;width:30px;font-weight:600;">${t.hi}°</div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Detail tiles -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:14px 16px;">
+        ${[
+          ['💨','Wind',         c.wind + ' mph', 'NW'],
+          ['💧','Humidity',     c.humidity + '%', `Dew point ${c.dew}°`],
+          ['👁️','Visibility',   c.vis + ' mi', 'Clear'],
+          ['🌡️','Pressure',     c.pressure + ' mb', c.pressure > 1013 ? 'High' : 'Low'],
+          ['🌅','Sunrise',      c.sunrise, 'Sunset ' + c.sunset],
+          ['🤒','Feels like',   c.feels + '°', c.feels > c.temp ? 'Warmer' : 'Cooler'],
+        ].map(([ic, lbl, val, sub]) => `
+          <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px;">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;opacity:0.8;">${ic} ${lbl}</div>
+            <div style="font-size:22px;font-weight:600;margin:4px 0;">${val}</div>
+            <div style="font-size:11px;opacity:0.7;">${sub}</div>
+          </div>`).join('')}
+
+        <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;opacity:0.8;">☀️ UV index</div>
+          <div style="font-size:22px;font-weight:600;margin:4px 0;color:${uvColor};">${c.uv} · ${uvLabel}</div>
+          <div style="height:5px;background:linear-gradient(90deg,#4caf50,#ffeb3b,#ff9800,#f44336,#9c27b0);border-radius:3px;position:relative;margin-top:6px;">
+            <div style="position:absolute;left:${(c.uv/12)*100}%;top:-3px;width:11px;height:11px;background:white;border-radius:50%;border:2px solid #333;transform:translateX(-50%);"></div>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;opacity:0.8;">🍃 Air quality</div>
+          <div style="font-size:22px;font-weight:600;margin:4px 0;color:${aqiColor};">${c.aqi} · ${aqiLabel}</div>
+          <div style="font-size:11px;opacity:0.7;">${c.aqi < 50 ? 'Air quality is satisfactory.' : c.aqi < 100 ? 'Acceptable for most.' : 'Sensitive groups beware.'}</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:8px 0 14px;font-size:11px;opacity:0.6;">Data is simulated · Updated ${new Date().toLocaleTimeString()}</div>
+    </div>`;
 }
 
 // Snipping Tool
@@ -3857,74 +5217,482 @@ function createCalendar() {
 
 // Clock App
 function createClockApp() {
-    setTimeout(() => {
-        updateClockApp();
-        setInterval(updateClockApp, 1000);
-    }, 100);
-    
+    window._clock = { swRunning:false, swMs:0, swStart:null, swInterval:null, timerLeft:0, timerTotal:0, timerInterval:null, alarms:JSON.parse(localStorage.getItem('clockAlarms')||'[]') };
+    setTimeout(clockTabSwitch, 80, 'clock');
     return `
-        <div class="clock-app">
-            <div class="clock-display" id="clock-app-time">00:00:00</div>
-            <div class="clock-date" id="clock-app-date">Loading...</div>
-        </div>
-    `;
+    <div style="height:100%;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;font-family:Segoe UI,sans-serif;display:flex;flex-direction:column;">
+      <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.08);">
+        ${['clock','alarm','stopwatch','timer'].map(t=>`<button id="clktab-${t}" onclick="clockTabSwitch('${t}')" style="flex:1;padding:14px;background:none;border:none;color:#9ca3af;font-size:13px;font-weight:600;cursor:pointer;text-transform:capitalize;letter-spacing:.5px;transition:color .15s,border-bottom .15s;">${t==='clock'?'⏰':t==='alarm'?'🔔':t==='stopwatch'?'⏱️':'⏲️'} ${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('')}
+      </div>
+      <div id="clock-body" style="flex:1;overflow:auto;"></div>
+    </div>`;
+}
+function clockTabSwitch(tab) {
+    ['clock','alarm','stopwatch','timer'].forEach(t=>{
+        const b=document.getElementById('clktab-'+t);
+        if(b){b.style.color=t===tab?'#60a5fa':'#9ca3af';b.style.borderBottom=t===tab?'2px solid #60a5fa':'2px solid transparent';}
+    });
+    const body=document.getElementById('clock-body');
+    if(!body)return;
+    if(tab==='clock'){
+        body.innerHTML=`<div style="text-align:center;padding:40px 20px;">
+          <div id="clk-time" style="font-size:72px;font-weight:200;letter-spacing:-2px;font-feature-settings:'tnum';"></div>
+          <div id="clk-date" style="font-size:18px;opacity:.6;margin-top:8px;"></div>
+          <div style="margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:420px;margin-inline:auto;">
+            ${[['🗽','New York','America/New_York'],['🏰','London','Europe/London'],['🗼','Paris','Europe/Paris'],['🏯','Tokyo','Asia/Tokyo'],['🏙️','Sydney','Australia/Sydney'],['🕌','Dubai','Asia/Dubai']].map(([ic,city,tz])=>`<div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:24px;">${ic}</div><div id="wclk-${tz.replace('/','_')}" style="font-size:18px;font-weight:600;"></div><div style="font-size:11px;opacity:.6;">${city}</div></div>`).join('')}
+          </div>
+        </div>`;
+        clearInterval(window._clockInterval);
+        window._clockInterval=setInterval(clockTick,1000);
+        clockTick();
+    } else if(tab==='alarm'){
+        const al=window._clock.alarms;
+        body.innerHTML=`<div style="padding:24px;max-width:420px;margin:0 auto;">
+          <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center;">
+            <input id="alarm-time" type="time" style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:white;padding:10px;border-radius:8px;font-size:16px;">
+            <input id="alarm-lbl" type="text" placeholder="Label (optional)" style="flex:2;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:white;padding:10px;border-radius:8px;font-size:14px;">
+            <button onclick="clockAddAlarm()" style="padding:10px 16px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">+ Add</button>
+          </div>
+          <div id="alarm-list">${al.length?al.map((a,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:8px;"><div><div style="font-size:22px;font-weight:600;">${a.time}</div><div style="font-size:12px;opacity:.6;">${a.label||'Alarm'}</div></div><button onclick="clockDelAlarm(${i})" style="background:#ef4444;border:none;color:white;border-radius:6px;padding:6px 12px;cursor:pointer;">✕</button></div>`).join(''):'<div style="text-align:center;opacity:.4;padding:40px 0;">No alarms set</div>'}</div>
+        </div>`;
+    } else if(tab==='stopwatch'){
+        body.innerHTML=`<div style="text-align:center;padding:40px 20px;">
+          <div id="sw-display" style="font-size:64px;font-weight:200;letter-spacing:-1px;font-feature-settings:'tnum';">00:00.00</div>
+          <div style="display:flex;gap:14px;justify-content:center;margin-top:28px;">
+            <button id="sw-btn" onclick="swToggle()" style="width:80px;height:80px;border-radius:50%;background:#22c55e;border:none;color:white;font-size:20px;cursor:pointer;">▶</button>
+            <button onclick="swReset()" style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:white;font-size:20px;cursor:pointer;">↺</button>
+          </div>
+          <div id="sw-laps" style="margin-top:24px;max-height:180px;overflow-y:auto;"></div>
+        </div>`;
+    } else if(tab==='timer'){
+        body.innerHTML=`<div style="text-align:center;padding:40px 20px;">
+          <div id="tmr-display" style="font-size:72px;font-weight:200;letter-spacing:-2px;font-feature-settings:'tnum';">00:00</div>
+          <div id="tmr-ring" style="width:200px;height:200px;margin:20px auto;position:relative;display:none;">
+            <svg viewBox="0 0 100 100" style="width:100%;transform:rotate(-90deg);">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+              <circle id="tmr-arc" cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="0" style="transition:stroke-dashoffset .9s linear;"/>
+            </svg>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px;flex-wrap:wrap;">
+            ${[[5,'5m'],[10,'10m'],[15,'15m'],[25,'25m'],[60,'1h']].map(([m,l])=>`<button onclick="timerSet(${m*60})" style="padding:8px 14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:white;border-radius:6px;cursor:pointer;">${l}</button>`).join('')}
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px;align-items:center;">
+            <input id="tmr-h" type="number" min="0" max="23" placeholder="h" style="width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:white;padding:8px;border-radius:6px;font-size:18px;text-align:center;">
+            <span style="font-size:24px;">:</span>
+            <input id="tmr-m" type="number" min="0" max="59" placeholder="m" style="width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:white;padding:8px;border-radius:6px;font-size:18px;text-align:center;">
+            <span style="font-size:24px;">:</span>
+            <input id="tmr-s" type="number" min="0" max="59" placeholder="s" style="width:60px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:white;padding:8px;border-radius:6px;font-size:18px;text-align:center;">
+          </div>
+          <div style="display:flex;gap:14px;justify-content:center;">
+            <button id="tmr-btn" onclick="timerToggle()" style="width:80px;height:80px;border-radius:50%;background:#3b82f6;border:none;color:white;font-size:20px;cursor:pointer;">▶</button>
+            <button onclick="timerReset()" style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:white;font-size:20px;cursor:pointer;">↺</button>
+          </div>
+        </div>`;
+    }
+}
+function clockTick(){
+    const n=new Date();
+    const t=document.getElementById('clk-time');
+    const d=document.getElementById('clk-date');
+    if(t)t.textContent=n.toLocaleTimeString('en-US',{hour12:true,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    if(d)d.textContent=n.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    [{tz:'America/New_York'},{tz:'Europe/London'},{tz:'Europe/Paris'},{tz:'Asia/Tokyo'},{tz:'Australia/Sydney'},{tz:'Asia/Dubai'}].forEach(({tz})=>{
+        const el=document.getElementById('wclk-'+tz.replace('/','_'));
+        if(el)el.textContent=new Date().toLocaleTimeString('en-US',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:true});
+    });
+    // check alarms
+    const hm=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');
+    (window._clock?.alarms||[]).forEach(a=>{if(a.time===hm&&!a.fired){a.fired=true;addNotification('🔔','Alarm',a.label||'Alarm ringing!');playSound&&playSound('notification');}});
+    if(n.getMinutes()===0)window._clock?.alarms?.forEach(a=>a.fired=false);
+}
+function clockAddAlarm(){
+    const t=document.getElementById('alarm-time')?.value;
+    const l=document.getElementById('alarm-lbl')?.value||'Alarm';
+    if(!t){addNotification('🔔','Alarm','Pick a time first');return;}
+    window._clock.alarms.push({time:t,label:l,fired:false});
+    localStorage.setItem('clockAlarms',JSON.stringify(window._clock.alarms));
+    clockTabSwitch('alarm');
+}
+function clockDelAlarm(i){
+    window._clock.alarms.splice(i,1);
+    localStorage.setItem('clockAlarms',JSON.stringify(window._clock.alarms));
+    clockTabSwitch('alarm');
+}
+let _swLapN=0;
+function swToggle(){
+    const c=window._clock;const btn=document.getElementById('sw-btn');
+    if(c.swRunning){
+        clearInterval(c.swInterval);c.swRunning=false;
+        c.swMs+=(Date.now()-c.swStart);
+        if(btn)btn.textContent='▶';
+        // lap
+        _swLapN++;
+        const laps=document.getElementById('sw-laps');
+        if(laps){const d=document.createElement('div');d.style.cssText='padding:6px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;font-size:14px;';d.innerHTML=`<span style="opacity:.6">Lap ${_swLapN}</span><span>${swFmt(c.swMs)}</span>`;laps.prepend(d);}
+    } else {
+        c.swStart=Date.now();c.swRunning=true;
+        if(btn)btn.textContent='⏸';
+        c.swInterval=setInterval(()=>{
+            const el=document.getElementById('sw-display');
+            if(el)el.textContent=swFmt(c.swMs+(Date.now()-c.swStart));
+        },50);
+    }
+}
+function swReset(){const c=window._clock;clearInterval(c.swInterval);c.swRunning=false;c.swMs=0;c.swStart=null;_swLapN=0;const el=document.getElementById('sw-display');if(el)el.textContent='00:00.00';const laps=document.getElementById('sw-laps');if(laps)laps.innerHTML='';const btn=document.getElementById('sw-btn');if(btn)btn.textContent='▶';}
+function swFmt(ms){const m=Math.floor(ms/60000);const s=Math.floor((ms%60000)/1000);const cs=Math.floor((ms%1000)/10);return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;}
+function timerSet(secs){window._clock.timerLeft=secs;window._clock.timerTotal=secs;timerUpdateDisplay();const ring=document.getElementById('tmr-ring');if(ring)ring.style.display='none';}
+function timerToggle(){
+    const c=window._clock;const btn=document.getElementById('tmr-btn');
+    if(c.timerInterval){clearInterval(c.timerInterval);c.timerInterval=null;if(btn)btn.textContent='▶';return;}
+    if(!c.timerLeft){
+        const h=parseInt(document.getElementById('tmr-h')?.value||0);
+        const m=parseInt(document.getElementById('tmr-m')?.value||0);
+        const s=parseInt(document.getElementById('tmr-s')?.value||0);
+        c.timerLeft=h*3600+m*60+s;c.timerTotal=c.timerLeft;
+    }
+    if(!c.timerLeft)return;
+    const ring=document.getElementById('tmr-ring');if(ring)ring.style.display='block';
+    if(btn)btn.textContent='⏸';
+    c.timerInterval=setInterval(()=>{
+        c.timerLeft--;timerUpdateDisplay();
+        if(c.timerLeft<=0){clearInterval(c.timerInterval);c.timerInterval=null;if(btn)btn.textContent='▶';addNotification('⏲️','Timer','Time\'s up!');playSound&&playSound('notification');}
+    },1000);
+}
+function timerReset(){const c=window._clock;clearInterval(c.timerInterval);c.timerInterval=null;c.timerLeft=0;c.timerTotal=0;timerUpdateDisplay();const btn=document.getElementById('tmr-btn');if(btn)btn.textContent='▶';const ring=document.getElementById('tmr-ring');if(ring)ring.style.display='none';}
+function timerUpdateDisplay(){
+    const c=window._clock;
+    const h=Math.floor(c.timerLeft/3600);const m=Math.floor((c.timerLeft%3600)/60);const s=c.timerLeft%60;
+    const el=document.getElementById('tmr-display');
+    if(el)el.textContent=h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const arc=document.getElementById('tmr-arc');
+    if(arc&&c.timerTotal)arc.style.strokeDashoffset=283*(1-c.timerLeft/c.timerTotal);
 }
 
-function updateClockApp() {
-    const now = new Date();
-    const timeEl = document.getElementById('clock-app-time');
-    const dateEl = document.getElementById('clock-app-date');
-    if (timeEl) timeEl.textContent = now.toLocaleTimeString();
-    if (dateEl) dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-}
-
-// Maps App
+// Maps App — real OpenStreetMap
 function createMaps() {
+    const cities = [
+        { name:'New York', lat:40.7128, lon:-74.0060 },
+        { name:'London', lat:51.5074, lon:-0.1278 },
+        { name:'Paris', lat:48.8566, lon:2.3522 },
+        { name:'Tokyo', lat:35.6895, lon:139.6917 },
+        { name:'Sydney', lat:-33.8688, lon:151.2093 },
+        { name:'Dubai', lat:25.2048, lon:55.2708 },
+    ];
+    window._mapsLat = 40.7128; window._mapsLon = -74.0060; window._mapsZoom = 13;
+    setTimeout(mapsLoad, 80);
     return `
-        <div class="maps-app">
-            <div class="maps-search">
-                <input type="text" placeholder="Search for a place...">
-            </div>
-            <div class="maps-content">🗺️</div>
+    <div style="height:100%;display:flex;flex-direction:column;background:#1a1d23;font-family:Segoe UI,sans-serif;">
+      <div style="padding:10px 14px;background:#1e2130;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="maps-input" type="text" placeholder="🔍 Search city or address…" style="flex:1;min-width:160px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:white;padding:9px 14px;border-radius:8px;font-size:14px;outline:none;" onkeydown="if(event.key==='Enter')mapsSearch()">
+        <button onclick="mapsSearch()" style="padding:9px 16px;background:#0078d4;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;">Go</button>
+        <select id="maps-zoom" onchange="mapsLoad()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:white;padding:9px 10px;border-radius:8px;font-size:13px;">
+          ${[5,8,10,11,12,13,14,15,16,17].map(z=>`<option value="${z}" ${z===13?'selected':''}>${z===5?'World':z<=10?'Country':z<=12?'Region':z<=14?'City':z<=15?'District':z<=16?'Street':'Building'} (${z})</option>`).join('')}
+        </select>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${cities.map(c=>`<button onclick="mapsGoTo(${c.lat},${c.lon})" style="padding:5px 10px;background:rgba(255,255,255,0.07);color:#93c5fd;border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;font-size:12px;">${c.name}</button>`).join('')}
         </div>
-    `;
+      </div>
+      <div style="flex:1;position:relative;">
+        <iframe id="maps-frame" style="width:100%;height:100%;border:none;" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+        <div id="maps-loading" style="position:absolute;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+          <div style="font-size:48px;">🗺️</div>
+          <div style="color:white;font-size:14px;">Loading map…</div>
+        </div>
+      </div>
+    </div>`;
+}
+function mapsLoad() {
+    const zoom = parseInt(document.getElementById('maps-zoom')?.value || 13);
+    window._mapsZoom = zoom;
+    const lat = window._mapsLat, lon = window._mapsLon;
+    const frame = document.getElementById('maps-frame');
+    const loading = document.getElementById('maps-loading');
+    if (!frame) return;
+    if (loading) loading.style.display = 'flex';
+    frame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.05},${lat-0.03},${lon+0.05},${lat+0.03}&layer=mapnik&marker=${lat},${lon}`;
+    frame.onload = () => { if (loading) loading.style.display = 'none'; };
+}
+function mapsGoTo(lat, lon) {
+    window._mapsLat = lat; window._mapsLon = lon;
+    mapsLoad();
+}
+async function mapsSearch() {
+    const q = document.getElementById('maps-input')?.value?.trim();
+    if (!q) return;
+    try {
+        const r = await fetch(`/proxy?url=${encodeURIComponent('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q)+'&format=json&limit=1')}`);
+        const data = await r.json();
+        if (data && data[0]) {
+            window._mapsLat = parseFloat(data[0].lat);
+            window._mapsLon = parseFloat(data[0].lon);
+            mapsLoad();
+            addNotification('🗺️','Maps',`Showing: ${data[0].display_name.split(',').slice(0,2).join(',')}`);
+        } else {
+            addNotification('🗺️','Maps','Location not found');
+        }
+    } catch(e) {
+        addNotification('🗺️','Maps','Search failed — check connection');
+    }
 }
 
-// Microsoft Store App
+// Groove Music — interactive playlist player
 function createMusicPlayer() {
-    return `
-        <div style="padding: 20px; background: #111; color: white; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <div style="font-size: 80px; margin-bottom: 20px;">🎵</div>
-            <h3>Now Playing</h3>
-            <p style="color: #888;">Windows 10 Remix.mp3</p>
-            <div style="width: 100%; height: 4px; background: #333; margin: 20px 0; border-radius: 2px;">
-                <div style="width: 45%; height: 100%; background: #0078d4; border-radius: 2px;"></div>
-            </div>
-            <div style="display: flex; gap: 20px; font-size: 24px;">
-                <span>⏮️</span>
-                <span style="font-size: 32px;">⏸️</span>
-                <span>⏭️</span>
-            </div>
+    window._music = {
+        tracks: [
+            { title:'Neon Dreams',        artist:'Synthwave Studio',  duration:214, genre:'Synthwave',  color:'#6366f1', emoji:'🎹' },
+            { title:'Ocean Drive',        artist:'Chill Collective',  duration:187, genre:'Lo-Fi',      color:'#0ea5e9', emoji:'🌊' },
+            { title:'Midnight City',      artist:'Urban Beats',       duration:241, genre:'Indie',      color:'#ec4899', emoji:'🏙️' },
+            { title:'Solar Flare',        artist:'Electronic Pulse',  duration:198, genre:'EDM',        color:'#f59e0b', emoji:'☀️' },
+            { title:'Forest Walk',        artist:'Ambient Journeys',  duration:267, genre:'Ambient',    color:'#22c55e', emoji:'🌿' },
+            { title:'Retro Arcade',       artist:'Chiptune Masters',  duration:173, genre:'Chiptune',   color:'#a855f7', emoji:'🕹️' },
+            { title:'Rainy Café',         artist:'Jazz Collective',   duration:231, genre:'Jazz',       color:'#94a3b8', emoji:'☕' },
+            { title:'Cosmic Voyage',      artist:'Space Ambient',     duration:312, genre:'Ambient',    color:'#38bdf8', emoji:'🚀' },
+            { title:'Thunderstruck',      artist:'Rock Legends',      duration:292, genre:'Rock',       color:'#ef4444', emoji:'⚡' },
+            { title:'Bossa Nova Sunset',  artist:'Latin Groove',      duration:204, genre:'Bossa Nova', color:'#f97316', emoji:'🌅' },
+        ],
+        idx: 0, pos: 0, playing: false, interval: null, volume: 80, shuffle: false, repeat: false
+    };
+    setTimeout(() => musicRender(), 50);
+    return `<div id="music-root" style="height:100%;background:linear-gradient(160deg,#0f172a 0%,#1e1b4b 100%);color:white;font-family:Segoe UI,sans-serif;display:flex;flex-direction:column;"></div>`;
+}
+function musicRender() {
+    const root = document.getElementById('music-root');
+    if (!root) return;
+    const m = window._music;
+    const t = m.tracks[m.idx];
+    root.innerHTML = `
+    <div style="display:flex;height:100%;overflow:hidden;">
+      <!-- Sidebar playlist -->
+      <div style="width:260px;flex-shrink:0;background:rgba(0,0,0,0.3);border-right:1px solid rgba(255,255,255,0.07);overflow-y:auto;padding:8px 0;">
+        <div style="padding:12px 16px;font-size:11px;font-weight:700;letter-spacing:1px;opacity:.5;text-transform:uppercase;">Playlist (${m.tracks.length})</div>
+        ${m.tracks.map((tr,i)=>`
+        <div onclick="musicPlay(${i})" style="padding:10px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;border-left:3px solid ${i===m.idx?tr.color:'transparent'};background:${i===m.idx?'rgba(255,255,255,0.07)':'none'};transition:background .1s;">
+          <div style="width:36px;height:36px;border-radius:8px;background:${tr.color}22;border:1px solid ${tr.color}44;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${tr.emoji}</div>
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:${i===m.idx?700:400};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${tr.title}</div>
+            <div style="font-size:11px;opacity:.5;">${tr.artist} · ${musicFmt(tr.duration)}</div>
+          </div>
+          ${i===m.idx&&m.playing?`<div style="margin-left:auto;display:flex;gap:2px;align-items:flex-end;">${[4,6,5,7,4].map(h=>`<div style="width:3px;height:${h}px;background:${tr.color};border-radius:2px;animation:musicBar .5s ease-in-out infinite alternate;"></div>`).join('')}</div>`:''}
+        </div>`).join('')}
+      </div>
+      <!-- Now playing -->
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;position:relative;overflow:hidden;">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,${t.color}22,transparent 70%);pointer-events:none;"></div>
+        <div style="width:160px;height:160px;border-radius:20px;background:linear-gradient(135deg,${t.color}66,${t.color}22);border:2px solid ${t.color}44;display:flex;align-items:center;justify-content:center;font-size:72px;margin-bottom:24px;box-shadow:0 20px 60px ${t.color}33;">${t.emoji}</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:6px;">${t.title}</div>
+        <div style="font-size:14px;opacity:.6;margin-bottom:4px;">${t.artist}</div>
+        <div style="font-size:12px;opacity:.4;margin-bottom:24px;">${t.genre}</div>
+        <!-- Progress bar -->
+        <div style="width:100%;max-width:380px;">
+          <div onclick="musicSeek(event,this)" style="height:5px;background:rgba(255,255,255,0.1);border-radius:3px;cursor:pointer;margin-bottom:6px;position:relative;">
+            <div id="music-bar" style="height:100%;background:${t.color};border-radius:3px;width:${Math.round(m.pos/t.duration*100)}%;transition:width .9s linear;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;opacity:.5;">
+            <span id="music-pos">${musicFmt(m.pos)}</span>
+            <span>${musicFmt(t.duration)}</span>
+          </div>
         </div>
-    `;
+        <!-- Controls -->
+        <div style="display:flex;align-items:center;gap:18px;margin-top:24px;">
+          <button onclick="musicToggleShuffle()" title="Shuffle" style="background:none;border:none;font-size:20px;cursor:pointer;opacity:${m.shuffle?.9:.35};color:${m.shuffle?t.color:'white'};">🔀</button>
+          <button onclick="musicPrev()" style="background:none;border:none;font-size:26px;cursor:pointer;color:white;">⏮</button>
+          <button onclick="musicToggle()" style="width:60px;height:60px;border-radius:50%;background:${t.color};border:none;color:white;font-size:26px;cursor:pointer;box-shadow:0 4px 20px ${t.color}66;">${m.playing?'⏸':'▶'}</button>
+          <button onclick="musicNext()" style="background:none;border:none;font-size:26px;cursor:pointer;color:white;">⏭</button>
+          <button onclick="musicToggleRepeat()" title="Repeat" style="background:none;border:none;font-size:20px;cursor:pointer;opacity:${m.repeat?.9:.35};color:${m.repeat?t.color:'white'};">🔁</button>
+        </div>
+        <!-- Volume -->
+        <div style="display:flex;align-items:center;gap:10px;margin-top:20px;max-width:280px;width:100%;">
+          <span style="font-size:16px;opacity:.6;">🔈</span>
+          <input type="range" min="0" max="100" value="${m.volume}" oninput="window._music.volume=+this.value" style="flex:1;accent-color:${t.color};">
+          <span style="font-size:16px;opacity:.6;">🔊</span>
+        </div>
+      </div>
+    </div>`;
+}
+function musicFmt(s){return`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;}
+function musicPlay(i){
+    const m=window._music;
+    clearInterval(m.interval);m.interval=null;
+    m.idx=i;m.pos=0;m.playing=true;
+    musicRender();
+    musicTick();
+}
+function musicToggle(){
+    const m=window._music;
+    m.playing=!m.playing;
+    if(m.playing)musicTick();else{clearInterval(m.interval);m.interval=null;}
+    musicRender();
+}
+function musicNext(){
+    const m=window._music;
+    const next=m.shuffle?Math.floor(Math.random()*m.tracks.length):(m.idx+1)%m.tracks.length;
+    musicPlay(next);
+}
+function musicPrev(){const m=window._music;musicPlay(m.idx>0?m.idx-1:m.tracks.length-1);}
+function musicToggleShuffle(){window._music.shuffle=!window._music.shuffle;musicRender();}
+function musicToggleRepeat(){window._music.repeat=!window._music.repeat;musicRender();}
+function musicTick(){
+    const m=window._music;
+    clearInterval(m.interval);
+    m.interval=setInterval(()=>{
+        m.pos++;
+        const bar=document.getElementById('music-bar');
+        const pos=document.getElementById('music-pos');
+        if(bar)bar.style.width=Math.round(m.pos/m.tracks[m.idx].duration*100)+'%';
+        if(pos)pos.textContent=musicFmt(m.pos);
+        if(m.pos>=m.tracks[m.idx].duration){
+            clearInterval(m.interval);
+            if(m.repeat)musicPlay(m.idx);else musicNext();
+        }
+    },1000);
+}
+function musicSeek(e,bar){
+    const m=window._music;
+    const t=m.tracks[m.idx];
+    const pct=e.offsetX/bar.offsetWidth;
+    m.pos=Math.floor(pct*t.duration);
+    const barEl=document.getElementById('music-bar');
+    const posEl=document.getElementById('music-pos');
+    if(barEl)barEl.style.width=Math.round(pct*100)+'%';
+    if(posEl)posEl.textContent=musicFmt(m.pos);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🃏 KLONDIKE SOLITAIRE — real working game
+// ═══════════════════════════════════════════════════════════════
 function createSolitaire() {
-    return `
-        <div style="padding: 20px; background: #0e4e2c; height: 100%; color: white;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <div>Score: 1250</div>
-                <div>Time: 04:23</div>
-            </div>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <div style="width: 80px; height: 120px; background: white; border-radius: 5px; border: 1px solid #ccc; color: red; padding: 5px;">A ❤️</div>
-                <div style="width: 80px; height: 120px; background: white; border-radius: 5px; border: 1px solid #ccc; color: black; padding: 5px;">K ♠️</div>
-                <div style="width: 80px; height: 120px; background: white; border-radius: 5px; border: 1px solid #ccc; color: red; padding: 5px;">Q ♦️</div>
-                <div style="width: 80px; height: 120px; background: white; border-radius: 5px; border: 1px solid #ccc; color: black; padding: 5px;">J ♣️</div>
-            </div>
-            <div style="margin-top: 50px; text-align: center; opacity: 0.5;">[ Game in Progress ]</div>
+    setTimeout(solInit, 60);
+    return `<div id="sol-root" style="height:100%;background:linear-gradient(135deg,#0e5c2e,#0a3d1e);font-family:Segoe UI,sans-serif;padding:14px;overflow:auto;user-select:none;"></div>`;
+}
+const SOL_SUITS = ['♠','♥','♦','♣'];
+const SOL_RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const SOL_RED = new Set(['♥','♦']);
+window._sol = null;
+function solMakeDeck(){return SOL_SUITS.flatMap(s=>SOL_RANKS.map((r,i)=>({suit:s,rank:r,val:i+1,red:SOL_RED.has(s),up:false})));}
+function solShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function solInit(){
+    const deck=solShuffle(solMakeDeck());
+    const tab=Array.from({length:7},(_,i)=>{const pile=deck.splice(0,i+1);pile[pile.length-1].up=true;return pile;});
+    const s={stock:deck.map(c=>({...c,up:false})),waste:[],found:[[[],[],[],[]]],tab,sel:null,score:0,moves:0};
+    s.found=[[], [], [], []];
+    window._sol=s;
+    solRender();
+}
+function solCard(c,pile,idx,isTop,selected){
+    if(!c.up)return`<div style="width:60px;height:90px;border-radius:6px;background:linear-gradient(135deg,#1a56db,#1e40af);border:1px solid rgba(255,255,255,0.2);flex-shrink:0;"></div>`;
+    const col=c.red?'#dc2626':'#111827';
+    const sel=selected?'outline:3px solid #fbbf24;outline-offset:2px;':'';
+    return`<div onclick="solClick('${pile}',${idx})" style="width:60px;height:90px;border-radius:6px;background:white;border:1px solid #d1d5db;color:${col};font-size:13px;font-weight:700;padding:4px 5px;cursor:pointer;flex-shrink:0;position:relative;box-shadow:0 2px 6px rgba(0,0,0,0.25);${sel}"><div>${c.rank}${c.suit}</div><div style="position:absolute;bottom:4px;right:5px;transform:rotate(180deg);">${c.rank}${c.suit}</div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;">${c.suit}</div></div>`;
+}
+function solRender(){
+    const root=document.getElementById('sol-root');
+    if(!root||!window._sol)return;
+    const s=window._sol;
+    // Stock + Waste + Foundations
+    const stockHtml=s.stock.length?`<div onclick="solDraw()" style="width:60px;height:90px;border-radius:6px;background:linear-gradient(135deg,#1a56db,#1e40af);border:2px dashed rgba(255,255,255,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;color:white;font-size:24px;" title="Draw">${s.stock.length}</div>`:`<div onclick="solRestock()" style="width:60px;height:90px;border-radius:6px;border:2px dashed rgba(255,255,255,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);font-size:28px;" title="Restart stock">↺</div>`;
+    const wasteHtml=s.waste.length?solCard(s.waste[s.waste.length-1],'waste',s.waste.length-1,true,s.sel?.pile==='waste'):`<div style="width:60px;height:90px;border-radius:6px;border:2px dashed rgba(255,255,255,0.2);"></div>`;
+    const foundHtml=s.found.map((f,fi)=>{
+        const top=f[f.length-1];
+        const col=top?SOL_RED.has(top.suit)?'#dc2626':'#111827':'rgba(255,255,255,0.3)';
+        const sel=s.sel===null&&false;
+        return top?`<div onclick="solClick('found',${fi})" style="width:60px;height:90px;border-radius:6px;background:white;border:2px solid #6ee7b7;color:${col};font-size:13px;font-weight:700;padding:4px 5px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);${s.sel?.pile==='found'&&s.sel.pileIdx===fi?'outline:3px solid #fbbf24;':''}" title="Foundation ${SOL_SUITS[fi]}"><div>${top.rank}${top.suit}</div></div>`:`<div onclick="solClick('found',${fi})" style="width:60px;height:90px;border-radius:6px;border:2px dashed ${s.found[fi].length===0?'rgba(255,255,255,0.25)':'#6ee7b7'};display:flex;align-items:center;justify-content:center;font-size:22px;opacity:.5;cursor:pointer;">${SOL_SUITS[fi]}</div>`;
+    }).join('');
+    // Tableau
+    const tabHtml=s.tab.map((pile,pi)=>`
+      <div style="flex:1;min-width:68px;position:relative;min-height:120px;">
+        <div onclick="solClick('tab',${pi})" style="width:60px;min-height:90px;border-radius:6px;border:2px dashed rgba(255,255,255,0.2);position:relative;">
+          ${pile.length===0?`<div style="width:60px;height:90px;border-radius:6px;"></div>`:''}
+          ${pile.map((c,ci)=>`<div style="position:${ci===0?'relative':'absolute'};top:${ci*22}px;z-index:${ci};">${solCard(c,'tab',pi+'_'+ci,ci===pile.length-1,s.sel&&s.sel.pile==='tab'&&s.sel.pileIdx===pi&&ci>=s.sel.cardIdx)}</div>`).join('')}
         </div>
-    `;
+      </div>`).join('');
+    root.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      ${stockHtml}${wasteHtml}
+      <div style="flex:1;min-width:20px;"></div>
+      ${foundHtml}
+      <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div style="color:white;font-size:13px;font-weight:600;">Score: ${s.score}</div>
+        <div style="color:rgba(255,255,255,0.6);font-size:11px;">Moves: ${s.moves}</div>
+        <button onclick="solInit()" style="padding:5px 12px;background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:6px;cursor:pointer;font-size:12px;">New Game</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;">${tabHtml}</div>`;
+    // Win check
+    if(s.found.every(f=>f.length===13)){
+        setTimeout(()=>{root.innerHTML+='<div style="position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999;"><div style="background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:20px;padding:40px 60px;text-align:center;"><div style="font-size:60px;">🎉</div><div style="font-size:28px;color:white;font-weight:700;margin-top:10px;">You Win!</div><div style="color:rgba(255,255,255,.8);margin-top:6px;">Score: ${s.score} · Moves: ${s.moves}</div><button onclick="solInit()" style="margin-top:20px;padding:12px 28px;background:white;color:#16a34a;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:16px;">Play Again</button></div></div>';},100);
+        addNotification('🃏','Solitaire',`You won! Score: ${s.score}`);
+    }
+}
+function solDraw(){const s=window._sol;if(!s)return;const c=s.stock.pop();c.up=true;s.waste.push(c);s.moves++;solRender();}
+function solRestock(){const s=window._sol;if(!s)return;s.stock=s.waste.reverse().map(c=>({...c,up:false}));s.waste=[];s.moves++;solRender();}
+function solClick(pile,idx){
+    const s=window._sol;if(!s)return;
+    if(pile==='tab'){
+        const [pi,ci]=String(idx).split('_').map(Number);
+        const card=s.tab[pi][ci];
+        if(!card.up){if(ci===s.tab[pi].length-1){s.tab[pi][ci].up=true;s.moves++;solRender();}return;}
+        if(s.sel){
+            // try to move sel → this tab pile
+            const srcCards=solGetSelCards();
+            if(solCanPlaceTab(srcCards[0],s.tab[pi])){
+                solDoMove(s.tab[pi]);
+                return;
+            }
+            s.sel=null;solRender();return;
+        }
+        s.sel={pile:'tab',pileIdx:pi,cardIdx:ci};solRender();
+    } else if(pile==='waste'){
+        if(s.sel){s.sel=null;solRender();return;}
+        if(!s.waste.length)return;
+        s.sel={pile:'waste'};solRender();
+    } else if(pile==='found'){
+        const fi=idx;
+        if(s.sel){
+            const srcCards=solGetSelCards();
+            if(srcCards.length===1&&solCanPlaceFound(srcCards[0],s.found[fi])){
+                solDoMove(null,fi);
+                return;
+            }
+            s.sel=null;solRender();return;
+        }
+        if(s.found[fi].length){s.sel={pile:'found',pileIdx:fi};solRender();}
+    }
+}
+function solGetSelCards(){
+    const s=window._sol;const sel=s.sel;
+    if(sel.pile==='waste')return[s.waste[s.waste.length-1]];
+    if(sel.pile==='found')return[s.found[sel.pileIdx][s.found[sel.pileIdx].length-1]];
+    return s.tab[sel.pileIdx].slice(sel.cardIdx);
+}
+function solCanPlaceTab(card,pile){
+    if(!pile.length)return card.rank==='K';
+    const top=pile[pile.length-1];
+    return top.up&&top.val===card.val+1&&top.red!==card.red;
+}
+function solCanPlaceFound(card,found){
+    if(!found.length)return card.rank==='A';
+    const top=found[found.length-1];
+    return top.suit===card.suit&&top.val===card.val-1;
+}
+function solDoMove(tabDest,foundIdx){
+    const s=window._sol;const sel=s.sel;
+    const cards=solGetSelCards();
+    // Remove from source
+    if(sel.pile==='waste')s.waste.splice(s.waste.length-1,1);
+    else if(sel.pile==='found')s.found[sel.pileIdx].splice(s.found[sel.pileIdx].length-1,1);
+    else s.tab[sel.pileIdx].splice(sel.cardIdx);
+    // Flip top of source if tableau
+    if(sel.pile==='tab'&&s.tab[sel.pileIdx].length>0){
+        const newTop=s.tab[sel.pileIdx][s.tab[sel.pileIdx].length-1];
+        if(!newTop.up){newTop.up=true;s.score+=5;}
+    }
+    // Place at destination
+    if(tabDest!==null)tabDest.push(...cards);
+    else s.found[foundIdx].push(...cards);
+    s.score+=foundIdx!==undefined?10:2;
+    s.moves++;
+    s.sel=null;
+    solRender();
 }
 
 // Weather App
@@ -4496,39 +6264,217 @@ function showVirusAlert() {
     document.body.appendChild(alert);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// NETWORK & INTERNET — full multi-tab settings
+// ═══════════════════════════════════════════════════════════════════════════
+let _wifiTab = 'status';
+let _wifiAvailable = [
+    { name:'Home_WiFi_5G',     bars:4, secure:true,  connected:true,  speed:'1.2 Gbps', freq:'5 GHz' },
+    { name:'Home_WiFi_2.4G',   bars:4, secure:true,  connected:false, speed:'150 Mbps', freq:'2.4 GHz' },
+    { name:'Neighbors_Network',bars:3, secure:true,  connected:false, speed:'80 Mbps',  freq:'5 GHz' },
+    { name:'Coffee_Shop_Free', bars:3, secure:false, connected:false, speed:'30 Mbps',  freq:'2.4 GHz' },
+    { name:'Office_Guest',     bars:2, secure:true,  connected:false, speed:'50 Mbps',  freq:'5 GHz' },
+    { name:'TP-Link_5G',       bars:1, secure:true,  connected:false, speed:'?',        freq:'5 GHz' }
+];
+let _vpnList = [
+    { name:'Work VPN',        host:'vpn.company.com',     type:'L2TP/IPsec', connected:false },
+    { name:'Personal NordVPN',host:'us-server-3242',      type:'OpenVPN',    connected:true },
+    { name:'Home OpenVPN',    host:'home.example.com',    type:'OpenVPN',    connected:false }
+];
+
 function createWifiSettings() {
+    setTimeout(renderWifiTab, 50);
     return `
-        <div style="padding: 20px; height: 100%; background: white;">
-            <h2 style="margin-bottom: 20px;">📶 Network & Internet</h2>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-size: 18px; font-weight: 500;">Wi-Fi</div>
-                        <div style="color: #666;">Connected to Home_WiFi_5G</div>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
+        <div style="height:100%;display:flex;background:#f5f5f5;">
+            <div style="width:230px;background:white;border-right:1px solid #e0e0e0;padding:14px 0;overflow-y:auto;">
+                <h2 style="padding:0 18px 14px;font-weight:400;font-size:18px;margin:0;">🌐 Network &amp; Internet</h2>
+                ${[
+                    ['status','📊 Status'],
+                    ['wifi','📶 Wi-Fi'],
+                    ['ethernet','🔌 Ethernet'],
+                    ['dialup','☎️ Dial-up'],
+                    ['vpn','🔐 VPN'],
+                    ['airplane','✈️ Airplane mode'],
+                    ['hotspot','📡 Mobile hotspot'],
+                    ['data','📈 Data usage'],
+                    ['proxy','🛡️ Proxy'],
+                    ['advanced','⚙️ Advanced']
+                ].map(([id,lbl]) => `<div onclick="wifiSwitchTab('${id}')" id="wifi-tab-${id}" style="padding:10px 18px;cursor:pointer;font-size:13px;border-left:3px solid transparent;${_wifiTab===id?'background:#e3f2fd;border-left-color:#0078d4;font-weight:500;':''}" onmouseover="if(_wifiTab!=='${id}') this.style.background='#f5f5f5'" onmouseout="if(_wifiTab!=='${id}') this.style.background='transparent'">${lbl}</div>`).join('')}
             </div>
-            <h3 style="margin-bottom: 10px;">Available networks</h3>
-            <div style="border: 1px solid #e0e0e0; border-radius: 8px;">
-                <div style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0; background: #e3f2fd;">
-                    <strong>Home_WiFi_5G</strong> - Connected, secured 📶
-                </div>
-                <div style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0;">
-                    Neighbors_Network - Secured 📶
-                </div>
-                <div style="padding: 12px 16px; border-bottom: 1px solid #e0e0e0;">
-                    Coffee_Shop_Free 5Ghz - Open 📶
-                </div>
-                <div style="padding: 12px 16px;">
-                    Office_Guest - Secured 📶
-                </div>
-            </div>
+            <div id="wifi-tab-content" style="flex:1;overflow-y:auto;padding:24px;background:white;"></div>
         </div>
     `;
+}
+
+function wifiSwitchTab(tab) { _wifiTab = tab; renderWifiTab(); }
+
+function renderWifiTab() {
+    const el = document.getElementById('wifi-tab-content');
+    if (!el) return;
+    document.querySelectorAll('[id^="wifi-tab-"]').forEach(n => {
+        if (n.id === 'wifi-tab-content') return;
+        const id = n.id.replace('wifi-tab-','');
+        if (id === _wifiTab) { n.style.background = '#e3f2fd'; n.style.borderLeftColor = '#0078d4'; n.style.fontWeight = '500'; }
+        else { n.style.background = 'transparent'; n.style.borderLeftColor = 'transparent'; n.style.fontWeight = '400'; }
+    });
+    const connected = _wifiAvailable.find(w => w.connected);
+    const tabs = {
+        status: () => `<h2 style="font-weight:400;margin-bottom:18px;">📊 Network status</h2>
+            <div style="background:linear-gradient(135deg,#0078d4,#00bcf2);color:white;padding:24px;border-radius:10px;margin-bottom:20px;">
+                <div style="font-size:64px;margin-bottom:10px;">🌐</div>
+                <div style="font-size:18px;font-weight:500;">${connected ? connected.name : 'Not connected'}</div>
+                <div style="opacity:.85;font-size:13px;margin-top:4px;">You're connected to the Internet • Public network</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+                ${[
+                    ['IPv4 address','192.168.1.142'],
+                    ['IPv6 address','fe80::a4f7:9b21:3c8e:d2f4'],
+                    ['Default gateway','192.168.1.1'],
+                    ['DNS servers','1.1.1.1, 8.8.8.8'],
+                    ['MAC address','3C:6A:A7:B5:F2:91'],
+                    ['DHCP enabled','Yes'],
+                    ['Link speed (Receive/Transmit)','866/866 (Mbps)'],
+                    ['Signal quality','Excellent (5/5)']
+                ].map(([k,v]) => `<div style="background:#f5f5f5;padding:12px 14px;border-radius:6px;"><div style="color:#666;font-size:11px;text-transform:uppercase;letter-spacing:.5px;">${k}</div><div style="font-weight:500;font-size:14px;margin-top:2px;">${v}</div></div>`).join('')}
+            </div>
+            <h3 style="margin:20px 0 10px;">Properties</h3>
+            ${settingsToggle('Set as metered connection', 'Some apps may use less data', false)}
+            ${settingsToggle('Random hardware addresses', 'Make harder to track', false)}
+            <div style="margin-top:14px;display:flex;gap:10px;">
+                <button onclick="alert('Network would be reset')" style="padding:10px 18px;background:#0078d4;color:white;border:none;border-radius:4px;cursor:pointer;">Reset network</button>
+                <button onclick="alert('Connection diagnosed: All systems normal')" style="padding:10px 18px;background:#f0f0f0;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;">Network troubleshooter</button>
+            </div>`,
+        wifi: () => `<h2 style="font-weight:400;margin-bottom:18px;">📶 Wi-Fi</h2>
+            <div style="background:#f5f5f5;padding:18px;border-radius:8px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;">
+                <div><div style="font-weight:500;font-size:15px;">Wi-Fi</div><div style="color:#666;font-size:13px;margin-top:2px;">${connected ? 'Connected to '+connected.name : 'Not connected'}</div></div>
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+            <h3 style="margin-bottom:10px;">Available networks</h3>
+            <div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+                ${_wifiAvailable.map((n,i) => `<div onclick="wifiConnectTo(${i})" style="padding:12px 16px;border-bottom:${i<_wifiAvailable.length-1?'1px solid #e0e0e0':'none'};cursor:pointer;display:flex;align-items:center;gap:12px;${n.connected?'background:#e3f2fd;':''}" onmouseover="if(!${n.connected}) this.style.background='#f5f5f5'" onmouseout="if(!${n.connected}) this.style.background='white'">
+                    <span style="display:inline-flex;gap:2px;align-items:flex-end;height:18px;">
+                        <span style="width:3px;height:5px;background:#333;${n.bars>=1?'':'opacity:.25'}"></span>
+                        <span style="width:3px;height:9px;background:#333;${n.bars>=2?'':'opacity:.25'}"></span>
+                        <span style="width:3px;height:13px;background:#333;${n.bars>=3?'':'opacity:.25'}"></span>
+                        <span style="width:3px;height:18px;background:#333;${n.bars>=4?'':'opacity:.25'}"></span>
+                    </span>
+                    <div style="flex:1;"><div><strong>${n.name}</strong> ${n.connected?'<span style="color:#107c10">— Connected, secured</span>':''}</div><div style="font-size:12px;color:#666;">${n.freq} • ${n.speed} • ${n.secure?'🔒 Secured':'Open'}</div></div>
+                </div>`).join('')}
+            </div>
+            <div style="margin-top:14px;">${settingsToggle('Connect automatically when in range','Reconnect to known networks',true)}</div>
+            ${settingsToggle('Show available networks in taskbar','Quick Wi-Fi access',true)}
+            <button onclick="alert('Manage known networks dialog would open')" style="padding:10px 18px;background:#f0f0f0;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;margin-top:14px;">Manage known networks</button>`,
+        ethernet: () => `<h2 style="font-weight:400;margin-bottom:18px;">🔌 Ethernet</h2>
+            <div style="background:#f5f5f5;padding:18px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+                <div><div style="font-weight:500;font-size:15px;">Ethernet</div><div style="color:#666;font-size:13px;">Realtek PCIe GbE — No cable connected</div></div>
+                <span style="padding:4px 12px;background:#fbe9e7;color:#bf360c;border-radius:12px;font-size:12px;">Disconnected</span>
+            </div>
+            <h3 style="margin:18px 0 10px;">Related settings</h3>
+            <button onclick="alert('Adapter properties dialog')" style="padding:10px 18px;background:#f0f0f0;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;margin-right:8px;">Change adapter options</button>
+            <button onclick="alert('Sharing center')" style="padding:10px 18px;background:#f0f0f0;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;">Network and Sharing Center</button>`,
+        dialup: () => `<h2 style="font-weight:400;margin-bottom:18px;">☎️ Dial-up</h2>
+            <p style="color:#666;margin-bottom:14px;">Set up a dial-up connection</p>
+            <div style="background:#f5f5f5;padding:24px;border-radius:8px;text-align:center;color:#666;">
+                <div style="font-size:48px;margin-bottom:10px;">📞</div>
+                <p>You don't have any dial-up connections yet.</p>
+                <button onclick="alert('Set up a new connection wizard')" style="padding:10px 20px;background:#0078d4;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:14px;">Set up a new connection</button>
+            </div>`,
+        vpn: () => `<h2 style="font-weight:400;margin-bottom:18px;">🔐 VPN</h2>
+            <button onclick="alert('Add VPN connection wizard')" style="padding:10px 18px;background:#0078d4;color:white;border:none;border-radius:4px;cursor:pointer;margin-bottom:18px;">+ Add a VPN connection</button>
+            ${_vpnList.map((v,i) => `<div style="background:#f5f5f5;padding:14px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                <div><div style="font-weight:500;">🔐 ${v.name}</div><div style="font-size:12px;color:#666;">${v.type} • ${v.host}</div></div>
+                <button onclick="_vpnList[${i}].connected=!_vpnList[${i}].connected; renderWifiTab();" style="padding:6px 14px;background:${v.connected?'#107c10':'#0078d4'};color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;">${v.connected?'✓ Connected':'Connect'}</button>
+            </div>`).join('')}
+            <h3 style="margin:18px 0 10px;">Advanced options</h3>
+            ${settingsToggle('Allow VPN over metered networks','Use VPN even when on cellular',true)}
+            ${settingsToggle('Allow VPN while roaming','Use VPN when traveling',false)}`,
+        airplane: () => `<h2 style="font-weight:400;margin-bottom:18px;">✈️ Airplane mode</h2>
+            <div style="background:#f5f5f5;padding:18px;border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+                <div><div style="font-weight:500;font-size:15px;">Airplane mode</div><div style="color:#666;font-size:13px;">Stops all wireless communication</div></div>
+                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+            </div>
+            <h3 style="margin:14px 0 10px;">Wireless devices</h3>
+            ${settingsToggle('Wi-Fi','',true)}
+            ${settingsToggle('Bluetooth','',true)}
+            ${settingsToggle('Cellular','No SIM detected',false)}
+            ${settingsToggle('GPS','Use location services',true)}
+            ${settingsToggle('NFC','Near field communication',false)}`,
+        hotspot: () => `<h2 style="font-weight:400;margin-bottom:18px;">📡 Mobile hotspot</h2>
+            <div style="background:#f5f5f5;padding:18px;border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+                <div><div style="font-weight:500;">Share my Internet connection with other devices</div></div>
+                <label class="toggle-switch"><input type="checkbox"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="setting-item"><div><div class="setting-label">Share over</div><div class="setting-description">Choose how to share your connection</div></div>
+                <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Wi-Fi</option><option>Bluetooth</option></select></div>
+            <div class="setting-item"><div><div class="setting-label">Network name</div><div class="setting-description">DESKTOP-${(userData.username||'WIN10').toUpperCase().slice(0,8)} 2354</div></div>
+                <button onclick="alert('Edit hotspot details')" style="padding:6px 14px;background:#f0f0f0;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;">Edit</button></div>
+            <div class="setting-item"><div><div class="setting-label">Network band</div><div class="setting-description">Choose 5GHz or 2.4GHz</div></div>
+                <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Any available</option><option>5 GHz</option><option>2.4 GHz</option></select></div>
+            ${settingsToggle('Power saving','Turn off hotspot when no devices connected',true)}
+            ${settingsToggle('Turn on remotely','Activate via Bluetooth from paired devices',false)}
+            <h3 style="margin:14px 0 10px;">Connected devices: 0 of 8</h3>
+            <p style="color:#666;font-size:13px;">No devices currently connected.</p>`,
+        data: () => `<h2 style="font-weight:400;margin-bottom:18px;">📈 Data usage</h2>
+            <div style="background:linear-gradient(135deg,#0078d4,#00bcf2);color:white;padding:24px;border-radius:10px;margin-bottom:18px;">
+                <div style="opacity:.85;font-size:13px;">This month (Wi-Fi)</div>
+                <div style="font-size:36px;font-weight:300;margin:6px 0;">24.6 GB</div>
+                <div style="opacity:.85;font-size:13px;">of 100 GB limit</div>
+                <div style="height:8px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:12px;overflow:hidden;"><div style="width:24.6%;height:100%;background:white;"></div></div>
+            </div>
+            <h3 style="margin:14px 0 10px;">Usage by app</h3>
+            ${[
+                ['Microsoft Edge','🌐',6.2],['YouTube','▶️',5.4],['Discord','💬',2.8],
+                ['Spotify','🎵',2.1],['Steam','🎮',1.9],['Windows Update','🔄',1.6],
+                ['OneDrive','☁️',1.4],['Mail','📧',0.9],['Other','📦',2.3]
+            ].map(([n,i,gb]) => `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                <span style="font-size:20px;">${i}</span>
+                <div style="flex:1;"><div style="font-size:13px;">${n}</div><div style="height:6px;background:#e0e0e0;border-radius:3px;margin-top:4px;overflow:hidden;"><div style="width:${gb*4}%;max-width:100%;height:100%;background:#0078d4;"></div></div></div>
+                <div style="font-size:13px;color:#666;font-weight:500;">${gb} GB</div>
+            </div>`).join('')}
+            <button onclick="alert('Data limit set')" style="padding:10px 18px;background:#0078d4;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:14px;">Enter limit</button>`,
+        proxy: () => `<h2 style="font-weight:400;margin-bottom:18px;">🛡️ Proxy</h2>
+            <h3 style="margin-bottom:10px;">Automatic proxy setup</h3>
+            ${settingsToggle('Automatically detect settings','Best for most networks',true)}
+            ${settingsToggle('Use setup script','Use a configuration script (PAC) URL',false)}
+            <div style="display:flex;gap:8px;margin:8px 0 18px;">
+                <input type="text" placeholder="http://proxy.example.com/proxy.pac" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:4px;">
+                <button onclick="alert('Proxy script saved')" style="padding:10px 18px;background:#f0f0f0;color:#333;border:1px solid #ccc;border-radius:4px;cursor:pointer;">Save</button>
+            </div>
+            <h3 style="margin-bottom:10px;">Manual proxy setup</h3>
+            ${settingsToggle('Use a proxy server','For LAN connections',false)}
+            <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;margin:8px 0;">
+                <input type="text" placeholder="Proxy server address" style="padding:10px;border:1px solid #ccc;border-radius:4px;">
+                <input type="text" placeholder="Port" style="padding:10px;border:1px solid #ccc;border-radius:4px;">
+            </div>
+            <textarea placeholder="Use the proxy server except for addresses (semicolon-separated)" style="width:100%;height:60px;padding:10px;border:1px solid #ccc;border-radius:4px;"></textarea>
+            ${settingsToggle("Don't use proxy server for local addresses",'',true)}`,
+        advanced: () => `<h2 style="font-weight:400;margin-bottom:18px;">⚙️ Advanced network settings</h2>
+            <h3 style="margin-bottom:10px;">Related settings</h3>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+                ${[
+                    ['Change adapter options','View network adapters'],
+                    ['Network and Sharing Center','For network and sharing'],
+                    ['Network reset','Reinstall all adapters'],
+                    ['Windows Firewall','Allow apps through firewall'],
+                    ['Wi-Fi calling','Make calls over Wi-Fi'],
+                    ['DNS settings','Configure DNS providers']
+                ].map(([t,d]) => `<div onclick="alert('${t} would open')" style="background:#f5f5f5;padding:14px;border-radius:8px;cursor:pointer;transition:.2s;" onmouseover="this.style.background='#e3f2fd'" onmouseout="this.style.background='#f5f5f5'">
+                    <div style="font-weight:500;">${t}</div><div style="color:#666;font-size:12px;margin-top:4px;">${d}</div>
+                </div>`).join('')}
+            </div>
+            <h3 style="margin:20px 0 10px;">DNS over HTTPS</h3>
+            ${settingsToggle('Encrypt DNS queries','More private DNS lookups',true)}
+            <div class="setting-item"><div><div class="setting-label">DNS provider</div><div class="setting-description"></div></div>
+                <select style="padding:8px;border-radius:4px;border:1px solid #ccc;"><option>Cloudflare (1.1.1.1)</option><option>Google (8.8.8.8)</option><option>Quad9 (9.9.9.9)</option><option>Custom</option></select></div>`
+    };
+    el.innerHTML = (tabs[_wifiTab] || tabs.status)();
+}
+
+function wifiConnectTo(i) {
+    _wifiAvailable.forEach(w => w.connected = false);
+    _wifiAvailable[i].connected = true;
+    if (typeof playSound === 'function') playSound('notification');
+    renderWifiTab();
 }
 
 // ── Discord OAuth2 state management ──────────────────────────────────────────
@@ -4654,8 +6600,9 @@ function discordShowProfile(user) {
             <span>▾ Text Channels</span><span>+</span>
           </div>
           ${['# general','# announcements','# memes','# dev-talk','# off-topic'].map((c,i)=>`
-          <div onclick="discordSwitchChannel(this,'${c}')" style="display:flex;align-items:center;gap:6px;padding:6px 16px;color:${i===0?'#fff':'#8e9297'};cursor:pointer;border-radius:4px;margin:0 8px;${i===0?'background:rgba(79,84,92,0.4);':''}" onmouseover="this.style.background='rgba(79,84,92,0.3)';this.style.color='#dcddde'" onmouseout="this.style.background='${i===0?'rgba(79,84,92,0.4)':'transparent'}';this.style.color='${i===0?'#fff':'#8e9297'}'">
+          <div class="discord-ch ${i===0?'active':''}" data-channel="${c}" onclick="discordSwitchChannel(this,'${c}')" style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 16px;color:${i===0?'#fff':'#8e9297'};cursor:pointer;border-radius:4px;margin:0 8px;${i===0?'background:rgba(79,84,92,0.4);':''}">
             <span style="font-size:13px;">${c}</span>
+            ${i===2 ? '<span style="background:#ed4245;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;">3</span>' : i===3 ? '<span style="background:#ed4245;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;">1</span>' : ''}
           </div>`).join('')}
           <div style="padding:6px 8px;font-size:11px;font-weight:600;color:#8e9297;text-transform:uppercase;letter-spacing:0.5px;margin-top:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.color='#dcddde'" onmouseout="this.style.color='#8e9297'">
             <span>▾ Voice Channels</span><span>+</span>
@@ -4684,14 +6631,14 @@ function discordShowProfile(user) {
       </div>
       <!-- Main chat area -->
       <div style="flex:1;display:flex;flex-direction:column;background:#36393f;">
-        <div style="padding:12px 16px;border-bottom:1px solid #202225;display:flex;align-items:center;gap:8px;">
+        <div style="padding:12px 16px;border-bottom:1px solid #202225;display:flex;align-items:center;gap:8px;box-shadow:0 1px 0 rgba(0,0,0,0.2);">
           <span style="color:#8e9297;font-size:18px;">#</span>
-          <span style="font-weight:700;color:white;font-size:15px;">general</span>
+          <span id="discord-channel-name" style="font-weight:700;color:white;font-size:15px;">general</span>
           <span style="color:#72767d;font-size:13px;">│ Welcome to the server! 🎉</span>
           <div style="margin-left:auto;display:flex;gap:12px;color:#b9bbbe;">
-            <span style="cursor:pointer;" title="Start Voice Call">📞</span>
-            <span style="cursor:pointer;" title="Members">👥</span>
-            <span style="cursor:pointer;" title="Search">🔍</span>
+            <span style="cursor:pointer;" title="Start Voice Call" onclick="addNotification('📞','Discord','Joined voice call')">📞</span>
+            <span style="cursor:pointer;" title="Members" onclick="addNotification('👥','Discord','Members panel toggled')">👥</span>
+            <span style="cursor:pointer;" title="Search" onclick="discordSearch()">🔍</span>
           </div>
         </div>
         <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;" id="discord-chat-messages">
@@ -4702,7 +6649,7 @@ function discordShowProfile(user) {
             <button onclick="addNotification('📎','Discord','File picker')" style="background:none;border:none;cursor:pointer;font-size:20px;color:#b9bbbe;">+</button>
             <input id="discord-msg-input" type="text" placeholder="Message #general" style="flex:1;background:none;border:none;color:#dcddde;font-size:14px;outline:none;"
               onkeydown="if(event.key==='Enter')discordSendMsg()">
-            <span style="color:#b9bbbe;cursor:pointer;font-size:18px;" onclick="addNotification('😀','Discord','Emoji picker')">😀</span>
+            <span style="color:#b9bbbe;cursor:pointer;font-size:18px;" onclick="discordToggleEmojiPicker()">😀</span>
             <span style="color:#b9bbbe;cursor:pointer;font-size:18px;" onclick="discordSendMsg()">➤</span>
           </div>
         </div>
@@ -4751,7 +6698,101 @@ function discordGetMessages(username) {
     </div>`).join('');
 }
 
-function discordSwitchChannel(el, channel) {}
+// ── Per-channel message banks (Discord upgrade) ──
+const DISCORD_CHANNEL_MSGS = {
+    '# general': [
+        {u:'Alice',c:'#3ba55d',a:'A',t:'9:00 AM',m:'Good morning everyone! 👋'},
+        {u:'Bob',c:'#5865f2',a:'B',t:'9:02 AM',m:'Morning! Ready for the stream tonight?'},
+        {u:'Carol',c:'#eb459e',a:'C',t:'9:05 AM',m:'Yep! Can\'t wait 🎮'},
+    ],
+    '# announcements': [
+        {u:'Mod Bot',c:'#faa61a',a:'🤖',t:'Yesterday',m:'**Server update!** New voice channels added 🎉'},
+        {u:'Admin',c:'#ed4245',a:'A',t:'Today at 8:00 AM',m:'Stream starts at 8 PM EST. Don\'t miss it!'},
+    ],
+    '# memes': [
+        {u:'Dave',c:'#faa61a',a:'D',t:'2:14 PM',m:'when the code finally compiles 😂'},
+        {u:'Eve',c:'#ed4245',a:'E',t:'2:16 PM',m:'lmao 💀'},
+        {u:'Frank',c:'#3ba55d',a:'F',t:'2:18 PM',m:'too real'},
+    ],
+    '# dev-talk': [
+        {u:'Bob',c:'#5865f2',a:'B',t:'10:30 AM',m:'anyone tried the new TypeScript 5.4 yet?'},
+        {u:'Carol',c:'#eb459e',a:'C',t:'10:32 AM',m:'Yeah! The new const type params are 🔥'},
+        {u:'Alice',c:'#3ba55d',a:'A',t:'10:35 AM',m:'gonna try it tonight'},
+    ],
+    '# off-topic': [
+        {u:'Grace',c:'#5865f2',a:'G',t:'11:00 AM',m:'what\'s everyone watching this weekend?'},
+        {u:'Henry',c:'#3ba55d',a:'H',t:'11:02 AM',m:'rewatching Arcane for the 3rd time 👀'},
+    ]
+};
+
+function discordSwitchChannel(el, channel) {
+    // Visual: clear active states
+    document.querySelectorAll('#discord-app-body [data-channel]').forEach(d => {
+        d.style.background = 'transparent';
+        d.style.color = '#8e9297';
+    });
+    if (el) {
+        el.style.background = 'rgba(79,84,92,0.4)';
+        el.style.color = '#fff';
+    }
+    // Update header
+    const hdrName = document.getElementById('discord-channel-name');
+    if (hdrName) hdrName.textContent = channel.replace(/^#\s?/, '');
+    // Render messages for this channel
+    const box = document.getElementById('discord-chat-messages');
+    if (!box) return;
+    const msgs = DISCORD_CHANNEL_MSGS[channel] || [{u:'System',c:'#72767d',a:'S',t:'now',m:'No messages yet in this channel. Be the first!'}];
+    const me = window._discordLoggedInUser?.username || 'You';
+    const all = [...msgs, {u:me,c:'#5865f2',a:me[0]||'?',t:'Just now',m:'👋',isMe:true}];
+    box.innerHTML = all.map(m => `
+        <div style="display:flex;gap:12px;padding:4px 0;${m.isMe?'flex-direction:row-reverse;text-align:right;':''}" onmouseover="this.style.background='rgba(79,84,92,0.1)'" onmouseout="this.style.background='transparent'">
+            <div style="width:40px;height:40px;background:${m.c};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0;">${m.a}</div>
+            <div>
+                <div style="display:flex;align-items:baseline;gap:8px;${m.isMe?'flex-direction:row-reverse;':''};margin-bottom:4px;">
+                    <span style="font-size:14px;font-weight:600;color:${m.c};">${m.u}</span>
+                    <span style="font-size:11px;color:#72767d;">Today at ${m.t}</span>
+                </div>
+                <div style="font-size:14px;color:#dcddde;line-height:1.4;">${m.m.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</div>
+            </div>
+        </div>`).join('');
+    box.scrollTop = box.scrollHeight;
+    // Save current channel for sendMsg
+    window._discordCurrentChannel = channel;
+}
+
+// ── Emoji picker (Discord upgrade) ──
+const DISCORD_EMOJIS = ['😀','😂','🤣','😍','🔥','💯','👀','😎','🥳','😭','💀','🙌','👏','🎉','✨','💜','💙','💚','💛','❤️','🚀','🎮','🌟','⚡','🌈','🍕','☕','🎵','📷','✅','❌','💡','🎯','🏆','💎','🔔','📌','🛸','🎁','💪','🤝','👋','🙏'];
+function discordToggleEmojiPicker() {
+    let pop = document.getElementById('discord-emoji-pop');
+    if (pop) { pop.remove(); return; }
+    pop = document.createElement('div');
+    pop.id = 'discord-emoji-pop';
+    pop.style.cssText = 'position:absolute;bottom:62px;right:18px;width:280px;background:#2f3136;border:1px solid #202225;border-radius:8px;padding:10px;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:100;';
+    pop.innerHTML = DISCORD_EMOJIS.map(e => `<div onclick="discordInsertEmoji('${e}')" style="font-size:20px;text-align:center;padding:4px;border-radius:4px;cursor:pointer;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='transparent'">${e}</div>`).join('');
+    document.querySelector('#discord-app-body > div')?.appendChild(pop);
+}
+function discordInsertEmoji(e) {
+    const inp = document.getElementById('discord-msg-input');
+    if (inp) { inp.value += e; inp.focus(); }
+    document.getElementById('discord-emoji-pop')?.remove();
+}
+
+// ── Typing indicator + better send (Discord upgrade) ──
+function discordShowTyping(name, color) {
+    const messages = document.getElementById('discord-chat-messages');
+    if (!messages) return;
+    let t = document.getElementById('discord-typing');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'discord-typing';
+        t.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 16px;color:#72767d;font-size:13px;font-style:italic;';
+        messages.appendChild(t);
+    }
+    t.innerHTML = `<span style="display:inline-flex;gap:3px;"><span style="width:5px;height:5px;background:${color};border-radius:50%;animation:asPulse 1s infinite;"></span><span style="width:5px;height:5px;background:${color};border-radius:50%;animation:asPulse 1s infinite .15s;"></span><span style="width:5px;height:5px;background:${color};border-radius:50%;animation:asPulse 1s infinite .3s;"></span></span> ${name} is typing…`;
+    messages.scrollTop = messages.scrollHeight;
+}
+function discordClearTyping() { document.getElementById('discord-typing')?.remove(); }
+
 
 function discordSendMsg() {
     const input = document.getElementById('discord-msg-input');
@@ -4765,16 +6806,30 @@ function discordSendMsg() {
     div.innerHTML = `<div style="width:40px;height:40px;background:#5865f2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0;">${(user.username||'?')[0]}</div><div><div style="display:flex;align-items:baseline;gap:8px;flex-direction:row-reverse;margin-bottom:4px;"><span style="font-size:14px;font-weight:600;color:#5865f2;">${user.username}</span><span style="font-size:11px;color:#72767d;">Just now</span></div><div style="font-size:14px;color:#dcddde;">${text}</div></div>`;
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
-    const replies = ['Nice! 🔥','Sounds good!','lol 😂','💯','That\'s crazy','Let\'s goo!','Facts 🙌'];
-    const names = [['Alice','#3ba55d','A'],['Bob','#5865f2','B'],['Carol','#eb459e','C']];
+    const replies = ['Nice! 🔥','Sounds good!','lol 😂','💯','That\'s crazy','Let\'s goo!','Facts 🙌','agreed','no way 😱','same here','tell me more','wow ✨'];
+    const names = [['Alice','#3ba55d','A'],['Bob','#5865f2','B'],['Carol','#eb459e','C'],['Dave','#faa61a','D'],['Eve','#ed4245','E']];
     const [name,color,av] = names[Math.floor(Math.random()*names.length)];
+    // Show typing indicator
+    setTimeout(() => discordShowTyping(name, color), 400);
     setTimeout(() => {
+        discordClearTyping();
         const rdiv = document.createElement('div');
-        rdiv.style.cssText = 'display:flex;gap:12px;padding:2px 0;';
+        rdiv.style.cssText = 'display:flex;gap:12px;padding:4px 0;';
         rdiv.innerHTML = `<div style="width:40px;height:40px;background:${color};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0;">${av}</div><div><div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;"><span style="font-size:14px;font-weight:600;color:${color};">${name}</span><span style="font-size:11px;color:#72767d;">Just now</span></div><div style="font-size:14px;color:#dcddde;">${replies[Math.floor(Math.random()*replies.length)]}</div></div>`;
         messages.appendChild(rdiv);
         messages.scrollTop = messages.scrollHeight;
-    }, 800 + Math.random()*1200);
+    }, 1400 + Math.random()*1500);
+}
+
+// ── Discord search modal (Discord upgrade) ──
+function discordSearch() {
+    const term = prompt('Search messages in this server:');
+    if (!term) return;
+    const ch = window._discordCurrentChannel || '# general';
+    const all = Object.entries(DISCORD_CHANNEL_MSGS).flatMap(([cn, ms]) =>
+        ms.filter(m => m.m.toLowerCase().includes(term.toLowerCase())).map(m => ({...m, ch: cn}))
+    );
+    addNotification('🔍','Discord Search', all.length ? `${all.length} match${all.length>1?'es':''} for "${term}"` : `No matches for "${term}"`);
 }
 
 function createDiscordApp() {
@@ -5988,3 +8043,631 @@ function createXbox() {
       </div>
     </div>`;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 📷 CAMERA APP — uses navigator.mediaDevices.getUserMedia
+// ═══════════════════════════════════════════════════════════════
+function createCamera() {
+    setTimeout(setupCamera, 100);
+    return `
+    <div style="height:100%;background:#0a0a0a;display:flex;flex-direction:column;color:white;font-family:Segoe UI,sans-serif;">
+        <div style="padding:14px 20px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:22px;">📷</span><span style="font-weight:700;font-size:15px;">Camera</span></div>
+            <div id="camera-status" style="font-size:11px;color:#86efac;display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;"></span>Initializing…</div>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;overflow:hidden;">
+            <video id="camera-video" autoplay playsinline muted style="max-width:100%;max-height:100%;display:block;"></video>
+            <canvas id="camera-canvas" style="display:none;"></canvas>
+            <div id="camera-fallback" style="display:none;text-align:center;padding:40px;color:#aaa;">
+                <div style="font-size:64px;margin-bottom:12px;opacity:.4;">📷</div>
+                <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Camera unavailable</div>
+                <div id="camera-error" style="font-size:12px;opacity:.7;max-width:340px;line-height:1.5;"></div>
+            </div>
+        </div>
+        <div style="padding:18px;background:#1a1a1a;border-top:1px solid #2a2a2a;display:flex;justify-content:center;gap:14px;">
+            <button onclick="cameraSwitch()" style="padding:10px 18px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:white;border-radius:6px;cursor:pointer;font-size:13px;">↻ Switch</button>
+            <button onclick="cameraSnap()" style="width:64px;height:64px;border-radius:50%;border:4px solid white;background:#ef4444;cursor:pointer;font-size:24px;color:white;" title="Take photo">📸</button>
+            <button onclick="cameraDownload()" id="camera-dl" disabled style="padding:10px 18px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:white;border-radius:6px;cursor:pointer;font-size:13px;opacity:.4;">⬇ Save</button>
+        </div>
+        <div id="camera-shots" style="display:flex;gap:8px;padding:12px;background:#0a0a0a;overflow-x:auto;min-height:74px;"></div>
+    </div>`;
+}
+window._cameraStream = null;
+window._cameraFacing = 'user';
+window._cameraLastShot = null;
+async function setupCamera() {
+    const v = document.getElementById('camera-video');
+    const fb = document.getElementById('camera-fallback');
+    const err = document.getElementById('camera-error');
+    const status = document.getElementById('camera-status');
+    if (!v) return;
+    if (window._cameraStream) { window._cameraStream.getTracks().forEach(t => t.stop()); }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: window._cameraFacing }, audio: false });
+        v.srcObject = stream;
+        window._cameraStream = stream;
+        status.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>Live';
+    } catch (e) {
+        v.style.display = 'none';
+        fb.style.display = 'block';
+        err.textContent = e.message + ' — please grant camera permission and try again.';
+        status.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;"></span>No access';
+    }
+}
+function cameraSwitch() {
+    window._cameraFacing = window._cameraFacing === 'user' ? 'environment' : 'user';
+    setupCamera();
+}
+function cameraSnap() {
+    const v = document.getElementById('camera-video');
+    const c = document.getElementById('camera-canvas');
+    if (!v || !v.videoWidth) { addNotification('📷','Camera','No video signal yet'); return; }
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0);
+    const data = c.toDataURL('image/png');
+    window._cameraLastShot = data;
+    document.getElementById('camera-dl').disabled = false;
+    document.getElementById('camera-dl').style.opacity = '1';
+    const shots = document.getElementById('camera-shots');
+    const thumb = document.createElement('img');
+    thumb.src = data;
+    thumb.style.cssText = 'height:50px;border-radius:4px;border:2px solid #444;cursor:pointer;flex-shrink:0;';
+    thumb.onclick = () => { window._cameraLastShot = data; addNotification('📷','Camera','Photo selected'); };
+    shots.appendChild(thumb);
+    addNotification('📷','Camera','Photo captured! Click Save to download.');
+}
+function cameraDownload() {
+    if (!window._cameraLastShot) return;
+    const a = document.createElement('a');
+    a.href = window._cameraLastShot;
+    a.download = 'photo-' + Date.now() + '.png';
+    a.click();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ▦ QR CODE GENERATOR — uses public api (api.qrserver.com)
+// ═══════════════════════════════════════════════════════════════
+function createQRGenerator() {
+    return `
+    <div style="height:100%;background:linear-gradient(135deg,#1a1d23,#0f172a);color:white;font-family:Segoe UI,sans-serif;padding:24px;overflow-y:auto;">
+        <div style="max-width:520px;margin:0 auto;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                <div style="font-size:36px;">▦</div>
+                <div>
+                    <div style="font-size:20px;font-weight:700;">QR Code Generator</div>
+                    <div style="font-size:12px;opacity:.7;">Turn any text or URL into a scannable QR code</div>
+                </div>
+            </div>
+            <textarea id="qr-input" placeholder="Enter text, URL, phone, email, etc." style="width:100%;min-height:100px;padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:white;font-size:14px;font-family:inherit;resize:vertical;outline:none;">https://replit.com</textarea>
+            <div style="display:flex;gap:10px;margin-top:12px;align-items:center;">
+                <label style="font-size:12px;opacity:.8;">Size:</label>
+                <select id="qr-size" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:white;padding:6px 10px;border-radius:6px;">
+                    <option value="200">Small (200)</option>
+                    <option value="300" selected>Medium (300)</option>
+                    <option value="500">Large (500)</option>
+                </select>
+                <label style="font-size:12px;opacity:.8;margin-left:10px;">Color:</label>
+                <input type="color" id="qr-color" value="#000000" style="width:40px;height:32px;border:none;border-radius:6px;background:none;cursor:pointer;">
+                <button onclick="qrGenerate()" style="margin-left:auto;padding:9px 22px;background:linear-gradient(135deg,#0078d4,#3ba55d);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;">Generate</button>
+            </div>
+            <div id="qr-result" style="margin-top:24px;text-align:center;"></div>
+        </div>
+    </div>`;
+}
+function qrGenerate() {
+    const text = document.getElementById('qr-input').value.trim();
+    if (!text) { addNotification('▦','QR Code','Enter some text first'); return; }
+    const size = document.getElementById('qr-size').value;
+    const color = document.getElementById('qr-color').value.replace('#','');
+    const url = `/proxy?url=${encodeURIComponent(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&color=${color}&data=${encodeURIComponent(text)}`)}`;
+    document.getElementById('qr-result').innerHTML = `
+        <div style="background:white;display:inline-block;padding:16px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+            <img src="${url}" style="display:block;max-width:100%;" alt="QR code">
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;">
+            <a href="${url}" download="qrcode.png" style="padding:9px 16px;background:rgba(255,255,255,0.08);color:white;border:1px solid rgba(255,255,255,0.12);border-radius:6px;text-decoration:none;font-size:13px;">⬇ Download</a>
+            <button onclick="navigator.clipboard.writeText('${text.replace(/'/g,"\\'")}').then(()=>addNotification('▦','QR','Text copied'))" style="padding:9px 16px;background:rgba(255,255,255,0.08);color:white;border:1px solid rgba(255,255,255,0.12);border-radius:6px;cursor:pointer;font-size:13px;">📋 Copy text</button>
+        </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🐍 SNAKE GAME — classic snake on canvas
+// ═══════════════════════════════════════════════════════════════
+function createSnake() {
+    setTimeout(setupSnake, 100);
+    return `
+    <div style="height:100%;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;font-family:Segoe UI,sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px;overflow-y:auto;">
+        <div style="display:flex;align-items:center;gap:24px;margin-bottom:14px;">
+            <div style="font-size:13px;opacity:.7;">SCORE</div>
+            <div id="snake-score" style="font-size:28px;font-weight:700;color:#22c55e;">0</div>
+            <div style="font-size:13px;opacity:.7;margin-left:20px;">HIGH</div>
+            <div id="snake-high" style="font-size:28px;font-weight:700;color:#fbbf24;">0</div>
+        </div>
+        <canvas id="snake-canvas" width="400" height="400" style="background:#020617;border:2px solid rgba(255,255,255,0.1);border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,0.5);"></canvas>
+        <div id="snake-overlay" style="margin-top:16px;text-align:center;">
+            <div style="font-size:13px;opacity:.6;margin-bottom:8px;">Use arrow keys or WASD to move</div>
+            <button onclick="snakeStart()" id="snake-btn" style="padding:10px 28px;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;">▶ Start Game</button>
+        </div>
+    </div>`;
+}
+window._snake = null;
+function setupSnake() {
+    const c = document.getElementById('snake-canvas');
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#22c55e';
+    ctx.font = 'bold 24px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('🐍 Press Start', c.width/2, c.height/2);
+    const high = parseInt(localStorage.getItem('snakeHigh') || '0');
+    document.getElementById('snake-high').textContent = high;
+    document.addEventListener('keydown', snakeKeyHandler);
+}
+function snakeKeyHandler(e) {
+    if (!window._snake) return;
+    const k = e.key.toLowerCase();
+    const d = window._snake.dir;
+    if ((k === 'arrowup' || k === 'w') && d !== 'down') window._snake.next = 'up';
+    else if ((k === 'arrowdown' || k === 's') && d !== 'up') window._snake.next = 'down';
+    else if ((k === 'arrowleft' || k === 'a') && d !== 'right') window._snake.next = 'left';
+    else if ((k === 'arrowright' || k === 'd') && d !== 'left') window._snake.next = 'right';
+}
+function snakeStart() {
+    const c = document.getElementById('snake-canvas');
+    const ctx = c.getContext('2d');
+    const grid = 20;
+    const cells = c.width / grid;
+    window._snake = {
+        body: [{x:5,y:5},{x:4,y:5},{x:3,y:5}],
+        dir: 'right', next: 'right',
+        food: {x:10,y:10}, score: 0, alive: true,
+        timer: null
+    };
+    document.getElementById('snake-btn').textContent = '⏸ Playing…';
+    document.getElementById('snake-btn').disabled = true;
+    document.getElementById('snake-btn').style.opacity = '.6';
+    if (window._snake.timer) clearInterval(window._snake.timer);
+    window._snake.timer = setInterval(() => {
+        const s = window._snake;
+        if (!s || !s.alive) return;
+        s.dir = s.next;
+        const head = {...s.body[0]};
+        if (s.dir === 'up') head.y--;
+        else if (s.dir === 'down') head.y++;
+        else if (s.dir === 'left') head.x--;
+        else if (s.dir === 'right') head.x++;
+        // Walls
+        if (head.x < 0 || head.y < 0 || head.x >= cells || head.y >= cells) return snakeOver();
+        // Self
+        if (s.body.some(b => b.x === head.x && b.y === head.y)) return snakeOver();
+        s.body.unshift(head);
+        // Food
+        if (head.x === s.food.x && head.y === s.food.y) {
+            s.score++;
+            document.getElementById('snake-score').textContent = s.score;
+            do { s.food = {x: Math.floor(Math.random()*cells), y: Math.floor(Math.random()*cells)}; }
+            while (s.body.some(b => b.x === s.food.x && b.y === s.food.y));
+        } else { s.body.pop(); }
+        // Draw
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 0, c.width, c.height);
+        // Grid hint
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(s.food.x*grid+2, s.food.y*grid+2, grid-4, grid-4);
+        s.body.forEach((b,i) => {
+            ctx.fillStyle = i === 0 ? '#22c55e' : '#16a34a';
+            ctx.fillRect(b.x*grid+1, b.y*grid+1, grid-2, grid-2);
+        });
+    }, 110);
+}
+function snakeOver() {
+    const s = window._snake;
+    if (!s) return;
+    s.alive = false;
+    clearInterval(s.timer);
+    const high = Math.max(s.score, parseInt(localStorage.getItem('snakeHigh') || '0'));
+    localStorage.setItem('snakeHigh', high);
+    document.getElementById('snake-high').textContent = high;
+    document.getElementById('snake-btn').textContent = '🔄 Play Again';
+    document.getElementById('snake-btn').disabled = false;
+    document.getElementById('snake-btn').style.opacity = '1';
+    addNotification('🐍','Snake', s.score >= high ? `🏆 New high score: ${s.score}!` : `Game over — score: ${s.score}`);
+    window._snake = null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 💣 MINESWEEPER — real working game
+// ═══════════════════════════════════════════════════════════════
+function createMinesweeper() {
+    window._mine = null;
+    setTimeout(() => mineSetup(9,9,10), 60);
+    return `
+    <div style="height:100%;background:linear-gradient(135deg,#1a1d23,#0f172a);color:white;font-family:Segoe UI,sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px;overflow:auto;">
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;justify-content:center;">
+        <button onclick="mineSetup(9,9,10)" style="padding:7px 14px;background:rgba(255,255,255,0.08);color:white;border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;font-size:13px;">😊 Beginner</button>
+        <button onclick="mineSetup(16,16,40)" style="padding:7px 14px;background:rgba(255,255,255,0.08);color:white;border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;font-size:13px;">😐 Intermediate</button>
+        <button onclick="mineSetup(30,16,99)" style="padding:7px 14px;background:rgba(255,255,255,0.08);color:white;border:1px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;font-size:13px;">😰 Expert</button>
+      </div>
+      <div id="mine-info" style="display:flex;gap:30px;margin-bottom:12px;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;">
+        <span>💣 <span id="mine-count">10</span></span>
+        <button onclick="mineReset()" id="mine-face" style="background:none;border:none;font-size:24px;cursor:pointer;">😊</button>
+        <span>⏱ <span id="mine-time">0</span></span>
+      </div>
+      <div id="mine-grid" style="display:inline-block;background:#374151;border-radius:6px;padding:6px;box-shadow:0 8px 30px rgba(0,0,0,0.5);overflow:auto;max-width:100%;"></div>
+    </div>`;
+}
+function mineSetup(cols, rows, mines) {
+    clearInterval(window._mineTimer);
+    window._mine = {
+        cols, rows, mines,
+        cells: Array.from({length:rows*cols}, (_,i) => ({idx:i, mine:false, revealed:false, flagged:false, adj:0})),
+        state: 'idle', // idle|playing|won|lost
+        started: false, minesLeft: mines, elapsed: 0
+    };
+    document.getElementById('mine-count').textContent = mines;
+    document.getElementById('mine-face').textContent = '😊';
+    document.getElementById('mine-time').textContent = '0';
+    mineRenderGrid();
+}
+function minePlaceMines(cols, rows, mines, safeIdx) {
+    const m = window._mine;
+    const candidates = m.cells.map((_,i) => i).filter(i => i !== safeIdx);
+    for (let i = candidates.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [candidates[i],candidates[j]] = [candidates[j],candidates[i]];
+    }
+    candidates.slice(0, mines).forEach(i => m.cells[i].mine = true);
+    m.cells.forEach((c,i) => {
+        c.adj = mineNeighbors(i).filter(n => m.cells[n].mine).length;
+    });
+}
+function mineNeighbors(idx) {
+    const m = window._mine;
+    const r = Math.floor(idx/m.cols), co = idx%m.cols;
+    const ns = [];
+    for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+        if (!dr&&!dc) continue;
+        const nr=r+dr, nc=co+dc;
+        if (nr>=0&&nr<m.rows&&nc>=0&&nc<m.cols) ns.push(nr*m.cols+nc);
+    }
+    return ns;
+}
+function mineReveal(idx) {
+    const m = window._mine;
+    if (m.state==='won'||m.state==='lost') return;
+    if (!m.started) {
+        m.started = true; m.state='playing';
+        minePlaceMines(m.cols, m.rows, m.mines, idx);
+        window._mineTimer = setInterval(() => {
+            m.elapsed++;
+            const el = document.getElementById('mine-time');
+            if (el) el.textContent = m.elapsed;
+        }, 1000);
+    }
+    const c = m.cells[idx];
+    if (c.revealed || c.flagged) return;
+    c.revealed = true;
+    if (c.mine) {
+        m.state='lost';
+        clearInterval(window._mineTimer);
+        document.getElementById('mine-face').textContent='😵';
+        m.cells.forEach(c => { if(c.mine) c.revealed=true; });
+        addNotification('💣','Minesweeper','BOOM! You hit a mine 💥');
+        mineRenderGrid(); return;
+    }
+    if (c.adj===0) mineNeighbors(idx).forEach(n => mineReveal(n));
+    // Win?
+    const unrevealed = m.cells.filter(c => !c.revealed).length;
+    if (unrevealed === m.mines) {
+        m.state='won';
+        clearInterval(window._mineTimer);
+        document.getElementById('mine-face').textContent='😎';
+        addNotification('💣','Minesweeper',`You won in ${m.elapsed}s! 🎉`);
+    }
+    mineRenderGrid();
+}
+function mineFlag(e, idx) {
+    e.preventDefault(); e.stopPropagation();
+    const m = window._mine;
+    if (m.state==='won'||m.state==='lost') return;
+    const c = m.cells[idx];
+    if (c.revealed) return;
+    c.flagged = !c.flagged;
+    m.minesLeft += c.flagged ? -1 : 1;
+    document.getElementById('mine-count').textContent = m.minesLeft;
+    mineRenderGrid();
+}
+function mineReset() { const m=window._mine; if(m) mineSetup(m.cols, m.rows, m.mines); }
+const MINE_COLORS = ['','#3b82f6','#22c55e','#ef4444','#7c3aed','#9f1239','#06b6d4','#000','#6b7280'];
+function mineRenderGrid() {
+    const m = window._mine;
+    const grid = document.getElementById('mine-grid');
+    if (!grid || !m) return;
+    const cs = Math.max(24, Math.min(32, Math.floor(480/m.cols)));
+    grid.innerHTML = `<div style="display:grid;grid-template-columns:repeat(${m.cols},${cs}px);gap:2px;">` +
+        m.cells.map((c,i) => {
+            if (c.revealed) {
+                if (c.mine) return `<div style="width:${cs}px;height:${cs}px;background:#ef4444;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:${cs*0.55}px;">💣</div>`;
+                const txt = c.adj > 0 ? `<span style="color:${MINE_COLORS[c.adj]};font-weight:700;font-size:${cs*0.5}px;">${c.adj}</span>` : '';
+                return `<div style="width:${cs}px;height:${cs}px;background:rgba(255,255,255,0.07);border-radius:3px;display:flex;align-items:center;justify-content:center;">${txt}</div>`;
+            }
+            const inner = c.flagged ? `<span style="font-size:${cs*0.55}px;">🚩</span>` : '';
+            return `<div onclick="mineReveal(${i})" oncontextmenu="mineFlag(event,${i})" style="width:${cs}px;height:${cs}px;background:rgba(255,255,255,0.12);border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,0.08);transition:background .1s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">${inner}</div>`;
+        }).join('') + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🎙️ VOICE RECORDER — MediaRecorder API
+// ═══════════════════════════════════════════════════════════════
+function createVoiceRecorder() {
+    window._vrec = { recorder: null, chunks: [], clips: JSON.parse(localStorage.getItem('voiceClips')||'[]'), recording: false, duration: 0, timer: null };
+    setTimeout(vrRender, 60);
+    return `<div id="vr-root" style="height:100%;background:linear-gradient(135deg,#0f172a,#1e293b);color:white;font-family:Segoe UI,sans-serif;display:flex;flex-direction:column;"></div>`;
+}
+function vrRender() {
+    const root = document.getElementById('vr-root');
+    if (!root) return;
+    const vr = window._vrec;
+    root.innerHTML = `
+    <div style="padding:24px;display:flex;flex-direction:column;align-items:center;gap:20px;flex:1;">
+      <div style="font-size:28px;font-weight:700;">🎙️ Voice Recorder</div>
+      <div id="vr-visualizer" style="width:100%;max-width:400px;height:80px;background:rgba(255,255,255,0.04);border-radius:12px;display:flex;align-items:center;justify-content:center;gap:3px;overflow:hidden;">
+        ${vr.recording ? Array.from({length:40},(_,i)=>`<div class="vr-bar" style="width:5px;background:#ef4444;border-radius:3px;height:${Math.random()*60+4}px;animation:vrPulse ${0.3+Math.random()*0.4}s ease-in-out infinite alternate;"></div>`).join('') : '<span style="opacity:.3;font-size:13px;">Press record to start</span>'}
+      </div>
+      <div style="font-size:48px;font-weight:200;font-variant-numeric:tabular-nums;color:${vr.recording?'#ef4444':'white'};" id="vr-time">${vrFmt(vr.duration)}</div>
+      <div style="display:flex;gap:16px;">
+        ${vr.recording
+            ? `<button onclick="vrStop()" style="width:72px;height:72px;border-radius:50%;background:#ef4444;border:none;color:white;font-size:28px;cursor:pointer;box-shadow:0 0 0 4px rgba(239,68,68,0.3);">⏹</button>`
+            : `<button onclick="vrStart()" style="width:72px;height:72px;border-radius:50%;background:#ef4444;border:none;color:white;font-size:28px;cursor:pointer;">🎙️</button>`}
+      </div>
+      ${vr.clips.length ? `
+      <div style="width:100%;max-width:500px;">
+        <div style="font-size:13px;font-weight:700;opacity:.6;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Recordings (${vr.clips.length})</div>
+        ${vr.clips.map((c,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:6px;">
+          <span style="font-size:18px;">🎵</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;">${c.name}</div>
+            <div style="font-size:11px;opacity:.5;">${c.dur} · ${c.date}</div>
+          </div>
+          <audio controls src="${c.url}" style="height:28px;max-width:160px;"></audio>
+          <a href="${c.url}" download="${c.name}" style="color:#93c5fd;font-size:18px;text-decoration:none;" title="Download">⬇</a>
+          <button onclick="vrDelete(${i})" style="background:none;border:none;color:#f87171;font-size:16px;cursor:pointer;" title="Delete">✕</button>
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+}
+function vrFmt(s){return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
+async function vrStart() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+        const vr = window._vrec;
+        vr.chunks = []; vr.duration = 0; vr.recording = true;
+        vr.recorder = new MediaRecorder(stream);
+        vr.recorder.ondataavailable = e => vr.chunks.push(e.data);
+        vr.recorder.onstop = vrSave;
+        vr.recorder.start();
+        vr.timer = setInterval(() => {
+            vr.duration++;
+            const el = document.getElementById('vr-time');
+            if (el) el.textContent = vrFmt(vr.duration);
+        }, 1000);
+        vrRender();
+    } catch(e) {
+        addNotification('🎙️','Recorder','Microphone access denied');
+    }
+}
+function vrStop() {
+    const vr = window._vrec;
+    if (!vr.recorder) return;
+    clearInterval(vr.timer);
+    vr.recording = false;
+    vr.recorder.stop();
+    vr.recorder.stream.getTracks().forEach(t => t.stop());
+}
+function vrSave() {
+    const vr = window._vrec;
+    const blob = new Blob(vr.chunks, {type:'audio/webm'});
+    const url = URL.createObjectURL(blob);
+    const dur = vrFmt(vr.duration);
+    const name = `Recording ${vr.clips.length+1} (${dur}).webm`;
+    const date = new Date().toLocaleString();
+    vr.clips.unshift({name, url, dur, date});
+    // Don't persist blob URLs to localStorage (they expire)
+    addNotification('🎙️','Recorder',`Saved: ${name}`);
+    vr.duration = 0;
+    vrRender();
+}
+function vrDelete(i) {
+    const vr = window._vrec;
+    URL.revokeObjectURL(vr.clips[i].url);
+    vr.clips.splice(i,1);
+    vrRender();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ✅ TO-DO — persistent task list with priorities & categories
+// ═══════════════════════════════════════════════════════════════
+function createToDo() {
+    window._todo = JSON.parse(localStorage.getItem('todoTasks')||'[]');
+    window._todoFilter = 'all';
+    setTimeout(todoRender, 60);
+    return `<div id="todo-root" style="height:100%;background:linear-gradient(135deg,#f8fafc,#f1f5f9);font-family:Segoe UI,sans-serif;display:flex;flex-direction:column;overflow:hidden;"></div>`;
+}
+function todoRender() {
+    const root = document.getElementById('todo-root');
+    if (!root) return;
+    const tasks = window._todo;
+    const f = window._todoFilter;
+    const filtered = tasks.filter(t => f==='all'||(f==='active'&&!t.done)||(f==='done'&&t.done)||(f===t.cat));
+    const cats = ['Work','Personal','Shopping','Health','Other'];
+    const prios = {high:'#ef4444',medium:'#f59e0b',low:'#22c55e'};
+    root.innerHTML = `
+    <div style="padding:18px 20px;background:linear-gradient(135deg,#0078d4,#0ea5e9);color:white;">
+      <div style="font-size:22px;font-weight:700;margin-bottom:2px;">✅ To-Do</div>
+      <div style="font-size:13px;opacity:.8;">${tasks.filter(t=>!t.done).length} tasks remaining · ${tasks.filter(t=>t.done).length} completed</div>
+    </div>
+    <div style="padding:14px 20px;background:white;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="todo-input" type="text" placeholder="Add a new task…" onkeydown="if(event.key==='Enter')todoAdd()" style="flex:1;min-width:180px;padding:9px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;" />
+      <select id="todo-cat" style="padding:9px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+        ${cats.map(c=>`<option>${c}</option>`).join('')}
+      </select>
+      <select id="todo-prio" style="padding:9px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+        <option value="high">🔴 High</option>
+        <option value="medium" selected>🟡 Medium</option>
+        <option value="low">🟢 Low</option>
+      </select>
+      <button onclick="todoAdd()" style="padding:9px 16px;background:#0078d4;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;">+ Add</button>
+    </div>
+    <div style="padding:8px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;gap:6px;flex-wrap:wrap;">
+      ${['all','active','done',...cats].map(f2=>`<button onclick="window._todoFilter='${f2}';todoRender()" style="padding:4px 12px;border-radius:20px;border:1px solid ${f===f2?'#0078d4':'#d1d5db'};background:${f===f2?'#0078d4':'white'};color:${f===f2?'white':'#374151'};cursor:pointer;font-size:12px;">${f2.charAt(0).toUpperCase()+f2.slice(1)}</button>`).join('')}
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px 20px;display:flex;flex-direction:column;gap:6px;">
+      ${filtered.length ? filtered.map((t,fi) => {
+          const realIdx = tasks.indexOf(t);
+          return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:white;border-radius:10px;border:1px solid #e2e8f0;border-left:4px solid ${prios[t.prio]||'#94a3b8'};opacity:${t.done?.7:1};">
+            <input type="checkbox" ${t.done?'checked':''} onchange="todoToggle(${realIdx})" style="width:18px;height:18px;cursor:pointer;accent-color:#0078d4;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;${t.done?'text-decoration:line-through;color:#9ca3af;':''}">${t.text}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${t.cat} · ${t.prio} priority · ${t.date}</div>
+            </div>
+            <button onclick="todoDel(${realIdx})" style="background:none;border:none;color:#f87171;font-size:18px;cursor:pointer;padding:2px;">✕</button>
+          </div>`;
+      }).join('') : `<div style="text-align:center;padding:60px;opacity:.4;"><div style="font-size:48px;">✅</div><div style="font-size:15px;margin-top:12px;">No tasks here</div></div>`}
+    </div>`;
+}
+function todoAdd() {
+    const input = document.getElementById('todo-input');
+    const cat = document.getElementById('todo-cat')?.value || 'Other';
+    const prio = document.getElementById('todo-prio')?.value || 'medium';
+    const text = input?.value?.trim();
+    if (!text) return;
+    window._todo.unshift({ text, cat, prio, done:false, date:new Date().toLocaleDateString() });
+    localStorage.setItem('todoTasks', JSON.stringify(window._todo));
+    todoRender();
+}
+function todoToggle(i) {
+    window._todo[i].done = !window._todo[i].done;
+    localStorage.setItem('todoTasks', JSON.stringify(window._todo));
+    todoRender();
+}
+function todoDel(i) {
+    window._todo.splice(i, 1);
+    localStorage.setItem('todoTasks', JSON.stringify(window._todo));
+    todoRender();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🖱️ DESKTOP RIGHT-CLICK CONTEXT MENU
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('contextmenu', function(e) {
+    const desktop = document.getElementById('screen-desktop') || document.querySelector('.desktop-icons');
+    const isDesktop = e.target.closest('#screen-desktop') && !e.target.closest('.window') && !e.target.closest('.taskbar') && !e.target.closest('.start-menu');
+    if (!isDesktop) return;
+    e.preventDefault();
+    const menu = document.getElementById('desktop-ctx-menu');
+    if (!menu) return;
+    menu.style.display = 'block';
+    const x = Math.min(e.clientX, window.innerWidth - 210);
+    const y = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 10);
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+});
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#desktop-ctx-menu')) ctxClose();
+});
+function ctxClose() { const m = document.getElementById('desktop-ctx-menu'); if(m) m.style.display='none'; }
+function ctxRefresh() {
+    ctxClose();
+    addNotification('🔄','Desktop','Refreshed');
+    const icons = document.querySelector('.desktop-icons');
+    if (icons) { icons.style.opacity='0'; setTimeout(()=>icons.style.opacity='1',150); }
+}
+function ctxView(size) {
+    ctxClose();
+    const icons = document.querySelectorAll('.desktop-icon');
+    const sizes = { large:{w:'90px',fs:'38px'}, medium:{w:'74px',fs:'32px'}, small:{w:'58px',fs:'24px'} };
+    const s = sizes[size] || sizes.medium;
+    icons.forEach(ic => {
+        ic.style.width = s.w;
+        const img = ic.querySelector('.icon-img');
+        if (img) img.style.fontSize = s.fs;
+    });
+    addNotification('🔲','Desktop',`Icon size: ${size}`);
+}
+function ctxSort(by) {
+    ctxClose();
+    addNotification('🔤','Desktop',`Sorted by ${by}`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 📣 ACTION CENTER — Quick Settings panel
+// ═══════════════════════════════════════════════════════════════
+window._acState = { wifi:true, bt:false, airplane:false, nightlight:false, focusassist:false, darkmode:true };
+function toggleActionCenter() {
+    const ac = document.getElementById('action-center');
+    if (!ac) return;
+    const isOpen = ac.classList.toggle('open');
+    if (isOpen) {
+        acRenderTiles();
+        acSyncNotifications();
+        // update clock
+        setInterval(() => {
+            const cl = document.getElementById('ac-clock');
+            if (cl) cl.textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}) + ' · ' + new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+        }, 1000);
+        const cl = document.getElementById('ac-clock');
+        if (cl) cl.textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}) + ' · ' + new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    }
+}
+const AC_TILES = [
+    { id:'wifi',     icon:'📶', label:'Wi-Fi',        color:'#3b82f6' },
+    { id:'bt',       icon:'🔵', label:'Bluetooth',     color:'#8b5cf6' },
+    { id:'airplane', icon:'✈️', label:'Airplane',      color:'#f59e0b' },
+    { id:'nightlight',icon:'🌙',label:'Night light',   color:'#f97316' },
+    { id:'focusassist',icon:'🎯',label:'Focus assist', color:'#22c55e' },
+    { id:'darkmode', icon:'🌑', label:'Dark mode',     color:'#6366f1' },
+    { id:'_hotspot', icon:'📡', label:'Hotspot',       color:'#06b6d4' },
+    { id:'_locn',    icon:'📍', label:'Location',      color:'#ef4444' },
+];
+function acRenderTiles() {
+    const el = document.getElementById('ac-tiles');
+    if (!el) return;
+    const s = window._acState;
+    el.innerHTML = AC_TILES.map(t => {
+        const on = t.id.startsWith('_') ? false : !!s[t.id];
+        return `<button onclick="acToggle('${t.id}')" style="aspect-ratio:1;border-radius:10px;border:none;background:${on?t.color:'rgba(255,255,255,0.07)'};color:white;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:20px;padding:6px;transition:background .2s;" title="${t.label}">
+            <span>${t.icon}</span>
+            <span style="font-size:9px;opacity:.8;font-family:Segoe UI,sans-serif;font-weight:600;">${t.label.split(' ')[0]}</span>
+        </button>`;
+    }).join('');
+}
+function acToggle(id) {
+    if (id.startsWith('_')) { addNotification('📣','Quick Settings', id.replace('_','') + ' toggled'); return; }
+    window._acState[id] = !window._acState[id];
+    acRenderTiles();
+    const labels = {wifi:'Wi-Fi',bt:'Bluetooth',airplane:'Airplane mode',nightlight:'Night light',focusassist:'Focus assist',darkmode:'Dark mode'};
+    addNotification('📣','Quick Settings', `${labels[id]||id}: ${window._acState[id]?'On':'Off'}`);
+    if (id==='nightlight') toggleNightLight({classList:{toggle:()=>{}}});
+}
+function acSyncNotifications() {
+    const list = document.getElementById('notification-list');
+    const acList = document.getElementById('ac-notifications');
+    if (!list || !acList) return;
+    const items = list.querySelectorAll('.notification');
+    if (!items.length) return;
+    acList.innerHTML = '';
+    items.forEach(item => {
+        const clone = item.cloneNode(true);
+        clone.style.cssText = 'background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;display:flex;gap:8px;cursor:pointer;';
+        clone.onclick = () => clone.remove();
+        acList.appendChild(clone);
+    });
+}
+// Close Action Center when clicking outside
+document.addEventListener('click', function(e) {
+    const ac = document.getElementById('action-center');
+    if (ac && ac.classList.contains('open') && !e.target.closest('#action-center') && !e.target.closest('.notification-button')) {
+        ac.classList.remove('open');
+    }
+});
