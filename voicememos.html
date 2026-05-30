@@ -13,7 +13,15 @@ body{background:#1c1c1e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,
 .hbtn{background:none;border:none;color:#ff3b30;font-size:15px;cursor:pointer;padding:4px 8px}
 /* Waveform visualizer */
 .rec-area{display:flex;flex-direction:column;align-items:center;padding:20px 18px;background:#000;margin:0 14px 14px;border-radius:16px}
-.waveform{display:flex;align-items:center;gap:3px;height:60px;margin-bottom:16px;width:100%;justify-content:center}
+.waveform{display:flex;align-items:center;gap:3px;height:60px;margin-bottom:16px;width:100%;justify-content:center;cursor:pointer;position:relative}
+.scrub-line{position:absolute;top:0;bottom:0;width:2px;background:#fff;left:0;display:none}
+.controls-pro{display:flex;justify-content:space-around;width:100%;padding:10px 0;border-top:1px solid #222;margin-top:10px}
+.pro-btn{background:none;border:none;color:#fff;font-size:12px;cursor:pointer;opacity:0.7}
+.pro-btn.active{color:#ff3b30;opacity:1}
+.trim-handle{width:8px;height:100%;background:rgba(255,255,255,0.3);position:absolute;top:0;cursor:ew-resize;display:none}
+.playback-speed-popover{position:absolute;bottom:80px;background:#2c2c2e;border-radius:12px;padding:8px;display:none;flex-direction:column;gap:4px;z-index:100}
+.speed-opt{padding:8px 16px;font-size:14px;cursor:pointer}
+.speed-opt:hover{background:#3a3a3c;border-radius:8px}
 .wave-bar{width:4px;border-radius:2px;background:#ff3b30;transition:height .1s;min-height:4px}
 .rec-time{font-size:48px;font-weight:200;letter-spacing:2px;margin-bottom:12px}
 .rec-time.inactive{color:#8e8e93}
@@ -68,12 +76,31 @@ body{background:#1c1c1e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,
 </div>
 
 <div class="rec-area">
-  <div class="waveform" id="waveform"></div>
+  <div class="waveform" id="waveform" onclick="scrub(event)">
+    <div class="scrub-line" id="scrub-line"></div>
+    <div class="trim-handle" id="trim-start" style="left:0;display:block"></div>
+    <div class="trim-handle" id="trim-end" style="right:0;display:block"></div>
+  </div>
   <div class="rec-time" id="rec-time">0:00</div>
   <button class="rec-btn" id="rec-btn" onclick="toggleRecording()">
     <div class="inner"></div>
   </button>
   <div class="rec-status" id="rec-status">Tap to record</div>
+  
+  <div class="controls-pro">
+    <button class="pro-btn" id="btn-speed" onclick="toggleSpeedMenu()">1x Speed</button>
+    <button class="pro-btn" id="btn-skip" onclick="toggleSkipSilence()">Skip Silence</button>
+    <button class="pro-btn" id="btn-enhance" onclick="toggleEnhance()">Enhance</button>
+    <button class="pro-btn" onclick="duplicateCurrent()">Duplicate</button>
+  </div>
+  
+  <div class="playback-speed-popover" id="speed-menu">
+    <div class="speed-opt" onclick="setSpeed(0.5)">0.5x</div>
+    <div class="speed-opt" onclick="setSpeed(0.75)">0.75x</div>
+    <div class="speed-opt" onclick="setSpeed(1)">1x</div>
+    <div class="speed-opt" onclick="setSpeed(1.5)">1.5x</div>
+    <div class="speed-opt" onclick="setSpeed(2)">2x</div>
+  </div>
 </div>
 
 <div class="search-wrap">
@@ -228,6 +255,64 @@ function fmtDate(iso){
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:d.getFullYear()!==now.getFullYear()?'numeric':undefined});
 }
 
+let playingId=null,playingAudio=null;
+let editingId=null, playbackSpeed=1, isEnhanced=false, isSkipSilence=false;
+
+function toggleSpeedMenu() {
+  const m = document.getElementById('speed-menu');
+  m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function setSpeed(s) {
+  playbackSpeed = s;
+  document.getElementById('btn-speed').textContent = s + 'x Speed';
+  if(playingAudio && playingAudio.playbackRate !== undefined) playingAudio.playbackRate = s;
+  toggleSpeedMenu();
+}
+
+function toggleSkipSilence() {
+  isSkipSilence = !isSkipSilence;
+  document.getElementById('btn-skip').classList.toggle('active', isSkipSilence);
+  alert(isSkipSilence ? 'Skip Silence Enabled (Simulated)' : 'Skip Silence Disabled');
+}
+
+function toggleEnhance() {
+  isEnhanced = !isEnhanced;
+  document.getElementById('btn-enhance').classList.toggle('active', isEnhanced);
+  alert(isEnhanced ? 'Recording Enhanced (Simulated)' : 'Enhancement Removed');
+}
+
+function duplicateCurrent() {
+  if(!playingId) { alert('Select a memo first'); return; }
+  const m = memos.find(x => x.id === playingId);
+  if(m) {
+    const copy = {...m, id: Date.now(), name: m.name + ' copy', date: new Date().toISOString()};
+    memos.unshift(copy); saveMemos(); renderMemos();
+    alert('Recording duplicated');
+  }
+}
+
+function scrub(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const pct = x / rect.width;
+  document.getElementById('scrub-line').style.display = 'block';
+  document.getElementById('scrub-line').style.left = (pct * 100) + '%';
+  if(playingAudio && playingAudio.duration) {
+    playingAudio.currentTime = playingAudio.duration * pct;
+  }
+}
+
+function selectMemo(id) {
+  playingId = id;
+  const m = memos.find(x => x.id === id);
+  if(m) {
+    document.getElementById('rec-time').textContent = fmtDur(m.duration);
+    document.getElementById('rec-status').textContent = m.name;
+    renderMemos();
+  }
+}
+
 function renderMemos(filter=''){
   const list=document.getElementById('memo-list');
   const filtered=memos.filter(m=>m.name.toLowerCase().includes(filter.toLowerCase()));
@@ -235,7 +320,7 @@ function renderMemos(filter=''){
     list.innerHTML=`<div class="empty-state"><div class="icon">🎙️</div><p>${filter?'No memos match your search.':'Tap the record button to start.'}</p></div>`;
     return;
   }
-  list.innerHTML=filtered.map(m=>`<div class="memo-item${playingId===m.id?' playing':''}" id="memo-${m.id}">
+  list.innerHTML=filtered.map(m=>`<div class="memo-item${playingId===m.id?' playing':''}" id="memo-${m.id}" onclick="selectMemo(${m.id})">
     <div class="memo-top">
       <div class="memo-name">${m.name}</div>
       <div class="memo-dur" id="dur-${m.id}">${fmtDur(m.duration)}</div>
@@ -243,11 +328,11 @@ function renderMemos(filter=''){
     <div class="memo-meta">
       <div class="memo-date">${fmtDate(m.date)}</div>
       <div class="memo-actions">
-        <button class="ma-btn" onclick="playMemo(${m.id})" title="${playingId===m.id?'Pause':'Play'}">
+        <button class="ma-btn" onclick="event.stopPropagation(); playMemo(${m.id})" title="${playingId===m.id?'Pause':'Play'}">
           ${playingId===m.id?'⏸':'▶'}
         </button>
-        <button class="ma-btn" onclick="renameMemo(${m.id})" title="Rename">✏️</button>
-        <button class="ma-btn delete" onclick="deleteMemo(${m.id})" title="Delete">🗑</button>
+        <button class="ma-btn" onclick="event.stopPropagation(); renameMemo(${m.id})" title="Rename">✏️</button>
+        <button class="ma-btn delete" onclick="event.stopPropagation(); deleteMemo(${m.id})" title="Delete">🗑</button>
       </div>
     </div>
     ${playingId===m.id?'<div class="play-bar"><div class="play-fill" id="pf-'+m.id+'"></div></div>':''}
@@ -255,22 +340,30 @@ function renderMemos(filter=''){
 }
 
 function playMemo(id){
-  if(playingId===id){
+  if(playingId===id && playingAudio && !playingAudio.paused){
     // pause
-    if(playingAudio){playingAudio.pause();playingAudio=null;}
-    playingId=null;renderMemos();return;
+    if(playingAudio.pause) playingAudio.pause();
+    playingId=null;
+    renderMemos();
+    return;
   }
-  if(playingAudio){playingAudio.pause();playingAudio=null;}
+  if(playingAudio && playingAudio.pause){playingAudio.pause();playingAudio=null;}
   const m=memos.find(x=>x.id===id);
   if(!m)return;
   playingId=id;
   if(m.dataUrl){
     playingAudio=new Audio(m.dataUrl);
+    playingAudio.playbackRate = playbackSpeed;
     playingAudio.play();
     playingAudio.addEventListener('ended',()=>{playingId=null;renderMemos();});
     playingAudio.addEventListener('timeupdate',()=>{
       const pf=document.getElementById('pf-'+id);
-      if(pf&&playingAudio.duration)pf.style.width=(playingAudio.currentTime/playingAudio.duration*100)+'%';
+      if(pf&&playingAudio.duration) {
+        const pct = (playingAudio.currentTime/playingAudio.duration*100);
+        pf.style.width=pct+'%';
+        document.getElementById('scrub-line').style.display = 'block';
+        document.getElementById('scrub-line').style.left = pct + '%';
+      }
     });
   } else {
     // simulate playback

@@ -49,7 +49,9 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
 .add-input{flex:1;background:#2c2c2e;border:none;color:#fff;padding:10px 14px;border-radius:10px;font-size:15px;outline:none}
 .add-input::placeholder{color:#8e8e93}
 .add-extra{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-.add-extra input{background:#2c2c2e;border:none;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;outline:none;color-scheme:dark}
+.add-extra input, .add-extra select{background:#2c2c2e;border:none;color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;outline:none;color-scheme:dark}
+.priority-tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px}
+.subtask-row{padding-left:40px !important; font-size: 14px !important; border-bottom: none !important; opacity: 0.9;}
 .add-btn{background:#ff9500;color:#000;border:none;border-radius:10px;padding:10px 16px;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0}
 </style>
 </head>
@@ -89,8 +91,18 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
     </div>
     <div class="add-extra">
       <input type="text" class="add-input" id="new-notes" placeholder="Notes (optional)" style="flex:1">
+      <select class="add-input" id="new-priority" style="width:auto">
+        <option value="0">None</option>
+        <option value="1">!</option>
+        <option value="2">!!</option>
+        <option value="3">!!!</option>
+      </select>
       <input type="date" class="add-input" id="new-date" style="width:auto">
       <input type="time" class="add-input" id="new-time" style="width:auto">
+    </div>
+    <div class="add-extra">
+      <input type="text" class="add-input" id="new-url" placeholder="URL" style="flex:1">
+      <input type="text" class="add-input" id="new-tags" placeholder="#tags" style="width:120px">
     </div>
   </div>
 </div>
@@ -180,18 +192,29 @@ function renderPanel(){
     const overdue=r.date&&r.date<today&&!r.done;
     const dateStr=r.date?`<span class="${overdue?'overdue':''}">${overdue?'⚠️ ':''} ${r.date}${r.time?' '+r.time:''}</span>`:'';
     const notesStr=r.notes?`<span>${r.notes.slice(0,60)}</span>`:'';
-    return`<div class="reminder-row">
+    const priorityStr=r.priority && r.priority > 0 ? `<span style="color:#ff9500">${'!'.repeat(r.priority)} </span>` : '';
+    const tagsStr=r.tags ? `<span style="color:#007aff">${r.tags}</span>` : '';
+    const urlStr=r.url ? `<a href="${r.url}" style="color:#007aff;text-decoration:none;font-size:11px">${r.url}</a>` : '';
+    
+    let html = `<div class="reminder-row ${r.parentId?'subtask-row':''}">
       <div class="check-circle ${r.done?'done':''}" style="color:${def.color};border-color:${def.color}" onclick="toggleReminder('${r._list}',${r.id})"></div>
       <div class="rem-body">
-        <div class="rem-title ${r.done?'done':''}">${r.title}</div>
-        ${dateStr||notesStr?`<div class="rem-meta">${dateStr}${notesStr}</div>`:''}
+        <div class="rem-title ${r.done?'done':''}">${priorityStr}${r.title}</div>
+        ${dateStr||notesStr||tagsStr||urlStr?`<div class="rem-meta">${dateStr}${notesStr}${tagsStr}${urlStr}</div>`:''}
       </div>
       <button class="rem-del" onclick="deleteReminder('${r._list}',${r.id})">×</button>
     </div>`;
+
+    if(!r.parentId) {
+      const subs = items.filter(s => s.parentId === r.id);
+      subs.forEach(s => html += rowHtml(s));
+    }
+    return html;
   }
-  document.getElementById('panel-items').innerHTML=
-    todo.map(rowHtml).join('')+
-    (done.length?`<div style="padding:10px 18px;font-size:13px;color:#8e8e93;font-weight:600">Completed</div>`+done.map(rowHtml).join(''):'');
+  
+  const topLevel = items.filter(r => !r.parentId);
+  const todo=topLevel.filter(r=>!r.done);
+  const done=topLevel.filter(r=>r.done);
 }
 
 function toggleReminder(list,id){
@@ -209,21 +232,37 @@ function openAddReminder(){
   if(area.style.display!=='none')document.getElementById('new-title').focus();
 }
 function saveReminder(){
-  const title=document.getElementById('new-title').value.trim();
+  let title=document.getElementById('new-title').value.trim();
   if(!title)return;
+  
+  // Basic Natural Language Parsing
+  let date = document.getElementById('new-date').value;
+  let time = document.getElementById('new-time').value;
+  if (title.toLowerCase().includes('tomorrow')) {
+    const d = new Date(); d.setDate(d.getDate()+1);
+    date = d.toISOString().slice(0,10);
+    title = title.replace(/tomorrow/i, '').trim();
+  }
+
   const target=LIST_DEFS.find(d=>d.name===currentList)?currentList:lists[0]||'Reminders';
   if(!reminders[target])reminders[target]=[];
   reminders[target].push({
     id:nextId++,title,done:false,
     notes:document.getElementById('new-notes').value.trim(),
-    date:document.getElementById('new-date').value,
-    time:document.getElementById('new-time').value,
+    priority: parseInt(document.getElementById('new-priority').value),
+    date:date,
+    time:time,
+    url: document.getElementById('new-url').value.trim(),
+    tags: document.getElementById('new-tags').value.trim()
   });
   save();
   document.getElementById('new-title').value='';
   document.getElementById('new-notes').value='';
   document.getElementById('new-date').value='';
   document.getElementById('new-time').value='';
+  document.getElementById('new-priority').value='0';
+  document.getElementById('new-url').value='';
+  document.getElementById('new-tags').value='';
   renderPanel();renderHome();
 }
 function addList(){

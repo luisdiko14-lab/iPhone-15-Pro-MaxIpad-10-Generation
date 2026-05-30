@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emergency SOS</title>
+<style>
+:root {
+  --bg-color: #000000;
+  --card-bg: #1c1c1e;
+  --text-primary: #ffffff;
+  --text-secondary: #8e8e93;
+  --accent: #007aff;
+  --danger: #ff3b30;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.header {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 12px;
+}
+.header h1 {
+  font-size: 17px;
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+}
+.back-btn {
+  color: var(--accent);
+  background: none;
+  border: none;
+  font-size: 17px;
+  cursor: pointer;
+}
+.sos-image {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1c1c1e;
+  margin: 20px;
+  border-radius: 12px;
+  font-size: 80px;
+}
+.section-title {
+  padding: 0 16px 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+.list {
+  background: var(--card-bg);
+  border-top: 0.5px solid #38383a;
+  border-bottom: 0.5px solid #38383a;
+}
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 12px;
+  border-bottom: 0.5px solid #38383a;
+}
+.toggle {
+  width: 51px;
+  height: 31px;
+  background: #34c759;
+  border-radius: 15.5px;
+  position: relative;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 27px;
+  height: 27px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  right: 2px;
+}
+.description {
+  padding: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.danger-btn {
+  color: var(--danger);
+  font-size: 17px;
+  padding: 12px;
+  text-align: center;
+  background: var(--card-bg);
+  border-top: 0.5px solid #38383a;
+  border-bottom: 0.5px solid #38383a;
+  margin-top: 20px;
+}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" class="back-btn">‹ Settings</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+
+<div class="header">
+  <h1>Emergency SOS</h1>
+</div>
+
+<div class="sos-image">🆘</div>
+
+<div class="section-title">Call with Hold</div>
+<div class="list">
+  <div class="list-item">
+    <div style="flex:1">Call with Hold</div>
+    <div class="toggle"></div>
+  </div>
+</div>
+<div class="description">If you hold the side button and either volume button, a countdown begins and an alert sounds. After the countdown, iPhone calls emergency services.</div>
+
+<div class="section-title">Crash Detection</div>
+<div class="list">
+  <div class="list-item">
+    <div style="flex:1">Call After Severe Crash</div>
+    <div class="toggle"></div>
+  </div>
+</div>
+<div class="description">iPhone will automatically call emergency services if it detects a severe car crash.</div>
+
+<div class="danger-btn">Set Up Emergency Contacts in Health</div>
+
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+</script>
+</body>
+</html>

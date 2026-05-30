@@ -93,6 +93,7 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
   <textarea id="source-text" placeholder="Enter text" rows="3" oninput="onInput()"></textarea>
   <div class="input-footer">
     <div class="input-actions">
+      <button class="ia-btn" onclick="startVoiceInput()" title="Voice Input">🎤</button>
       <button class="ia-btn" onclick="speakSource()" title="Speak">🔊</button>
       <button class="ia-btn" onclick="clearSource()" title="Clear">✕</button>
     </div>
@@ -200,32 +201,48 @@ function clearSource(){document.getElementById('source-text').value='';document.
 function clearAll(){clearSource();history_=[];save();renderHistory();}
 
 async function doTranslate(){
-  const text=document.getElementById('source-text').value.trim();
-  if(!text)return;
-  const btn=document.getElementById('translate-btn');
-  btn.disabled=true;btn.textContent='Translating…';
-  setLoading(true);
-  try{
-    // Try Groq AI endpoint
-    const res=await fetch('/api/siri/groq',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      message:`Translate the following text from ${fromLang.name} to ${toLang.name}. Return ONLY the translation, no explanation, no quotes, no extra text.\n\nText to translate: ${text}`,
-      model:'llama-3.1-8b-instant',
-    })});
-    const data=await res.json();
-    const translated=data.reply||data.text||data.response||'';
-    if(translated){
-      setOutput(translated,'groq:llama-3.1-8b-instant');lastTranslation=translated;
-      history_.unshift({from:fromLang.code,to:toLang.code,fromName:fromLang.name,toName:toLang.name,src:text,tgt:translated,ts:Date.now()});
-      if(history_.length>20)history_.pop();
-      save();renderHistory();
-    } else {
-      setOutput(localTranslate(text),'local');
-    }
-  } catch(e){
-    setOutput(localTranslate(text),'local');
-  } finally{
-    btn.disabled=false;btn.textContent='Translate';setLoading(false);
+   const text=document.getElementById('source-text').value.trim();
+   if(!text)return;
+   const btn=document.getElementById('translate-btn');
+   btn.disabled=true;btn.textContent='Translating…';
+   setLoading(true);
+   try{
+     // Try Groq AI endpoint
+     const res=await fetch('/api/siri/groq',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+       message:`Translate the following text from ${fromLang.name} to ${toLang.name}. Return ONLY the translation, no explanation, no quotes, no extra text.\n\nText to translate: ${text}`,
+       model:'llama-3.1-8b-instant',
+     })});
+     const data=await res.json();
+     const translated=data.reply||data.text||data.response||'';
+     if(translated){
+       setOutput(translated,'groq:llama-3.1-8b-instant');lastTranslation=translated;
+       history_.unshift({from:fromLang.code,to:toLang.code,fromName:fromLang.name,toName:toLang.name,src:text,tgt:translated,ts:Date.now()});
+       if(history_.length>20)history_.pop();
+       save();renderHistory();
+     } else {
+       setOutput(localTranslate(text),'local');
+     }
+   } catch(e){
+     setOutput(localTranslate(text),'local');
+   } finally{
+     btn.disabled=false;btn.textContent='Translate';setLoading(false);
+   }
+}
+
+function startVoiceInput() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert('Voice recognition not supported in this browser.');
+    return;
   }
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = fromLang.code;
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    document.getElementById('source-text').value = text;
+    onInput();
+    doTranslate();
+  };
+  recognition.start();
 }
 
 // Simple built-in word lookup as fallback

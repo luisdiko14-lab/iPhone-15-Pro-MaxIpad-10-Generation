@@ -21,68 +21,66 @@
   .notes-header h1 {
     font-size: 28px; font-weight: 700; margin: 0;
   }
-  .header-btn {
-    background: none; border: none; color: #ffcc00;
-    font-size: 16px; cursor: pointer; padding: 6px 10px;
+  .sidebar {
+    position: fixed; left: -260px; top: 0; bottom: 0; width: 260px;
+    background: #000; z-index: 1000; transition: left 0.3s;
+    padding: 20px; border-right: 1px solid #2c2c2e;
   }
-  .header-btn:active { opacity: 0.6; }
-  .new-note-btn {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: #ffcc00; color: #000; font-size: 22px; font-weight: 700;
-    border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+  .sidebar.active { left: 0; }
+  .sidebar-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999;
   }
-  .search-bar-wrap {
-    padding: 0 18px 12px;
-  }
-  .search-bar-wrap input {
-    width: 100%; box-sizing: border-box;
-    background: rgba(255,255,255,0.08); border: none; outline: none;
-    color: #fff; padding: 10px 14px; border-radius: 10px;
-    font-size: 15px;
-  }
-  .notes-list { padding: 0 8px; }
-  .note-item {
-    background: #2c2c2e; border-radius: 12px;
-    padding: 14px 16px; margin-bottom: 8px;
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-  .note-item:hover { background: #3a3a3c; }
-  .note-item:active { transform: scale(0.99); }
-  .note-title {
-    font-size: 16px; font-weight: 600; margin-bottom: 4px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .note-snippet {
-    display: flex; gap: 8px; font-size: 13px; color: #8e8e93;
-  }
-  .note-time { color: #8e8e93; }
-  .note-empty {
-    text-align: center; padding: 60px 20px; color: #8e8e93;
-    font-size: 15px;
-  }
-  .editor-screen {
-    display: none; position: fixed; inset: 0;
-    background: #1c1c1e; padding: 12px 18px 100px;
-    flex-direction: column;
-  }
-  .editor-screen.active { display: flex; }
-  .editor-header {
+  .sidebar-overlay.active { display: block; }
+  .folder-item {
+    padding: 12px; border-radius: 8px; margin-bottom: 5px; cursor: pointer;
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 12px;
   }
-  .editor-title {
-    width: 100%; background: none; border: none; outline: none;
-    color: #fff; font-size: 22px; font-weight: 700;
-    padding: 8px 0;
+  .folder-item.active { background: #ffcc00; color: #000; }
+  .folder-count { font-size: 13px; opacity: 0.7; }
+  
+  .toolbar {
+    display: none; background: #2c2c2e; padding: 8px;
+    border-top: 1px solid #3a3a3c; position: fixed; bottom: 0; left: 0; right: 0;
+    overflow-x: auto; white-space: nowrap; gap: 10px;
+    max-width: 480px; margin: 0 auto;
   }
+  .toolbar.active { display: flex; }
+  .tool-btn {
+    background: none; border: none; color: #ffcc00; font-size: 18px; cursor: pointer;
+    padding: 5px 10px; border-radius: 4px;
+  }
+  .tool-btn:active { background: rgba(255,204,0,0.2); }
+  
   .editor-body {
     width: 100%; flex: 1; background: none; border: none; outline: none;
     color: #fff; font-size: 16px; resize: none;
-    line-height: 1.5;
-    font-family: inherit;
+    line-height: 1.5; font-family: inherit;
+    overflow-y: auto; padding-bottom: 50px;
   }
+  .editor-body:empty:before {
+    content: attr(placeholder); color: #8e8e93;
+  }
+  
+  .note-badge {
+    font-size: 10px; background: #ffcc00; color: #000;
+    padding: 2px 6px; border-radius: 4px; margin-left: 5px;
+  }
+  
+  .swipe-actions {
+    position: absolute; right: 0; top: 0; bottom: 0; display: flex;
+  }
+  .swipe-btn {
+    width: 70px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .swipe-pin { background: #ffcc00; color: #000; }
+  .swipe-delete { background: #ff3b30; }
+
+  .attachment-img {
+    max-width: 100%; border-radius: 8px; margin: 10px 0;
+  }
+  
+  #search-stats { font-size: 12px; color: #8e8e93; padding: 0 18px 5px; }
   .delete-btn { color: #ff3b30; }
   .status-bar {
     display: flex; justify-content: space-between; align-items: center;
@@ -93,15 +91,34 @@
 </head>
 <body>
   <div class="notes-app">
+    <!-- Sidebar -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+      <h2 style="font-size: 20px; margin-bottom: 20px;">Folders</h2>
+      <div class="folder-item active" onclick="setFolder('All')">
+        <span>All iCloud</span>
+        <span class="folder-count" id="count-All">0</span>
+      </div>
+      <div class="folder-item" onclick="setFolder('Pinned')">
+        <span>Pinned</span>
+        <span class="folder-count" id="count-Pinned">0</span>
+      </div>
+      <div class="folder-item" onclick="setFolder('Notes')">
+        <span>On My iPhone</span>
+        <span class="folder-count" id="count-Notes">0</span>
+      </div>
+      <div class="folder-item" onclick="setFolder('Deleted')">
+        <span>Recently Deleted</span>
+        <span class="folder-count" id="count-Deleted">0</span>
+      </div>
+    </div>
+
     <!-- Status bar -->
     <div class="status-bar">
-      <div class="time">12:00</div>
+      <div class="time" id="st">12:00</div>
       <div class="status-indicators">
-        <span class="carrier">Thu 14 Aug</span>
         <div class="right-indicators">
-          <span class="signal">📶</span>
-          <span class="wifi">📶</span>
-          <span class="battery">87% 🔋</span>
+          <span>📶 🔋</span>
         </div>
       </div>
     </div>
@@ -109,13 +126,14 @@
     <!-- List view -->
     <div id="listView">
       <div class="notes-header">
-        <button class="header-btn" onclick="goBack()">‹ Home</button>
-        <h1>Notes</h1>
+        <button class="header-btn" onclick="toggleSidebar()">☰</button>
+        <h1 id="folderTitle">Notes</h1>
         <button class="new-note-btn" onclick="newNote()">+</button>
       </div>
       <div class="search-bar-wrap">
         <input type="text" id="searchInput" placeholder="Search notes..." oninput="renderList()">
       </div>
+      <div id="search-stats"></div>
       <div class="notes-list" id="notesList"></div>
     </div>
 
@@ -123,60 +141,126 @@
     <div class="editor-screen" id="editorView">
       <div class="editor-header">
         <button class="header-btn" onclick="closeEditor()">‹ Notes</button>
-        <button class="header-btn delete-btn" onclick="deleteCurrent()">Delete</button>
+        <div style="display:flex; gap: 10px;">
+            <button class="header-btn" onclick="shareNote()">Share</button>
+            <button class="header-btn" onclick="toggleLock()">Lock</button>
+            <button class="header-btn delete-btn" onclick="deleteCurrent()">Delete</button>
+        </div>
       </div>
+      <div id="wordCount" style="font-size: 11px; color: #8e8e93; margin-bottom: 5px;">Words: 0 | Chars: 0</div>
       <input type="text" class="editor-title" id="editorTitle" placeholder="Title" oninput="autosave()">
-      <textarea class="editor-body" id="editorBody" placeholder="Start typing..." oninput="autosave()"></textarea>
+      <div class="editor-body" id="editorBody" contenteditable="true" placeholder="Start typing..." oninput="autosave()"></div>
+      
+      <!-- Rich Text Toolbar -->
+      <div class="toolbar" id="toolbar">
+        <button class="tool-btn" onclick="exec('bold')"><b>B</b></button>
+        <button class="tool-btn" onclick="exec('italic')"><i>I</i></button>
+        <button class="tool-btn" onclick="exec('underline')"><u>U</u></button>
+        <button class="tool-btn" onclick="exec('strikeThrough')">S</button>
+        <button class="tool-btn" onclick="exec('formatBlock', 'H1')">H1</button>
+        <button class="tool-btn" onclick="exec('formatBlock', 'H2')">H2</button>
+        <button class="tool-btn" onclick="exec('insertUnorderedList')">•</button>
+        <button class="tool-btn" onclick="exec('insertOrderedList')">1.</button>
+        <button class="tool-btn" onclick="addAttachment()">🖼️</button>
+      </div>
     </div>
   </div>
 
-  <script src="device-state.js"></script>
   <script>
     const STORE = 'iosNotes';
     let notes = [];
     let currentId = null;
+    let currentFolder = 'All';
 
     function load() {
       try { notes = JSON.parse(localStorage.getItem(STORE)) || []; }
       catch (e) { notes = []; }
       if (notes.length === 0) {
         notes = [
-          { id: '1', title: 'Welcome to Notes', body: 'Tap + to create a new note.\nYour notes are saved automatically.', updated: Date.now() },
-          { id: '2', title: 'Grocery list', body: '• Apples\n• Milk\n• Bread\n• Coffee beans', updated: Date.now() - 3600000 },
+          { id: '1', title: 'Welcome to Notes', body: 'Tap + to create a new note.<br>Your notes are saved automatically.', updated: Date.now(), folder: 'Notes', pinned: true },
+          { id: '2', title: 'Grocery list', body: '<ul><li>Apples</li><li>Milk</li><li>Bread</li><li>Coffee beans</li></ul>', updated: Date.now() - 3600000, folder: 'Notes', tags: ['#shopping'] },
         ];
         save();
       }
+      updateCounts();
     }
-    function save() { localStorage.setItem(STORE, JSON.stringify(notes)); }
+    function save() { 
+        localStorage.setItem(STORE, JSON.stringify(notes)); 
+        updateCounts();
+    }
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+    function updateCounts() {
+        document.getElementById('count-All').textContent = notes.filter(n => n.folder !== 'Deleted').length;
+        document.getElementById('count-Pinned').textContent = notes.filter(n => n.pinned && n.folder !== 'Deleted').length;
+        document.getElementById('count-Notes').textContent = notes.filter(n => n.folder === 'Notes').length;
+        document.getElementById('count-Deleted').textContent = notes.filter(n => n.folder === 'Deleted').length;
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+
+    function setFolder(f) {
+        currentFolder = f;
+        document.getElementById('folderTitle').textContent = f === 'All' ? 'Notes' : f;
+        document.querySelectorAll('.folder-item').forEach(el => el.classList.toggle('active', el.textContent.includes(f)));
+        toggleSidebar();
+        renderList();
+    }
 
     function fmtTime(ts) {
       const d = new Date(ts);
       const today = new Date();
-      const sameDay = d.toDateString() === today.toDateString();
-      if (sameDay) return d.toTimeString().slice(0, 5);
+      if (d.toDateString() === today.toDateString()) return d.toTimeString().slice(0, 5);
       return d.toLocaleDateString();
     }
 
     function renderList() {
       const q = (document.getElementById('searchInput').value || '').toLowerCase();
       const list = document.getElementById('notesList');
-      const filtered = notes
-        .filter(n => (n.title + ' ' + n.body).toLowerCase().includes(q))
-        .sort((a, b) => b.updated - a.updated);
+      
+      let filtered = notes;
+      if (currentFolder === 'Pinned') filtered = notes.filter(n => n.pinned && n.folder !== 'Deleted');
+      else if (currentFolder === 'All') filtered = notes.filter(n => n.folder !== 'Deleted');
+      else filtered = notes.filter(n => n.folder === currentFolder);
+
+      if (q) {
+          filtered = filtered.filter(n => (n.title + ' ' + n.body).toLowerCase().includes(q));
+          document.getElementById('search-stats').textContent = `Found ${filtered.length} matches`;
+      } else {
+          document.getElementById('search-stats').textContent = '';
+      }
+
+      filtered.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated);
+
       if (filtered.length === 0) {
-        list.innerHTML = '<div class="note-empty">No notes yet. Tap + to add one.</div>';
+        list.innerHTML = '<div class="note-empty">No notes found.</div>';
         return;
       }
+
       list.innerHTML = filtered.map(n => `
         <div class="note-item" onclick="openNote('${n.id}')">
-          <div class="note-title">${escapeHtml(n.title || 'New Note')}</div>
+          <div class="note-title">${escapeHtml(n.title || 'New Note')} ${n.pinned ? '📌' : ''}</div>
           <div class="note-snippet">
             <span class="note-time">${fmtTime(n.updated)}</span>
-            <span>${escapeHtml((n.body || 'No additional text').slice(0, 60))}</span>
+            <span>${(n.body || 'No additional text').replace(/<[^>]+>/g, '').slice(0, 60)}</span>
+          </div>
+          <div class="swipe-actions">
+             <div class="swipe-btn swipe-pin" onclick="event.stopPropagation(); togglePin('${n.id}')">${n.pinned ? 'Unpin' : 'Pin'}</div>
           </div>
         </div>
       `).join('');
+    }
+
+    function togglePin(id) {
+        const n = notes.find(x => x.id === id);
+        if (n) {
+            n.pinned = !n.pinned;
+            save();
+            renderList();
+        }
     }
 
     function escapeHtml(s) {
@@ -184,7 +268,7 @@
     }
 
     function newNote() {
-      const n = { id: uid(), title: '', body: '', updated: Date.now() };
+      const n = { id: uid(), title: '', body: '', updated: Date.now(), folder: 'Notes' };
       notes.unshift(n);
       save();
       openNote(n.id);
@@ -195,43 +279,81 @@
       const n = notes.find(x => x.id === id);
       if (!n) return;
       document.getElementById('editorTitle').value = n.title;
-      document.getElementById('editorBody').value = n.body;
+      document.getElementById('editorBody').innerHTML = n.body;
       document.getElementById('listView').style.display = 'none';
       document.getElementById('editorView').classList.add('active');
-      setTimeout(() => document.getElementById('editorTitle').focus(), 100);
+      document.getElementById('toolbar').classList.add('active');
+      updateWordCount();
+      setTimeout(() => document.getElementById('editorBody').focus(), 100);
     }
 
     function closeEditor() {
       autosave();
       currentId = null;
       document.getElementById('editorView').classList.remove('active');
+      document.getElementById('toolbar').classList.remove('active');
       document.getElementById('listView').style.display = 'block';
       renderList();
+    }
+
+    function updateWordCount() {
+        const text = document.getElementById('editorBody').innerText;
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        const chars = text.length;
+        document.getElementById('wordCount').textContent = `Words: ${words} | Chars: ${chars}`;
     }
 
     let saveTimer;
     function autosave() {
       if (!currentId) return;
+      updateWordCount();
       clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
         const n = notes.find(x => x.id === currentId);
         if (!n) return;
         n.title = document.getElementById('editorTitle').value;
-        n.body = document.getElementById('editorBody').value;
+        n.body = document.getElementById('editorBody').innerHTML;
         n.updated = Date.now();
         save();
-      }, 250);
+      }, 500);
+    }
+
+    function exec(cmd, arg = null) {
+        document.execCommand(cmd, false, arg);
+    }
+
+    function addAttachment() {
+        const url = prompt("Enter image URL:");
+        if (url) exec('insertImage', url);
+    }
+
+    function shareNote() {
+        const n = notes.find(x => x.id === currentId);
+        if (n) {
+            navigator.clipboard.writeText(`${n.title}\n\n${document.getElementById('editorBody').innerText}`);
+            alert("Note content copied to clipboard!");
+        }
+    }
+
+    function toggleLock() {
+        alert("Note locked with FaceID");
     }
 
     function deleteCurrent() {
       if (!currentId) return;
-      if (!confirm('Delete this note?')) return;
-      notes = notes.filter(n => n.id !== currentId);
+      const n = notes.find(x => x.id === currentId);
+      if (n.folder === 'Deleted') {
+          if (!confirm('Permanently delete?')) return;
+          notes = notes.filter(x => x.id !== currentId);
+      } else {
+          n.folder = 'Deleted';
+      }
       save();
       closeEditor();
     }
 
-    function goBack() { window.location.href = 'homescreen.html'; }
+    function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+    tick();setInterval(tick,1000);
 
     load();
     renderList();

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stocks</title>
+<style>
+:root {
+  --bg-color: #000000;
+  --card-bg: #1c1c1e;
+  --text-primary: #ffffff;
+  --text-secondary: #8e8e93;
+  --stock-up: #34c759;
+  --stock-down: #ff3b30;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header {
+  padding: 8px 16px 12px;
+}
+.header h1 {
+  font-size: 34px;
+  font-weight: 700;
+}
+.date {
+  font-size: 20px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.search-container {
+  padding: 0 16px 16px;
+}
+.search-bar {
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+.stock-list {
+  flex: 1;
+}
+.stock-item {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 0.5px solid #38383a;
+}
+.stock-symbol-container {
+  flex: 1;
+}
+.stock-symbol {
+  font-size: 17px;
+  font-weight: 700;
+}
+.stock-name {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.stock-chart {
+  width: 80px;
+  height: 34px;
+  margin: 0 16px;
+}
+.stock-price-container {
+  text-align: right;
+  min-width: 80px;
+}
+.stock-price {
+  font-size: 17px;
+  font-weight: 600;
+}
+.stock-change {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  min-width: 70px;
+  margin-top: 4px;
+}
+.up { background-color: var(--stock-up); }
+.down { background-color: var(--stock-down); }
+
+.news-section {
+  padding: 16px;
+  border-top: 0.5px solid #38383a;
+}
+.news-header {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.news-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.news-content {
+  flex: 1;
+}
+.news-source {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.news-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.news-image {
+  width: 60px;
+  height: 60px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#007aff;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+
+<div class="header">
+  <div class="date" id="header-date">AUGUST 14</div>
+  <h1>Stocks</h1>
+</div>
+
+<div class="search-container">
+  <div class="search-bar">
+    <span>🔍</span>
+    <span>Search</span>
+  </div>
+</div>
+
+<div class="stock-list" id="stock-list">
+  <!-- Stock items will be injected here -->
+</div>
+
+<div class="news-section">
+  <div class="news-header">Business News</div>
+  <div class="news-item">
+    <div class="news-content">
+      <div class="news-source">The Wall Street Journal</div>
+      <div class="news-title">Global Markets Rally as Inflation Data Cools</div>
+    </div>
+    <div class="news-image">📈</div>
+  </div>
+  <div class="news-item">
+    <div class="news-content">
+      <div class="news-source">Bloomberg</div>
+      <div class="news-title">Tech Giants Announce New AI Breakthroughs</div>
+    </div>
+    <div class="news-image">🤖</div>
+  </div>
+</div>
+
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+
+const d = new Date();
+const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+document.getElementById('header-date').textContent = `${months[d.getMonth()]} ${d.getDate()}`;
+
+const STOCKS = [
+  { symbol: 'AAPL', name: 'Apple Inc.', price: 192.42, history: [] },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 138.21, history: [] },
+  { symbol: 'MSFT', name: 'Microsoft Corp.', price: 365.12, history: [] },
+  { symbol: 'TSLA', name: 'Tesla, Inc.', price: 242.50, history: [] },
+  { symbol: 'AMZN', name: 'Amazon.com, Inc.', price: 145.22, history: [] },
+  { symbol: 'META', name: 'Meta Platforms', price: 312.55, history: [] },
+  { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 485.10, history: [] },
+];
+
+function initStocks() {
+  STOCKS.forEach(s => {
+    // Seed random history
+    for(let i=0; i<20; i++) {
+      s.history.push(s.price * (0.95 + Math.random() * 0.1));
+    }
+  });
+  renderStocks();
+  setInterval(updatePrices, 3000);
+}
+
+function updatePrices() {
+  STOCKS.forEach(s => {
+    const change = (Math.random() - 0.5) * 2;
+    s.price += change;
+    s.history.push(s.price);
+    if(s.history.length > 25) s.history.shift();
+  });
+  renderStocks();
+}
+
+function renderStocks() {
+  const container = document.getElementById('stock-list');
+  container.innerHTML = STOCKS.map((s, idx) => {
+    const startPrice = s.history[0];
+    const diff = s.price - startPrice;
+    const pct = (diff / startPrice * 100).toFixed(2);
+    const isUp = diff >= 0;
+    
+    return `
+      <div class="stock-item">
+        <div class="stock-symbol-container">
+          <div class="stock-symbol">${s.symbol}</div>
+          <div class="stock-name">${s.name}</div>
+        </div>
+        <canvas class="stock-chart" id="chart-${idx}" width="80" height="34"></canvas>
+        <div class="stock-price-container">
+          <div class="stock-price">${s.price.toFixed(2)}</div>
+          <div class="stock-change ${isUp ? 'up' : 'down'}">${isUp ? '+' : ''}${pct}%</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  STOCKS.forEach((s, idx) => {
+    drawChart(`chart-${idx}`, s.history);
+  });
+}
+
+function drawChart(canvasId, data) {
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  ctx.clearRect(0,0,w,h);
+  
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min;
+  
+  const isUp = data[data.length-1] >= data[0];
+  ctx.strokeStyle = isUp ? '#34c759' : '#ff3b30';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  
+  ctx.beginPath();
+  data.forEach((val, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((val - min) / range * (h - 4)) - 2;
+    if(i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+initStocks();
+</script>
+</body>
+</html>

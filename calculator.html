@@ -25,6 +25,11 @@
             background-color: #000;
             padding: 20px;
             border-radius: 40px;
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .calculator.scientific {
+            width: 480px;
         }
 
         .display {
@@ -35,12 +40,26 @@
             font-weight: 300;
             overflow: hidden;
             white-space: nowrap;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .history {
+            font-size: 1.2rem;
+            color: #888;
+            min-height: 1.5rem;
         }
 
         .buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
+        }
+
+        .calculator.scientific .buttons {
+            grid-template-columns: repeat(6, 1fr);
         }
 
         button {
@@ -50,21 +69,41 @@
             border: none;
             font-size: 1.5rem;
             cursor: pointer;
-            transition: brightness 0.2s;
+            transition: brightness 0.2s, background-color 0.2s;
             display: flex;
             justify-content: center;
             align-items: center;
             outline: none;
+            user-select: none;
+        }
+
+        .scientific-btn {
+            display: none;
+            font-size: 1.1rem;
+            background-color: #212121;
+            color: #fff;
+        }
+
+        .calculator.scientific .scientific-btn {
+            display: flex;
         }
 
         button:active {
             filter: brightness(1.5);
+            animation: haptic 0.1s;
+        }
+
+        @keyframes haptic {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
         }
 
         /* Color Schemes */
         .btn-gray { background-color: #a5a5a5; color: #000; }
         .btn-dark { background-color: #333333; color: #fff; }
         .btn-orange { background-color: #ff9f0a; color: #fff; }
+        .btn-active { background-color: #fff; color: #ff9f0a; }
 
         /* Special sizing for zero */
         .btn-zero {
@@ -75,6 +114,19 @@
             padding-left: 28px;
         }
 
+        .calculator.scientific .btn-zero {
+            width: 152px; /* Keep same or adjust if needed */
+        }
+
+        .mode-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #ff9f0a;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
         .operator-active {
             background-color: #fff;
             color: #ff9f0a;
@@ -83,32 +135,59 @@
 </head>
 <body>
 
-<div class="calculator">
-    <div class="display" id="display">0</div>
+<div class="calculator" id="calculator">
+    <div class="mode-toggle" onclick="toggleScientific()">Scientific</div>
+    <div class="display">
+        <div class="history" id="history"></div>
+        <div id="display" onlongpress="copyResult()">0</div>
+    </div>
     <div class="buttons">
+        <!-- Row 1 -->
+        <button class="scientific-btn" onclick="toggleRad()">Rad</button>
+        <button class="scientific-btn" onclick="scientificOp('factorial')">x!</button>
         <button class="btn-gray" onclick="clearDisplay()">AC</button>
         <button class="btn-gray" onclick="toggleSign()">+/-</button>
         <button class="btn-gray" onclick="percentage()">%</button>
-        <button class="btn-orange" onclick="setOperator('/')">÷</button>
+        <button class="btn-orange" id="op-/" onclick="setOperator('/')">÷</button>
         
+        <!-- Row 2 -->
+        <button class="scientific-btn" onclick="scientificOp('sin')">sin</button>
+        <button class="scientific-btn" onclick="scientificOp('asin')">sin⁻¹</button>
         <button class="btn-dark" onclick="appendNumber('7')">7</button>
         <button class="btn-dark" onclick="appendNumber('8')">8</button>
         <button class="btn-dark" onclick="appendNumber('9')">9</button>
-        <button class="btn-orange" onclick="setOperator('*')">×</button>
+        <button class="btn-orange" id="op-*" onclick="setOperator('*')">×</button>
         
+        <!-- Row 3 -->
+        <button class="scientific-btn" onclick="scientificOp('cos')">cos</button>
+        <button class="scientific-btn" onclick="scientificOp('acos')">cos⁻¹</button>
         <button class="btn-dark" onclick="appendNumber('4')">4</button>
         <button class="btn-dark" onclick="appendNumber('5')">5</button>
         <button class="btn-dark" onclick="appendNumber('6')">6</button>
-        <button class="btn-orange" onclick="setOperator('-')">−</button>
+        <button class="btn-orange" id="op--" onclick="setOperator('-')">−</button>
         
+        <!-- Row 4 -->
+        <button class="scientific-btn" onclick="scientificOp('tan')">tan</button>
+        <button class="scientific-btn" onclick="scientificOp('atan')">tan⁻¹</button>
         <button class="btn-dark" onclick="appendNumber('1')">1</button>
         <button class="btn-dark" onclick="appendNumber('2')">2</button>
         <button class="btn-dark" onclick="appendNumber('3')">3</button>
-        <button class="btn-orange" onclick="setOperator('+')">+</button>
+        <button class="btn-orange" id="op-+" onclick="setOperator('+')">+</button>
         
+        <!-- Row 5 -->
+        <button class="scientific-btn" onclick="scientificOp('ln')">ln</button>
+        <button class="scientific-btn" onclick="scientificOp('log10')">log₁₀</button>
         <button class="btn-dark btn-zero" onclick="appendNumber('0')">0</button>
         <button class="btn-dark" onclick="appendNumber('.')">.</button>
         <button class="btn-orange" onclick="calculate()">=</button>
+
+        <!-- Scientific Only Row 6 (optional extra buttons) -->
+        <button class="scientific-btn" onclick="scientificOp('pi')">π</button>
+        <button class="scientific-btn" onclick="scientificOp('e')">e</button>
+        <button class="scientific-btn" onclick="scientificOp('pow2')">x²</button>
+        <button class="scientific-btn" onclick="scientificOp('sqrt')">√</button>
+        <button class="scientific-btn" onclick="memory('M+')">M+</button>
+        <button class="scientific-btn" onclick="memory('MR')">MR</button>
     </div>
 </div>
 
@@ -117,22 +196,38 @@
     let previousInput = '';
     let operator = null;
     let shouldResetScreen = false;
+    let history = [];
+    let memoryValue = 0;
+    let isRad = true;
 
     const displayElement = document.getElementById('display');
+    const historyElement = document.getElementById('history');
 
     function updateDisplay() {
-        // Adjust font size if number gets too long
-        if (currentInput.length > 6) {
+        if (currentInput.length > 8) {
             displayElement.style.fontSize = '3rem';
         } else {
             displayElement.style.fontSize = '5rem';
         }
         displayElement.innerText = currentInput;
+        historyElement.innerText = history.slice(-1)[0] || '';
     }
+
+    function toggleScientific() {
+        const calc = document.getElementById('calculator');
+        calc.classList.toggle('scientific');
+        document.querySelector('.mode-toggle').innerText = calc.classList.contains('scientific') ? 'Standard' : 'Scientific';
+    }
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > window.innerHeight && window.innerWidth > 400) {
+            document.getElementById('calculator').classList.add('scientific');
+        }
+    });
 
     function appendNumber(number) {
         if (currentInput === '0' || shouldResetScreen) {
-            currentInput = number;
+            currentInput = number === '.' ? '0.' : number;
             shouldResetScreen = false;
         } else {
             if (number === '.' && currentInput.includes('.')) return;
@@ -145,6 +240,8 @@
         currentInput = '0';
         previousInput = '';
         operator = null;
+        shouldResetScreen = false;
+        document.querySelectorAll('.btn-orange').forEach(b => b.classList.remove('btn-active'));
         updateDisplay();
     }
 
@@ -159,10 +256,12 @@
     }
 
     function setOperator(op) {
-        if (operator !== null) calculate();
+        if (operator !== null && !shouldResetScreen) calculate();
         previousInput = currentInput;
         operator = op;
         shouldResetScreen = true;
+        document.querySelectorAll('.btn-orange').forEach(b => b.classList.remove('btn-active'));
+        document.getElementById('op-' + op).classList.add('btn-active');
     }
 
     function calculate() {
@@ -179,10 +278,61 @@
             default: return;
         }
 
+        history.push(`${prev} ${operator} ${current} =`);
+        if (history.length > 10) history.shift();
+        
         currentInput = result.toString();
         operator = null;
         shouldResetScreen = true;
+        document.querySelectorAll('.btn-orange').forEach(b => b.classList.remove('btn-active'));
         updateDisplay();
+    }
+
+    function scientificOp(op) {
+        let val = parseFloat(currentInput);
+        let result;
+        switch(op) {
+            case 'sin': result = isRad ? Math.sin(val) : Math.sin(val * Math.PI / 180); break;
+            case 'cos': result = isRad ? Math.cos(val) : Math.cos(val * Math.PI / 180); break;
+            case 'tan': result = isRad ? Math.tan(val) : Math.tan(val * Math.PI / 180); break;
+            case 'asin': result = isRad ? Math.asin(val) : Math.asin(val) * 180 / Math.PI; break;
+            case 'acos': result = isRad ? Math.acos(val) : Math.acos(val) * 180 / Math.PI; break;
+            case 'atan': result = isRad ? Math.atan(val) : Math.atan(val) * 180 / Math.PI; break;
+            case 'ln': result = Math.log(val); break;
+            case 'log10': result = Math.log10(val); break;
+            case 'sqrt': result = Math.sqrt(val); break;
+            case 'pow2': result = Math.pow(val, 2); break;
+            case 'factorial': 
+                result = 1;
+                for(let i=2; i<=val; i++) result *= i;
+                break;
+            case 'pi': result = Math.PI; break;
+            case 'e': result = Math.E; break;
+        }
+        currentInput = result.toString();
+        shouldResetScreen = true;
+        updateDisplay();
+    }
+
+    function toggleRad() {
+        isRad = !isRad;
+        alert(isRad ? "Radian Mode" : "Degree Mode");
+    }
+
+    function memory(op) {
+        let val = parseFloat(currentInput);
+        switch(op) {
+            case 'M+': memoryValue += val; break;
+            case 'M-': memoryValue -= val; break;
+            case 'MR': currentInput = memoryValue.toString(); shouldResetScreen = true; break;
+            case 'MC': memoryValue = 0; break;
+        }
+        updateDisplay();
+    }
+
+    function copyResult() {
+        navigator.clipboard.writeText(currentInput);
+        alert("Copied: " + currentInput);
     }
 </script>
 

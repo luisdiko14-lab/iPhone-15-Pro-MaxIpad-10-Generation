@@ -10,6 +10,9 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
 .status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600}
 .header{display:flex;justify-content:space-between;align-items:center;padding:8px 18px 6px}
 .header h1{font-size:22px;font-weight:700;color:#ff3b30}
+.view-tabs{display:flex;background:#1c1c1e;margin:0 18px 10px;border-radius:8px;padding:2px}
+.view-tab{flex:1;background:none;border:none;color:#fff;font-size:13px;font-weight:600;padding:6px;cursor:pointer;border-radius:6px}
+.view-tab.active{background:#3a3a3c;box-shadow:0 2px 4px rgba(0,0,0,.3)}
 .hbtn{background:none;border:none;color:#007aff;font-size:15px;cursor:pointer;padding:4px 8px}
 .month-nav{display:flex;align-items:center;justify-content:space-between;padding:4px 18px 8px}
 .month-label{font-size:22px;font-weight:700}
@@ -62,16 +65,30 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
     <button class="hbtn" onclick="openAdd()">＋</button>
   </div>
 </div>
-<div class="month-nav">
-  <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
-  <div class="month-label" id="month-label"></div>
-  <button class="nav-btn" onclick="changeMonth(1)">›</button>
+<div class="view-tabs">
+  <button class="view-tab active" onclick="setView('month')">Month</button>
+  <button class="view-tab" onclick="setView('week')">Week</button>
+  <button class="view-tab" onclick="setView('day')">Day</button>
 </div>
-<div class="weekdays">
-  <div class="wd">Sun</div><div class="wd">Mon</div><div class="wd">Tue</div>
-  <div class="wd">Wed</div><div class="wd">Thu</div><div class="wd">Fri</div><div class="wd">Sat</div>
+<div id="month-view">
+  <div class="month-nav">
+    <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+    <div class="month-label" id="month-label"></div>
+    <button class="nav-btn" onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="weekdays">
+    <div class="wd">Sun</div><div class="wd">Mon</div><div class="wd">Tue</div>
+    <div class="wd">Wed</div><div class="wd">Thu</div><div class="wd">Fri</div><div class="wd">Sat</div>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
 </div>
-<div class="cal-grid" id="cal-grid"></div>
+<div id="week-view" style="display:none">
+  <div id="week-grid" style="overflow-x:auto;display:flex;padding:10px 0"></div>
+  <div id="week-timeline" style="padding:10px 18px"></div>
+</div>
+<div id="day-view" style="display:none">
+  <div id="day-timeline" style="padding:10px 18px"></div>
+</div>
 <div class="events-section">
   <div class="events-hdr" id="events-hdr">Today</div>
   <div id="events-list"></div>
@@ -93,6 +110,10 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
       <option value="#007aff">Blue</option><option value="#ff3b30">Red</option>
       <option value="#30d158">Green</option><option value="#ff9500">Orange</option>
       <option value="#af52de">Purple</option><option value="#ff2d55">Pink</option>
+    </select></div>
+    <div class="form-row"><label>Repeat</label><select id="ev-repeat">
+      <option value="none">None</option><option value="daily">Daily</option>
+      <option value="weekly">Weekly</option><option value="monthly">Monthly</option>
     </select></div>
     <div class="modal-btns">
       <button class="mbtn cancel" onclick="closeModal()">Cancel</button>
@@ -123,9 +144,76 @@ if(!events.length){
 let nextId=parseInt(localStorage.getItem('calNextId')||'10000');
 function save(){localStorage.setItem('calEvents',JSON.stringify(events));localStorage.setItem('calNextId',nextId);}
 
-const now=new Date();
+let now=new Date();
 let viewYear=now.getFullYear(),viewMonth=now.getMonth();
 let selectedDate=now.toISOString().slice(0,10);
+let currentView='month';
+
+function setView(view){
+  currentView=view;
+  document.querySelectorAll('.view-tab').forEach(t=>t.classList.toggle('active', t.textContent.toLowerCase()===view));
+  document.getElementById('month-view').style.display=view==='month'?'block':'none';
+  document.getElementById('week-view').style.display=view==='week'?'block':'none';
+  document.getElementById('day-view').style.display=view==='day'?'block':'none';
+  render();
+}
+
+function render(){
+  if(currentView==='month') renderCal();
+  else if(currentView==='week') renderWeek();
+  else if(currentView==='day') renderDay();
+  renderEvents();
+}
+
+function renderWeek(){
+  const weekGrid=document.getElementById('week-grid');
+  const weekTimeline=document.getElementById('week-timeline');
+  weekGrid.innerHTML='';
+  weekTimeline.innerHTML='';
+  const d=new Date(selectedDate+'T12:00');
+  const day=d.getDay();
+  const start=new Date(d); start.setDate(d.getDate()-day);
+  
+  for(let i=0;i<7;i++){
+    const cur=new Date(start); cur.setDate(start.getDate()+i);
+    const ds=cur.toISOString().slice(0,10);
+    const isToday=ds===now.toISOString().slice(0,10);
+    const isSel=ds===selectedDate;
+    weekGrid.innerHTML+=`<div style="flex:1;text-align:center;padding:10px;cursor:pointer;border-radius:10px;${isSel?'background:#007aff;':isToday?'background:#ff3b30;':''}" onclick="selectDate('${ds}')">
+      <div style="font-size:10px;color:${isSel||isToday?'#fff':'#8e8e93'}">${['S','M','T','W','T','F','S'][i]}</div>
+      <div style="font-size:16px;font-weight:700">${cur.getDate()}</div>
+    </div>`;
+  }
+  
+  const dayEvs=events.filter(e=>e.date===selectedDate).sort((a,b)=>a.start.localeCompare(b.start));
+  weekTimeline.innerHTML=renderTimeline(dayEvs);
+}
+
+function renderDay(){
+  const dayTimeline=document.getElementById('day-timeline');
+  const dayEvs=events.filter(e=>e.date===selectedDate).sort((a,b)=>a.start.localeCompare(b.start));
+  dayTimeline.innerHTML=renderTimeline(dayEvs);
+}
+
+function renderTimeline(evs){
+  let html='<div style="position:relative;height:1200px;background:linear-gradient(#1c1c1e 1px,transparent 1px);background-size:100% 50px">';
+  for(let i=0;i<24;i++){
+    html+=`<div style="position:absolute;top:${i*50}px;left:-40px;font-size:10px;color:#8e8e93">${i}:00</div>`;
+  }
+  evs.forEach(e=>{
+    if(!e.start) return;
+    const [h,m]=e.start.split(':').map(Number);
+    const [eh,em]=e.end ? e.end.split(':').map(Number) : [h+1,m];
+    const top=(h*50)+(m/60*50);
+    const height=Math.max(25, ((eh*60+em)-(h*60+m))/60*50);
+    html+=`<div style="position:absolute;top:${top}px;left:0;right:0;height:${height}px;background:${e.color}44;border-left:4px solid ${e.color};padding:4px;border-radius:4px;font-size:12px;overflow:hidden">
+      <div style="font-weight:700">${e.title}</div>
+      <div style="font-size:10px">${e.start}${e.end?'-'+e.end:''}</div>
+    </div>`;
+  });
+  html+='</div>';
+  return html;
+}
 
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -162,7 +250,7 @@ function renderCal(){
 }
 
 function selectDate(ds){
-  selectedDate=ds;renderCal();
+  selectedDate=ds;render();
 }
 
 function renderEvents(){
@@ -182,8 +270,8 @@ function renderEvents(){
   </div>`).join('');
 }
 
-function changeMonth(d){viewMonth+=d;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}renderCal();}
-function goToToday(){viewYear=now.getFullYear();viewMonth=now.getMonth();selectedDate=now.toISOString().slice(0,10);renderCal();}
+function changeMonth(d){viewMonth+=d;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}render();}
+function goToToday(){viewYear=now.getFullYear();viewMonth=now.getMonth();selectedDate=now.toISOString().slice(0,10);render();}
 function deleteEvent(id){events=events.filter(e=>e.id!==id);save();renderEvents();}
 
 function openAdd(){
@@ -200,12 +288,12 @@ function closeModal(){document.getElementById('modal-bg').style.display='none';}
 function saveEvent(){
   const title=document.getElementById('ev-title').value.trim();
   if(!title)return;
-  events.push({id:nextId++,title,date:document.getElementById('ev-date').value||selectedDate,start:document.getElementById('ev-start').value,end:document.getElementById('ev-end').value,loc:document.getElementById('ev-loc').value.trim(),notes:document.getElementById('ev-notes').value.trim(),color:document.getElementById('ev-color').value});
+  events.push({id:nextId++,title,date:document.getElementById('ev-date').value||selectedDate,start:document.getElementById('ev-start').value,end:document.getElementById('ev-end').value,loc:document.getElementById('ev-loc').value.trim(),notes:document.getElementById('ev-notes').value.trim(),color:document.getElementById('ev-color').value,repeat:document.getElementById('ev-repeat').value});
   save();closeModal();
   selectedDate=document.getElementById('ev-date').value||selectedDate;
-  renderCal();
+  render();
 }
-renderCal();
+render();
 </script>
 </body>
 </html>

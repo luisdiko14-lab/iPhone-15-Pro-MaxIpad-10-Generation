@@ -21,26 +21,59 @@
     </div>
 
     <div class="homescreen">
+        <!-- iOS 17-style widgets -->
+        <div class="widgets-row">
+            <div class="widget small weather-widget" id="weather-widget">
+                <div class="widget-header">
+                    <span>Cupertino</span>
+                </div>
+                <div class="widget-content">
+                    <span class="widget-temp">72°</span>
+                    <span class="widget-icon">☀️</span>
+                </div>
+                <div class="widget-footer">
+                    <span>H:75° L:62°</span>
+                </div>
+            </div>
+            <div class="widget small clock-widget" id="clock-widget">
+                <div class="clock-face">
+                    <div class="hand hour-hand"></div>
+                    <div class="hand min-hand"></div>
+                    <div class="hand sec-hand"></div>
+                </div>
+                <div class="widget-city">CUPERTINO</div>
+            </div>
+        </div>
+
+        <!-- Spotlight search bar (hidden by default, pulled down) -->
+        <div class="spotlight-search" id="spotlightSearch">
+            <div class="search-input-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="Search" id="spotlightInput">
+            </div>
+        </div>
+
         <!-- First Row -->
-        <div class="app" id="phone-app">
+        <div class="app" id="phone-app" data-name="Phone">
             <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
                 📞
             </div>
             <span>Phone</span>
         </div>
-        <div class="app" id="messages-app">
+        <div class="app" id="messages-app" data-name="Messages">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 💬
             </div>
             <span>Messages</span>
+            <div class="badge" id="badge-messages">2</div>
         </div>
-        <div class="app" id="camera-app">
+        <div class="app" id="camera-app" data-name="Camera">
             <div class="app-icon" style="background: linear-gradient(135deg, #8e8e93, #adadad);">
                 📷
             </div>
             <span>Camera</span>
         </div>
-        <div class="app" id="photos-app">
+        <div class="app" id="photos-app" data-name="Photos">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 🖼️
             </div>
@@ -48,25 +81,25 @@
         </div>
 
         <!-- Second Row -->
-        <div class="app" id="settings-app">
+        <div class="app" id="settings-app" data-name="Settings">
             <div class="app-icon" style="background: linear-gradient(135deg, #8e8e93, #adadad);">
                 ⚙️
             </div>
             <span>Settings</span>
         </div>
-        <div class="app" id="app-store-app">
+        <div class="app" id="app-store-app" data-name="App Store">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 🏪
             </div>
             <span>App Store</span>
         </div>
-        <div class="app" id="safari-app">
+        <div class="app" id="safari-app" data-name="Safari">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 🌐
             </div>
             <span>Safari</span>
         </div>
-        <div class="app" id="mail-app">
+        <div class="app" id="mail-app" data-name="Mail">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 ✉️
             </div>
@@ -74,25 +107,25 @@
         </div>
 
         <!-- Third Row -->
-        <div class="app" id="music-app">
+        <div class="app" id="music-app" data-name="Music">
             <div class="app-icon" style="background: linear-gradient(135deg, #ff2d92, #ff6bb3);">
                 🎵
             </div>
             <span>Music</span>
         </div>
-        <div class="app" id="notes-app">
+        <div class="app" id="notes-app" data-name="Notes">
             <div class="app-icon" style="background: linear-gradient(135deg, #ffcc02, #ffd60a);">
                 📝
             </div>
             <span>Notes</span>
         </div>
-        <div class="app" id="calculator-app">
+        <div class="app" id="calculator-app" data-name="Calculator">
             <div class="app-icon" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
                 🧮
             </div>
             <span>Calculator</span>
         </div>
-        <div class="app" id="weather-app">
+        <div class="app" id="weather-app" data-name="Weather">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 ⛅
             </div>
@@ -100,25 +133,25 @@
         </div>
 
         <!-- Fourth Row -->
-        <div class="app" id="clock-app">
+        <div class="app" id="clock-app" data-name="Clock">
             <div class="app-icon" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
                 ⏰
             </div>
             <span>Clock</span>
         </div>
-        <div class="app" id="maps-app">
+        <div class="app" id="maps-app" data-name="Maps">
             <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
                 🗺️
             </div>
             <span>Maps</span>
         </div>
-        <div class="app" id="facetime-app">
+        <div class="app" id="facetime-app" data-name="FaceTime">
             <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
                 📹
             </div>
             <span>FaceTime</span>
         </div>
-        <div class="app" id="wallet-app">
+        <div class="app" id="wallet-app" data-name="Wallet">
             <div class="app-icon" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
                 💳
             </div>
@@ -126,83 +159,86 @@
         </div>
 
         <!-- Fifth Row with authentication and VPN -->
-        <div class="app" id="auth-app">
+        <div class="app" id="auth-app" data-name="Sign In">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 🔐
             </div>
             <span>Sign In</span>
         </div>
-        <div class="app" id="vpn-app">
+        <div class="app" id="vpn-app" data-name="VPN">
             <div class="app-icon" style="background: linear-gradient(135deg, #ff9500, #ffad33);">
                 🛡️
             </div>
             <span>VPN</span>
         </div>
-        <div class="app" id="health-app">
+        <div class="app" id="health-app" data-name="Health">
             <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff6961);">
                 ❤️
             </div>
             <span>Health</span>
         </div>
-        <div class="app" id="find-my-app">
+        <div class="app" id="find-my-app" data-name="Find My">
             <div class="app-icon" style="background: linear-gradient(135deg, #34c759, #4dd65a);">
                 📍
             </div>
             <span>Find My</span>
         </div>
-        <div class="app" id="game-app">
+
+        <!-- Row 6 -->
+        <div class="app" id="game-app" data-name="Games">
             <div class="app-icon" style="background: linear-gradient(135deg, #edc22e, #ff9500);">
                 🎮
             </div>
             <span>Games</span>
         </div>
-        <div class="app" id="siri-app">
+        <div class="app" id="siri-app" data-name="Siri">
             <div class="app-icon" style="background: linear-gradient(135deg, #af52de, #5ac8fa);">
                 🎙️
             </div>
             <span>Siri</span>
         </div>
-
-        <!-- Row 7 — New apps -->
-        <div class="app" id="reminders-app">
+        <div class="app" id="reminders-app" data-name="Reminders">
             <div class="app-icon" style="background: linear-gradient(135deg, #ff9500, #ff6b00);">
                 ☑️
             </div>
             <span>Reminders</span>
+            <div class="badge" id="badge-reminders">5</div>
         </div>
-        <div class="app" id="calendar-app">
+        <div class="app" id="calendar-app" data-name="Calendar">
             <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff6961);">
                 📅
             </div>
             <span>Calendar</span>
         </div>
-        <div class="app" id="contacts-app">
+
+        <!-- Row 7 -->
+        <div class="app" id="contacts-app" data-name="Contacts">
             <div class="app-icon" style="background: linear-gradient(135deg, #8e8e93, #636366);">
                 👤
             </div>
             <span>Contacts</span>
         </div>
-        <div class="app" id="translate-app">
+        <div class="app" id="translate-app" data-name="Translate">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 🌐
             </div>
             <span>Translate</span>
         </div>
-
-        <!-- Row 8 -->
-        <div class="app" id="voicememos-app">
+        <div class="app" id="voicememos-app" data-name="Voice Memos">
             <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff6961);">
                 🎙️
             </div>
             <span>Voice Memos</span>
         </div>
-        <div class="app" id="files-app">
+        <div class="app" id="files-app" data-name="Files">
             <div class="app-icon" style="background: linear-gradient(135deg, #007aff, #339cff);">
                 📁
             </div>
             <span>Files</span>
         </div>
-        <div class="app" id="discord-app">
+
+        <!-- Row 8 -->
+        <div class="app" id="discord-app" data-name="Discord">
             <div class="app-icon" style="background: linear-gradient(135deg, #5865F2, #4752C4); color: white; font-size: 30px;">
                 <svg width="34" height="34" viewBox="0 0 24 24" fill="white">
                     <path d="M19.27 4.51a14.86 14.86 0 00-3.61-1.12c-.14-.02-.29.04-.36.17-.18.33-.39.78-.53 1.11a13.63 13.63 0 00-4.32 0c-.14-.33-.36-.78-.54-1.11-.07-.13-.22-.19-.36-.17a14.88 14.88 0 00-3.61 1.12.2.2 0 00-.09.08c-2.3 3.44-2.93 6.8-2.62 10.12a.23.23 0 00.1.17c1.51 1.12 2.98 1.8 4.41 2.24.14.04.29-.01.38-.14.34-.46.63-.95.88-1.46.06-.11.01-.24-.1-.28-.46-.17-.9-.38-1.32-.62a.22.22 0 01-.01-.36c.09-.07.18-.14.26-.22a.2.2 0 01.21-.03c2.9 1.33 6.04 1.33 8.9 0a.2.2 0 01.21.03c.08.08.17.15.26.22a.22.22 0 01-.01.36c-.42.24-.86.45-1.32.62-.11.04-.16.17-.1.28.25.51.54 1 .88 1.46.09.13.24.18.38.14 1.43-.44 2.9-1.12 4.41-2.24a.23.23 0 00.1-.17c.37-3.86-.64-7.2-2.62-10.12a.2.2 0 00-.09-.08zM8.52 14.91c-.88 0-1.61-.81-1.61-1.8 0-.99.7-1.8 1.61-1.8.91 0 1.62.81 1.61 1.8 0 .99-.71 1.8-1.61 1.8zm6.96 0c-.88 0-1.61-.81-1.61-1.8 0-.99.71-1.8 1.61-1.8.91 0 1.62.81 1.61 1.8 0 .99-.71 1.8-1.61 1.8z"/>
@@ -210,6 +246,80 @@
             </div>
             <span>Discord</span>
         </div>
+        <div class="app" id="stocks-app" data-name="Stocks">
+            <div class="app-icon" style="background: #000; color: #34c759; font-size: 24px; border: 1px solid #333;">
+                📈
+            </div>
+            <span>Stocks</span>
+        </div>
+        <div class="app" id="podcasts-app" data-name="Podcasts">
+            <div class="app-icon" style="background: linear-gradient(135deg, #af52de, #5e5ce6);">
+                🎙️
+            </div>
+            <span>Podcasts</span>
+        </div>
+        <div class="app" id="shortcuts-app" data-name="Shortcuts">
+            <div class="app-icon" style="background: linear-gradient(135deg, #5856d6, #af52de);">
+                🔳
+            </div>
+            <span>Shortcuts</span>
+        </div>
+
+        <!-- Row 9 -->
+        <div class="app" id="notifications-app" data-name="Notifications">
+            <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff6961);">
+                🔔
+            </div>
+            <span>Notifications</span>
+        </div>
+        <div class="app" id="screentime-app" data-name="Screen Time">
+            <div class="app-icon" style="background: linear-gradient(135deg, #5856d6, #af52de);">
+                ⏳
+            </div>
+            <span>Screen Time</span>
+        </div>
+        <div class="app" id="emergency-app" data-name="Emergency">
+            <div class="app-icon" style="background: linear-gradient(135deg, #ff3b30, #ff6961);">
+                🆘
+            </div>
+            <span>Emergency</span>
+        </div>
+        <div class="app" id="applepay-app" data-name="Apple Pay">
+            <div class="app-icon" style="background: linear-gradient(135deg, #1c1c1e, #2c2c2e);">
+                💳
+            </div>
+            <span>Apple Pay</span>
+        </div>
+
+        <div class="app-library-btn" id="appLibraryBtn">
+            <div class="app-library-icon">
+                <div class="lib-square"></div>
+                <div class="lib-square"></div>
+                <div class="lib-square"></div>
+                <div class="lib-square"></div>
+            </div>
+            <span>App Library</span>
+        </div>
+    </div>
+
+    <!-- App Library Overlay -->
+    <div class="app-library" id="appLibrary">
+        <div class="app-library-header">
+            <div class="search-input-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="App Library" id="librarySearch">
+            </div>
+        </div>
+        <div class="library-grid" id="libraryGrid">
+            <!-- Grouped apps will be injected here -->
+        </div>
+    </div>
+
+    <!-- Context Menu (Quick Actions) -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" id="cm-open">Open</div>
+        <div class="context-menu-item" id="cm-edit">Edit Home Screen</div>
+        <div class="context-menu-item cm-danger" id="cm-delete">Delete App</div>
     </div>
 
     <!-- Dock -->

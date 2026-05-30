@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podcasts</title>
+<style>
+:root {
+  --bg-color: #000000;
+  --card-bg: #1c1c1e;
+  --text-primary: #ffffff;
+  --text-secondary: #8e8e93;
+  --accent: #af52de;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 20px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header {
+  padding: 8px 16px 12px;
+}
+.header h1 {
+  font-size: 34px;
+  font-weight: 700;
+}
+.tabs {
+  display: flex;
+  padding: 0 16px 12px;
+  gap: 20px;
+  border-bottom: 0.5px solid #38383a;
+}
+.tab {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.tab.active {
+  color: var(--accent);
+}
+.content {
+  flex: 1;
+  padding: 16px;
+}
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.podcast-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.podcast-card {
+  display: flex;
+  flex-direction: column;
+}
+.podcast-art {
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #af52de, #5e5ce6);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+.podcast-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.podcast-author {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.mini-player {
+  background: #2c2c2e;
+  margin: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.mp-art {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+.mp-info {
+  flex: 1;
+}
+.mp-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.mp-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.mp-controls {
+  display: flex;
+  gap: 16px;
+  font-size: 24px;
+}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#007aff;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span>📶 🔋</span>
+</div>
+
+<div class="header">
+  <h1>Listen Now</h1>
+</div>
+
+<div class="tabs">
+  <div class="tab active">Listen Now</div>
+  <div class="tab">Browse</div>
+  <div class="tab">Library</div>
+  <div class="tab">Search</div>
+</div>
+
+<div class="content">
+  <div class="section-title">Up Next</div>
+  <div class="podcast-grid">
+    <div class="podcast-card">
+      <div class="podcast-art">🎙️</div>
+      <div class="podcast-title">The Daily</div>
+      <div class="podcast-author">The New York Times</div>
+    </div>
+    <div class="podcast-card">
+      <div class="podcast-art" style="background: linear-gradient(135deg, #ff9500, #ff3b30);">🎧</div>
+      <div class="podcast-title">Stuff You Should Know</div>
+      <div class="podcast-author">iHeartPodcasts</div>
+    </div>
+    <div class="podcast-card">
+      <div class="podcast-art" style="background: linear-gradient(135deg, #34c759, #007aff);">🧬</div>
+      <div class="podcast-title">Huberman Lab</div>
+      <div class="podcast-author">Scicomm Media</div>
+    </div>
+    <div class="podcast-card">
+      <div class="podcast-art" style="background: linear-gradient(135deg, #ff2d55, #ff375f);">💰</div>
+      <div class="podcast-title">Planet Money</div>
+      <div class="podcast-author">NPR</div>
+    </div>
+  </div>
+</div>
+
+<div class="mini-player">
+  <div class="mp-art">🎙️</div>
+  <div class="mp-info">
+    <div class="mp-title">The Daily</div>
+    <div class="mp-status">Playing • 12:45 remaining</div>
+  </div>
+  <div class="mp-controls">
+    <span>⏯️</span>
+    <span>⏩</span>
+  </div>
+</div>
+
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+</script>
+</body>
+</html>

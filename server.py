@@ -77,6 +77,68 @@ a.btn:hover{{background:#4752c4}}
 </div></body></html>"""
     return html, status
 
+
+@app.route('/api/proxy')
+def proxy():
+    url = request.args.get('url')
+    if not url:
+        return "Missing URL", 400
+    
+    if not url.startswith('http'):
+        url = 'https://' + url
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    }
+
+    try:
+        r = requests.get(url, timeout=10, headers=headers)
+        r.raise_for_status()
+        
+        content_type = r.headers.get('Content-Type', '')
+        if 'text/html' not in content_type:
+             # If it's not HTML, redirect to resource proxy or return as is
+             return redirect(url_for('proxy_resource', url=url))
+
+        html = r.text
+        
+        # Inject <base href="...">
+        base_tag = f'<base href="{url}">'
+        if '<head>' in html:
+            html = html.replace('<head>', f'<head>{base_tag}', 1)
+        else:
+            html = f'{base_tag}{html}'
+
+        return html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except Exception as e:
+        return f"""
+        <html>
+            <body style="background:#1c1c1e; color:white; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; padding:20px;">
+                <div style="font-size:48px; margin-bottom:20px;">⚠️</div>
+                <h2>Connection Failed</h2>
+                <p style="color:#8e8e93;">Safari cannot open the page because the server cannot be reached or returned an error.</p>
+                <p style="font-size:12px; color:#636366;">{str(e)}</p>
+                <button onclick="location.reload()" style="background:#007aff; color:white; border:none; padding:12px 24px; border-radius:10px; font-size:16px; margin-top:20px;">Retry</button>
+            </body>
+        </html>
+        """, 200, {'Content-Type': 'text/html'}
+
+@app.route('/api/proxy/resource')
+def proxy_resource():
+    url = request.args.get('url')
+    if not url:
+        return "Missing URL", 400
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    }
+    
+    try:
+        r = requests.get(url, timeout=10, headers=headers, stream=True)
+        return (r.content, r.status_code, r.headers.items())
+    except Exception as e:
+        return str(e), 500
+
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')

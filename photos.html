@@ -106,9 +106,62 @@ body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystem
   <div class="lightbox-actions">
     <button class="lb-action" onclick="prevPhoto()"><span class="ic">‹</span><span>Prev</span></button>
     <button class="lb-action" onclick="favoritePhoto()"><span class="ic" id="lb-fav">🤍</span><span>Favorite</span></button>
+    <button class="lb-action" onclick="openEditor()"><span class="ic">🪄</span><span>Edit</span></button>
     <button class="lb-action" onclick="deletePhoto()"><span class="ic">🗑️</span><span>Delete</span></button>
     <button class="lb-action" onclick="nextPhoto()"><span class="ic">›</span><span>Next</span></button>
   </div>
+</div>
+
+<!-- Editor UI -->
+<div class="lightbox" id="editor" style="background:#1c1c1e;">
+    <div class="lightbox-toolbar">
+        <button class="lb-close" onclick="closeEditor()">Cancel</button>
+        <span class="lb-caption">Edit</span>
+        <button class="lb-close" style="color:#007aff" onclick="saveEdit()">Done</button>
+    </div>
+    <div style="flex:1; display:flex; align-items:center; justify-content:center; width:100%; overflow:hidden; position:relative;">
+        <img id="editor-img" src="" style="max-height:60vh; transition: filter 0.2s;">
+        <canvas id="markup-canvas" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none;"></canvas>
+    </div>
+    <div class="edit-controls" style="width:100%; padding:20px; box-sizing:border-box; background:#000;">
+        <div class="edit-tabs" style="display:flex; justify-content:space-around; margin-bottom:20px;">
+            <span onclick="setEditMode('adjust')" id="tab-adjust" style="color:#007aff">Adjust</span>
+            <span onclick="setEditMode('filters')" id="tab-filters">Filters</span>
+            <span onclick="setEditMode('markup')" id="tab-markup">Markup</span>
+        </div>
+        <div id="adjust-panel">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                <span style="width:80px; font-size:12px;">Brightness</span>
+                <input type="range" id="br-range" min="0" max="200" value="100" style="flex:1" oninput="applyFilters()">
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                <span style="width:80px; font-size:12px;">Contrast</span>
+                <input type="range" id="ct-range" min="0" max="200" value="100" style="flex:1" oninput="applyFilters()">
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="width:80px; font-size:12px;">Saturation</span>
+                <input type="range" id="st-range" min="0" max="200" value="100" style="flex:1" oninput="applyFilters()">
+            </div>
+        </div>
+        <div id="filters-panel" style="display:none; overflow-x:auto; white-space:nowrap; padding:10px 0;">
+            <div onclick="setFilter('none')" style="display:inline-block; margin-right:15px; text-align:center;">
+                <div style="width:50px; height:50px; background:#333; border-radius:8px; margin-bottom:5px;"></div>
+                <div style="font-size:10px;">Original</div>
+            </div>
+            <div onclick="setFilter('vivid')" style="display:inline-block; margin-right:15px; text-align:center;">
+                <div style="width:50px; height:50px; background:linear-gradient(45deg, #f09, #09f); border-radius:8px; margin-bottom:5px;"></div>
+                <div style="font-size:10px;">Vivid</div>
+            </div>
+            <div onclick="setFilter('noir')" style="display:inline-block; margin-right:15px; text-align:center;">
+                <div style="width:50px; height:50px; background:#666; border-radius:8px; margin-bottom:5px;"></div>
+                <div style="font-size:10px;">Noir</div>
+            </div>
+        </div>
+        <div id="markup-panel" style="display:none; text-align:center;">
+            <button onclick="startMarkup()" style="background:#007aff; border:none; color:white; padding:8px 16px; border-radius:8px;">Start Drawing</button>
+            <button onclick="clearMarkup()" style="background:#333; border:none; color:white; padding:8px 16px; border-radius:8px; margin-left:10px;">Clear</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -251,6 +304,70 @@ function sharePhoto() {
   const url = item.real ? item.src : null;
   if (url && navigator.share) { navigator.share({ files: [] }); }
   else { const t = document.createElement('div'); t.textContent = 'Shared!'; t.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#333;color:#fff;padding:12px 24px;border-radius:12px;z-index:999'; document.body.appendChild(t); setTimeout(()=>t.remove(),1200); }
+}
+
+// Editor logic
+let currentFilter = 'none';
+function openEditor() {
+    const item = lbAll[lightboxIdx];
+    const img = document.getElementById('editor-img');
+    img.src = document.getElementById('lb-img').src;
+    document.getElementById('editor').classList.add('open');
+}
+function closeEditor() {
+    document.getElementById('editor').classList.remove('open');
+}
+function setEditMode(mode) {
+    document.getElementById('adjust-panel').style.display = mode === 'adjust' ? 'block' : 'none';
+    document.getElementById('filters-panel').style.display = mode === 'filters' ? 'block' : 'none';
+    document.getElementById('markup-panel').style.display = mode === 'markup' ? 'block' : 'none';
+    document.querySelectorAll('.edit-tabs span').forEach(s => s.style.color = '#fff');
+    document.getElementById('tab-' + mode).style.color = '#007aff';
+}
+function applyFilters() {
+    const br = document.getElementById('br-range').value;
+    const ct = document.getElementById('ct-range').value;
+    const st = document.getElementById('st-range').value;
+    let filterStr = `brightness(${br}%) contrast(${ct}%) saturate(${st}%)`;
+    if (currentFilter === 'vivid') filterStr += ' saturate(150%) contrast(110%)';
+    if (currentFilter === 'noir') filterStr += ' grayscale(100%)';
+    document.getElementById('editor-img').style.filter = filterStr;
+}
+function setFilter(f) {
+    currentFilter = f;
+    applyFilters();
+}
+function saveEdit() {
+    // In a real app we'd save to canvas then dataURL
+    // For now we just simulate success
+    const t = document.createElement('div');
+    t.textContent = 'Saved to Camera Roll';
+    t.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#333;color:#fff;padding:12px 24px;border-radius:12px;z-index:999';
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(),1200);
+    closeEditor();
+}
+
+let drawing = false;
+function startMarkup() {
+    const img = document.getElementById('editor-img');
+    const canvas = document.getElementById('markup-canvas');
+    canvas.width = img.clientWidth;
+    canvas.height = img.clientHeight;
+    canvas.style.pointerEvents = 'auto';
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#ff2d55';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+
+    canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); };
+    canvas.onmousemove = (e) => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } };
+    canvas.onmouseup = () => { drawing = false; };
+}
+function clearMarkup() {
+    const canvas = document.getElementById('markup-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 }
 
 // Status bar time

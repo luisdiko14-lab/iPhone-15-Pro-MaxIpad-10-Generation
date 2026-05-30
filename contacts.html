@@ -45,6 +45,11 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
 .info-row .ir-val{font-size:15px}
 .info-row .ir-val a{color:#007aff;text-decoration:none}
 .info-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+.fav-btn{color:#ffcc02 !important}
+.recent-row{display:flex;gap:12px;padding:10px 18px;overflow-x:auto;border-bottom:1px solid #1c1c1e}
+.recent-item{display:flex;flex-direction:column;align-items:center;min-width:60px}
+.recent-avatar{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;margin-bottom:4px}
+.recent-name{font-size:11px;color:#fff;text-align:center;width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .delete-btn{display:block;width:calc(100%-28px);margin:0 14px 30px;background:#1c1c1e;border:none;color:#ff3b30;border-radius:14px;padding:15px;font-size:16px;cursor:pointer;text-align:center}
 /* Add/Edit form */
 .form-sheet{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:flex-end;justify-content:center}
@@ -76,6 +81,7 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
     <input type="text" id="search" placeholder="Search" oninput="renderList(this.value)">
   </div>
 </div>
+<div id="recent-contacts" class="recent-row"></div>
 <div id="list-container" style="padding-bottom:60px"></div>
 <div class="alpha-nav" id="alpha-nav"></div>
 
@@ -95,7 +101,10 @@ body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF
     <div class="form-group"><label>First Name</label><input id="f-first" type="text" placeholder="First name"></div>
     <div class="form-group"><label>Last Name</label><input id="f-last" type="text" placeholder="Last name"></div>
     <div class="form-group"><label>Phone</label><input id="f-phone" type="tel" placeholder="+1 (555) 000-0000"></div>
+    <div class="form-group"><label>Work Phone</label><input id="f-phone-work" type="tel" placeholder="Work phone"></div>
     <div class="form-group"><label>Email</label><input id="f-email" type="email" placeholder="email@example.com"></div>
+    <div class="form-group"><label>Address</label><input id="f-address" type="text" placeholder="Street, City, ZIP"></div>
+    <div class="form-group"><label>Birthday</label><input id="f-birthday" type="date"></div>
     <div class="form-group"><label>Company</label><input id="f-company" type="text" placeholder="Company"></div>
     <div class="form-group"><label>Notes</label><input id="f-notes" type="text" placeholder="Notes"></div>
     <div class="form-btns">
@@ -177,6 +186,7 @@ function openDetail(id){
   const c=contacts.find(x=>x.id===id);
   if(!c)return;
   const col=colorFor(c.first+c.last);
+  const isFav = c.favorite;
   document.getElementById('detail-body').innerHTML=`
     <div class="contact-hero">
       <div class="hero-avatar" style="background:${col}">${initials(c)}</div>
@@ -184,19 +194,44 @@ function openDetail(id){
       ${c.company?`<div class="hero-sub">${c.company}</div>`:''}
     </div>
     <div class="action-row">
+      <div class="action-btn" onclick="toggleFavorite(${id})"><div class="ab-circle ${isFav?'fav-btn':''}" style="background:rgba(255,204,2,.15)">${isFav?'★':'☆'}</div><span>Favorite</span></div>
       <div class="action-btn" onclick="window.location.href='call.html'"><div class="ab-circle" style="background:rgba(52,199,89,.15)">📞</div><span>Call</span></div>
       <div class="action-btn" onclick="window.location.href='discord_2.html'"><div class="ab-circle" style="background:rgba(0,122,255,.15)">💬</div><span>Message</span></div>
       <div class="action-btn" onclick="window.location.href='mail.html'"><div class="ab-circle" style="background:rgba(0,122,255,.15)">✉️</div><span>Mail</span></div>
-      <div class="action-btn" onclick="window.location.href='call.html'"><div class="ab-circle" style="background:rgba(52,199,89,.15)">📹</div><span>FaceTime</span></div>
     </div>
     <div class="info-section">
       ${c.phone?`<div class="info-row"><span class="info-icon">📞</span><div><div class="ir-label">mobile</div><div class="ir-val"><a href="tel:${c.phone}">${c.phone}</a></div></div></div>`:''}
+      ${c.phoneWork?`<div class="info-row"><span class="info-icon">📞</span><div><div class="ir-label">work</div><div class="ir-val"><a href="tel:${c.phoneWork}">${c.phoneWork}</a></div></div></div>`:''}
       ${c.email?`<div class="info-row"><span class="info-icon">✉️</span><div><div class="ir-label">home</div><div class="ir-val"><a href="mailto:${c.email}">${c.email}</a></div></div></div>`:''}
+      ${c.address?`<div class="info-row"><span class="info-icon">📍</span><div><div class="ir-label">address</div><div class="ir-val">${c.address}</div></div></div>`:''}
+      ${c.birthday?`<div class="info-row"><span class="info-icon">🎂</span><div><div class="ir-label">birthday</div><div class="ir-val">${c.birthday}</div></div></div>`:''}
       ${c.notes?`<div class="info-row"><span class="info-icon">📝</span><div><div class="ir-label">notes</div><div class="ir-val">${c.notes}</div></div></div>`:''}
     </div>
     <button class="delete-btn" onclick="deleteContact(${id})">Delete Contact</button>
   `;
+  addToRecent(c);
   document.getElementById('detail').classList.add('open');
+}
+
+let recentIds = JSON.parse(localStorage.getItem('recentContacts') || '[]');
+function addToRecent(c) {
+  recentIds = [c.id, ...recentIds.filter(id => id !== c.id)].slice(0, 8);
+  localStorage.setItem('recentContacts', JSON.stringify(recentIds));
+  renderRecent();
+}
+
+function renderRecent() {
+  const rc = document.getElementById('recent-contacts');
+  const recent = recentIds.map(id => contacts.find(c => c.id === id)).filter(Boolean);
+  rc.innerHTML = recent.map(c => `<div class="recent-item" onclick="openDetail(${c.id})">
+    <div class="recent-avatar" style="background:${colorFor(c.first+c.last)}">${initials(c)}</div>
+    <div class="recent-name">${c.first}</div>
+  </div>`).join('');
+}
+
+function toggleFavorite(id) {
+  const c = contacts.find(x => x.id === id);
+  if(c) { c.favorite = !c.favorite; save(); openDetail(id); renderList(); }
 }
 function closeDetail(){document.getElementById('detail').classList.remove('open');}
 function deleteContact(id){
@@ -211,7 +246,10 @@ function openEdit(){
   document.getElementById('f-first').value=c.first;
   document.getElementById('f-last').value=c.last;
   document.getElementById('f-phone').value=c.phone;
+  document.getElementById('f-phone-work').value=c.phoneWork||'';
   document.getElementById('f-email').value=c.email;
+  document.getElementById('f-address').value=c.address||'';
+  document.getElementById('f-birthday').value=c.birthday||'';
   document.getElementById('f-company').value=c.company||'';
   document.getElementById('f-notes').value=c.notes||'';
   document.getElementById('form-sheet').style.display='flex';
@@ -219,7 +257,7 @@ function openEdit(){
 function openAdd(){
   isEditing=false;selectedId=null;
   document.getElementById('form-title').textContent='New Contact';
-  ['first','last','phone','email','company','notes'].forEach(f=>document.getElementById('f-'+f).value='');
+  ['first','last','phone','phone-work','email','address','birthday','company','notes'].forEach(f=>document.getElementById('f-'+f).value='');
   document.getElementById('form-sheet').style.display='flex';
   setTimeout(()=>document.getElementById('f-first').focus(),100);
 }
@@ -228,7 +266,7 @@ function saveContact(){
   const first=document.getElementById('f-first').value.trim();
   const last=document.getElementById('f-last').value.trim();
   if(!first&&!last)return;
-  const data={first:first||'',last:last||'',phone:document.getElementById('f-phone').value.trim(),email:document.getElementById('f-email').value.trim(),company:document.getElementById('f-company').value.trim(),notes:document.getElementById('f-notes').value.trim()};
+  const data={first:first||'',last:last||'',phone:document.getElementById('f-phone').value.trim(),phoneWork:document.getElementById('f-phone-work').value.trim(),email:document.getElementById('f-email').value.trim(),address:document.getElementById('f-address').value.trim(),birthday:document.getElementById('f-birthday').value,company:document.getElementById('f-company').value.trim(),notes:document.getElementById('f-notes').value.trim()};
   if(isEditing){
     const c=contacts.find(x=>x.id===selectedId);
     if(c)Object.assign(c,data);
@@ -239,6 +277,7 @@ function saveContact(){
   }
 }
 renderList();
+renderRecent();
 </script>
 </body>
 </html>

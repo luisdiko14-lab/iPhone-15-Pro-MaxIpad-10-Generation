@@ -5,9 +5,18 @@ class HomeScreen {
     this.setupEventListeners();
     this.startClock();
     this.setupControlCenter();
+    this.setupSpotlight();
+    this.setupAppLibrary();
+    this.setupJiggleMode();
+    this.setupContextMenu();
+    this.updateClockWidget();
     this.recentApps = JSON.parse(localStorage.getItem('recentApps')) || [];
     this.touchStartY = 0;
     this.isAppSwitcherOpen = false;
+    
+    // Page indicators
+    this.currentPage = 0;
+    this.totalPages = 2; // Simulated
   }
 
   initializeElements() {
@@ -16,20 +25,459 @@ class HomeScreen {
     this.appSwitcher = document.getElementById('appSwitcher');
     this.recentAppsContainer = document.getElementById('recentApps');
     this.homeIndicatorArea = document.getElementById('homeIndicatorArea');
+    this.homescreen = document.querySelector('.homescreen');
+    
+    // New elements
+    this.spotlight = document.getElementById('spotlightSearch');
+    this.spotlightInput = document.getElementById('spotlightInput');
+    this.appLibrary = document.getElementById('appLibrary');
+    this.appLibraryBtn = document.getElementById('appLibraryBtn');
+    this.contextMenu = document.getElementById('contextMenu');
   }
 
   setupEventListeners() {
     // Wire up app clicks
     this.wireApps();
 
-    // Add touch feedback to all apps
+    // Add touch feedback and jiggle/context menu triggers
     this.apps.forEach(app => {
-      app.addEventListener('touchstart', this.addTouchFeedback, {passive: true});
-      app.addEventListener('touchend', this.removeTouchFeedback, {passive: true});
+      app.addEventListener('touchstart', (e) => this.handleAppTouchStart(e, app), {passive: true});
+      app.addEventListener('touchend', (e) => this.handleAppTouchEnd(e, app), {passive: true});
+      app.addEventListener('click', (e) => {
+        if (this.isJiggleMode) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+    });
+
+    // Global click to close menus/jiggle
+    document.addEventListener('click', (e) => {
+      if (this.isJiggleMode && !e.target.closest('.app')) {
+        this.exitJiggleMode();
+      }
+      if (this.contextMenu.style.display === 'flex') {
+        this.closeContextMenu();
+      }
     });
 
     // Swipe detection
     this.setupSwipeDetection();
+    
+    // Parallax effect
+    window.addEventListener('scroll', () => {
+        const scroll = window.scrollY;
+        document.body.style.backgroundPosition = `center ${50 + scroll * 0.1}%`;
+    });
+  }
+
+  handleAppTouchStart(e, app) {
+    this.addTouchFeedback(e);
+    
+    // Long press for Jiggle/Context menu
+    this.longPressTimer = setTimeout(() => {
+      if (!this.isJiggleMode) {
+        this.openContextMenu(e, app);
+      }
+    }, 600);
+  }
+
+  handleAppTouchEnd(e, app) {
+    this.removeTouchFeedback(e);
+    clearTimeout(this.longPressTimer);
+  }
+
+  setupSpotlight() {
+    let startY = 0;
+    document.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+    }, {passive: true});
+
+    document.addEventListener('touchmove', (e) => {
+      const currentY = e.touches[0].clientY;
+      if (currentY - startY > 100 && !this.isAppSwitcherOpen && window.scrollY === 0) {
+        this.showSpotlight();
+      }
+    }, {passive: true});
+
+    this.spotlightInput.addEventListener('blur', () => {
+      setTimeout(() => this.hideSpotlight(), 200);
+    });
+  }
+
+  showSpotlight() {
+    this.spotlight.classList.add('active');
+    this.spotlightInput.focus();
+  }
+
+  hideSpotlight() {
+    this.spotlight.classList.remove('active');
+  }
+
+  setupAppLibrary() {
+    if (!this.appLibraryBtn) return;
+    this.appLibraryBtn.addEventListener('click', () => {
+      this.appLibrary.classList.add('active');
+      this.renderAppLibrary();
+    });
+
+    // Close app library by swiping left
+    let startX = 0;
+    this.appLibrary.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+    });
+
+    this.appLibrary.addEventListener('touchend', (e) => {
+      const endX = e.changedTouches[0].clientX;
+      if (endX - startX > 100) {
+        this.appLibrary.classList.remove('active');
+      }
+    });
+  }
+
+  renderAppLibrary() {
+    const libraryGrid = document.getElementById('libraryGrid');
+    if (!libraryGrid) return;
+    libraryGrid.innerHTML = '';
+    
+    // Simple grouping
+    const groups = {
+        'Social': ['messages-app', 'discord-app', 'facetime-app'],
+        'Productivity': ['mail-app', 'notes-app', 'reminders-app', 'calendar-app', 'files-app', 'shortcuts-app'],
+        'Utilities': ['calculator-app', 'clock-app', 'settings-app', 'translate-app', 'voicememos-app', 'vpn-app'],
+        'Information': ['weather-app', 'stocks-app', 'maps-app', 'safari-app'],
+        'Entertainment': ['music-app', 'podcasts-app', 'game-app', 'photos-app', 'camera-app'],
+        'Health & Wallet': ['health-app', 'find-my-app', 'wallet-app', 'applepay-app']
+    };
+
+    Object.entries(groups).forEach(([name, appIds]) => {
+        const category = document.createElement('div');
+        category.className = 'library-category';
+        category.innerHTML = `<div style="grid-column: span 2; font-weight: 600; font-size: 14px; margin-bottom: 5px;">${name}</div>`;
+        
+        appIds.forEach(id => {
+            const original = document.getElementById(id);
+            if (original) {
+                const clone = original.cloneNode(true);
+                clone.removeAttribute('id');
+                clone.style.transform = 'scale(0.8)';
+                category.appendChild(clone);
+                clone.addEventListener('click', () => original.click());
+            }
+        });
+        libraryGrid.appendChild(category);
+    });
+  }
+
+  setupJiggleMode() {
+    this.isJiggleMode = false;
+  }
+
+  enterJiggleMode() {
+    this.isJiggleMode = true;
+    this.apps.forEach(app => {
+      app.classList.add('jiggle');
+      if (!app.querySelector('.delete-btn')) {
+        const del = document.createElement('div');
+        del.className = 'delete-btn';
+        del.textContent = '−';
+        del.onclick = (e) => {
+          e.stopPropagation();
+          app.remove();
+        };
+        app.appendChild(del);
+      }
+    });
+  }
+
+  exitJiggleMode() {
+    this.isJiggleMode = false;
+    this.apps.forEach(app => {
+      app.classList.remove('jiggle');
+      const del = app.querySelector('.delete-btn');
+      if (del) del.remove();
+    });
+  }
+
+  setupContextMenu() {
+    this.cmTarget = null;
+    const openBtn = document.getElementById('cm-open');
+    if (openBtn) {
+        openBtn.onclick = () => {
+            if (this.cmTarget) this.cmTarget.click();
+            this.closeContextMenu();
+        };
+    }
+    const editBtn = document.getElementById('cm-edit');
+    if (editBtn) {
+        editBtn.onclick = () => {
+            this.enterJiggleMode();
+            this.closeContextMenu();
+        };
+    }
+    const deleteBtn = document.getElementById('cm-delete');
+    if (deleteBtn) {
+        deleteBtn.onclick = () => {
+            if (this.cmTarget) this.cmTarget.remove();
+            this.closeContextMenu();
+        };
+    }
+  }
+
+  openContextMenu(e, app) {
+    if (this.isJiggleMode) return;
+    this.cmTarget = app;
+    const touch = e.touches ? e.touches[0] : e;
+    this.contextMenu.style.display = 'flex';
+    this.contextMenu.style.top = `${touch.clientY}px`;
+    this.contextMenu.style.left = `${touch.clientX}px`;
+    
+    // Haptic feedback
+    if (window.navigator.vibrate) window.navigator.vibrate(50);
+  }
+
+  closeContextMenu() {
+    this.contextMenu.style.display = 'none';
+  }
+
+  updateClockWidget() {
+    const update = () => {
+      const now = new Date();
+      const h = now.getHours() % 12;
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+
+      const hDeg = (h * 30) + (m * 0.5);
+      const mDeg = (m * 6);
+      const sDeg = (s * 6);
+
+      const hHand = document.querySelector('.hour-hand');
+      const mHand = document.querySelector('.min-hand');
+      const sHand = document.querySelector('.sec-hand');
+
+      if (hHand) hHand.style.transform = `translateX(-50%) rotate(${hDeg}deg)`;
+      if (mHand) mHand.style.transform = `translateX(-50%) rotate(${mDeg}deg)`;
+      if (sHand) sHand.style.transform = `translateX(-50%) rotate(${sDeg}deg)`;
+    };
+    setInterval(update, 1000);
+    update();
+  }
+
+  setupSpotlight() {
+    let startY = 0;
+    document.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+    }, {passive: true});
+
+    document.addEventListener('touchmove', (e) => {
+      const currentY = e.touches[0].clientY;
+      if (currentY - startY > 100 && !this.isAppSwitcherOpen && window.scrollY === 0) {
+        this.showSpotlight();
+      }
+    }, {passive: true});
+
+    this.spotlightInput.addEventListener('blur', () => {
+      setTimeout(() => this.hideSpotlight(), 200);
+    });
+  }
+
+  showSpotlight() {
+    this.spotlight.classList.add('active');
+    this.spotlightInput.focus();
+  }
+
+  hideSpotlight() {
+    this.spotlight.classList.remove('active');
+  }
+
+  setupAppLibrary() {
+    this.appLibraryBtn.addEventListener('click', () => {
+      this.appLibrary.classList.add('active');
+      this.renderAppLibrary();
+    });
+
+    // Close app library by swiping left
+    let startX = 0;
+    this.appLibrary.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+    });
+
+    this.appLibrary.addEventListener('touchend', (e) => {
+      const endX = e.changedTouches[0].clientX;
+      if (endX - startX > 100) {
+        this.appLibrary.classList.remove('active');
+      }
+    });
+  }
+
+  renderAppLibrary() {
+    const libraryGrid = document.getElementById('libraryGrid');
+    libraryGrid.innerHTML = '';
+    
+    // Simple grouping
+    const groups = {
+        'Social': ['messages-app', 'discord-app', 'facetime-app'],
+        'Productivity': ['mail-app', 'notes-app', 'reminders-app', 'calendar-app', 'files-app', 'shortcuts-app'],
+        'Utilities': ['calculator-app', 'clock-app', 'settings-app', 'translate-app', 'voicememos-app', 'vpn-app'],
+        'Information': ['weather-app', 'stocks-app', 'maps-app', 'safari-app'],
+        'Entertainment': ['music-app', 'podcasts-app', 'game-app', 'photos-app', 'camera-app'],
+        'Health & Wallet': ['health-app', 'find-my-app', 'wallet-app', 'applepay-app']
+    };
+
+    Object.entries(groups).forEach(([name, appIds]) => {
+        const category = document.createElement('div');
+        category.className = 'library-category';
+        category.innerHTML = `<div style="grid-column: span 2; font-weight: 600; font-size: 14px; margin-bottom: 5px;">${name}</div>`;
+        
+        appIds.forEach(id => {
+            const original = document.getElementById(id);
+            if (original) {
+                const clone = original.cloneNode(true);
+                clone.removeAttribute('id');
+                clone.style.transform = 'scale(0.8)';
+                category.appendChild(clone);
+                clone.addEventListener('click', () => original.click());
+            }
+        });
+        libraryGrid.appendChild(category);
+    });
+  }
+
+  setupJiggleMode() {
+    this.isJiggleMode = false;
+  }
+
+  enterJiggleMode() {
+    this.isJiggleMode = true;
+    this.apps.forEach(app => {
+      app.classList.add('jiggle');
+      if (!app.querySelector('.delete-btn')) {
+        const del = document.createElement('div');
+        del.className = 'delete-btn';
+        del.textContent = '−';
+        del.onclick = (e) => {
+          e.stopPropagation();
+          app.remove();
+        };
+        app.appendChild(del);
+      }
+    });
+  }
+
+  exitJiggleMode() {
+    this.isJiggleMode = false;
+    this.apps.forEach(app => {
+      app.classList.remove('jiggle');
+      const del = app.querySelector('.delete-btn');
+      if (del) del.remove();
+    });
+  }
+
+  setupContextMenu() {
+    this.cmTarget = null;
+    document.getElementById('cm-open').onclick = () => {
+      if (this.cmTarget) this.cmTarget.click();
+      this.closeContextMenu();
+    };
+    document.getElementById('cm-edit').onclick = () => {
+      this.enterJiggleMode();
+      this.closeContextMenu();
+    };
+    document.getElementById('cm-delete').onclick = () => {
+      if (this.cmTarget) this.cmTarget.remove();
+      this.closeContextMenu();
+    };
+  }
+
+  openContextMenu(e, app) {
+    if (this.isJiggleMode) return;
+    this.cmTarget = app;
+    const touch = e.touches ? e.touches[0] : e;
+    this.contextMenu.style.display = 'flex';
+    this.contextMenu.style.top = `${touch.clientY}px`;
+    this.contextMenu.style.left = `${touch.clientX}px`;
+    
+    // Haptic feedback
+    if (window.navigator.vibrate) window.navigator.vibrate(50);
+  }
+
+  closeContextMenu() {
+    this.contextMenu.style.display = 'none';
+  }
+
+  updateClockWidget() {
+    const update = () => {
+      const now = new Date();
+      const h = now.getHours() % 12;
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+
+      const hDeg = (h * 30) + (m * 0.5);
+      const mDeg = (m * 6);
+      const sDeg = (s * 6);
+
+      const hHand = document.querySelector('.hour-hand');
+      const mHand = document.querySelector('.min-hand');
+      const sHand = document.querySelector('.sec-hand');
+
+      if (hHand) hHand.style.transform = `translateX(-50%) rotate(${hDeg}deg)`;
+      if (mHand) mHand.style.transform = `translateX(-50%) rotate(${mDeg}deg)`;
+      if (sHand) sHand.style.transform = `translateX(-50%) rotate(${sDeg}deg)`;
+    };
+    setInterval(update, 1000);
+    update();
+  }
+
+  initializeElements() {
+    this.timeElement = document.getElementById("time");
+    this.apps = document.querySelectorAll('.app');
+    this.appSwitcher = document.getElementById('appSwitcher');
+    this.recentAppsContainer = document.getElementById('recentApps');
+    this.homeIndicatorArea = document.getElementById('homeIndicatorArea');
+    this.homescreen = document.querySelector('.homescreen');
+    
+    // New elements
+    this.spotlight = document.getElementById('spotlightSearch');
+    this.spotlightInput = document.getElementById('spotlightInput');
+    this.appLibrary = document.getElementById('appLibrary');
+    this.appLibraryBtn = document.getElementById('appLibraryBtn');
+    this.contextMenu = document.getElementById('contextMenu');
+  }
+
+  setupEventListeners() {
+    // Wire up app clicks
+    this.wireApps();
+
+    // Add touch feedback and jiggle/context menu triggers
+    this.apps.forEach(app => {
+      app.addEventListener('touchstart', (e) => this.handleAppTouchStart(e, app), {passive: true});
+      app.addEventListener('touchend', (e) => this.handleAppTouchEnd(e, app), {passive: true});
+      app.addEventListener('click', (e) => {
+        if (this.isJiggleMode) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+    });
+
+    // Global click to close menus/jiggle
+    document.addEventListener('click', (e) => {
+      if (this.isJiggleMode && !e.target.closest('.app')) {
+        this.exitJiggleMode();
+      }
+      if (this.contextMenu && this.contextMenu.style.display === 'flex') {
+        this.closeContextMenu();
+      }
+    });
+
+    // Swipe detection
+    this.setupSwipeDetection();
+    
+    // Parallax effect
+    window.addEventListener('scroll', () => {
+        const scroll = window.scrollY;
+        document.body.style.backgroundPosition = `center ${50 + scroll * 0.1}%`;
+    });
   }
 
   setupSwipeDetection() {
@@ -156,8 +604,15 @@ class HomeScreen {
     this.setupAppClick('translate-app', `translate.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Translate', '🌐');
     this.setupAppClick('voicememos-app', `voicememos.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Voice Memos', '🎙️');
     this.setupAppClick('files-app', `files.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Files', '📁');
+    this.setupAppClick('stocks-app', `stocks.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Stocks', '📈');
+    this.setupAppClick('podcasts-app', `podcasts.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Podcasts', '🎙️');
+    this.setupAppClick('shortcuts-app', `shortcuts.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Shortcuts', '🔳');
+    this.setupAppClick('notifications-app', `notifications.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Notifications', '🔔');
+    this.setupAppClick('screentime-app', `screentime.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Screen Time', '⏳');
+    this.setupAppClick('emergency-app', `emergency.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Emergency', '🆘');
+    this.setupAppClick('applepay-app', `applepay.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Apple Pay', '💳');
   }
-  
+
   setupAppClick(appId, url, appName, appIcon) {
     const element = document.getElementById(appId);
     if (!element) return;
@@ -239,16 +694,25 @@ class HomeScreen {
   }
 
   addTouchFeedback(event) {
-    event.target.style.transform = 'scale(0.95)';
-    event.target.style.opacity = '0.8';
+    const target = event.currentTarget || event.target.closest('.app');
+    if (target) {
+        target.style.transform = 'scale(0.95)';
+        target.style.opacity = '0.8';
+    }
   }
 
   removeTouchFeedback(event) {
-    event.target.style.transform = 'scale(1)';
-    event.target.style.opacity = '1';
+    const target = event.currentTarget || event.target.closest('.app');
+    if (target) {
+        target.style.transform = 'scale(1)';
+        target.style.opacity = '1';
+    }
   }
 
   startClock() {
+    // Clock widget updates
+    this.updateClockWidget();
+    
     // Time + battery now handled by device-state.js (shared across all pages)
     // This is kept as a no-op fallback in case device-state.js fails to load.
     if (!this.timeElement || window.iOSDevice) return;
