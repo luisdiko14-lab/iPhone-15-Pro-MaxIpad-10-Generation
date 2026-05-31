@@ -3,7 +3,7 @@
 
   const STATE_KEY = 'iosDeviceState';
   const DRAIN_SECONDS_PER_PERCENT = 25;
-  const CHARGE_SECONDS_PER_PERCENT = 1.5;
+  const CHARGE_SECONDS_PER_PERCENT = 0.3;
 
   function defaults() {
     return {
