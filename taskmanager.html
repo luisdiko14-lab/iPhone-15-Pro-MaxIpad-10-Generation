@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Menlo,monospace;min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:30px}
+.status-bar{display:flex;justify-content:space-between;padding:12px 20px 6px;font-size:13px;font-weight:600}
+.header{padding:10px 16px 8px;border-bottom:1px solid #1c1c1e}
+.header h1{font-size:22px;font-weight:700;color:#00ff88}
+.header .subtitle{font-size:11px;color:#8e8e93;margin-top:2px;letter-spacing:.3px}
+
+/* Specs bar */
+.specs-bar{display:flex;gap:8px;padding:10px 12px;background:#0a0a0a;border-bottom:1px solid #1c1c1e;flex-wrap:wrap}
+.spec-chip{background:#1c1c1e;border-radius:8px;padding:5px 10px;font-size:11px;color:#8e8e93;border:1px solid #2c2c2e}
+.spec-chip span{color:#00ff88;font-weight:700}
+
+/* System gauges */
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px;background:#0a0a0a;border-bottom:1px solid #1c1c1e}
+.gauge-card{background:#111;border-radius:12px;padding:10px 12px;border:1px solid #1c1c1e}
+.gauge-label{font-size:11px;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;justify-content:space-between}
+.gauge-label .gauge-val{color:#00ff88;font-weight:700}
+.gauge-bar{height:8px;background:#1c1c1e;border-radius:4px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:4px;transition:width .5s}
+.gauge-fill.ram{background:linear-gradient(90deg,#00ff88,#00d4ff)}
+.gauge-fill.cpu{background:linear-gradient(90deg,#ff9500,#ff3b30)}
+.gauge-fill.gpu{background:linear-gradient(90deg,#af52de,#ff2d55)}
+.gauge-fill.temp{background:linear-gradient(90deg,#30d158,#ff9500)}
+
+/* CPU cores grid */
+.cores-section{padding:10px 12px;border-bottom:1px solid #1c1c1e}
+.cores-title{font-size:12px;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.cores-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}
+.core-bar{height:28px;background:#1c1c1e;border-radius:3px;position:relative;overflow:hidden;cursor:default}
+.core-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(0deg,#ff9500,#ffcc00);border-radius:3px;transition:height .4s}
+.core-label{position:absolute;top:1px;left:0;right:0;text-align:center;font-size:7px;color:#636366}
+
+/* Section headers */
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px;font-size:12px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px}
+.sec-hdr .count{color:#007aff;background:rgba(0,122,255,.15);padding:2px 7px;border-radius:10px;font-size:11px}
+
+/* Process rows */
+.proc-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #0d0d0d;transition:background .15s}
+.proc-row:hover{background:#0d0d0d}
+.proc-row.system-proc{opacity:.75}
+.proc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;position:relative}
+.proc-icon .dmg-badge{position:absolute;bottom:-2px;right:-2px;background:#ff9500;color:#000;font-size:7px;font-weight:700;padding:1px 3px;border-radius:3px;letter-spacing:.3px}
+.proc-info{flex:1;min-width:0}
+.proc-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proc-sub{font-size:11px;color:#8e8e93;margin-top:1px}
+.proc-stats{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.stat-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;white-space:nowrap}
+.stat-badge.ram{background:rgba(0,255,136,.1);color:#00ff88}
+.stat-badge.cpu{background:rgba(255,149,0,.1);color:#ff9500}
+.kill-btn{width:28px;height:28px;border-radius:50%;background:#ff3b30;border:none;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s,background .15s}
+.kill-btn:hover{background:#ff6b6b;transform:scale(1.1)}
+.kill-btn:active{transform:scale(.9)}
+.kill-btn:disabled{background:#2c2c2e;color:#636366;cursor:not-allowed}
+.kill-btn.protected{background:#3a3a3c;color:#ff9500;cursor:not-allowed}
+
+/* RAM meter at top of process list */
+.ram-detail{background:#0a0a0a;margin:0 12px 8px;border-radius:12px;padding:10px 12px;border:1px solid #1c1c1e}
+.ram-seg-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:1px;margin-top:8px}
+.ram-seg{border-radius:2px;transition:flex .5s}
+.ram-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.ram-leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#8e8e93}
+.ram-dot{width:8px;height:8px;border-radius:50%}
+
+/* Bottom action bar */
+.bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#0a0a0a;border-top:1px solid #1c1c1e;padding:10px 14px;display:flex;gap:8px}
+.action-btn{flex:1;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.action-btn:active{opacity:.7}
+.btn-kill-all{background:#ff3b30;color:#fff}
+.btn-launch{background:#007aff;color:#fff}
+.btn-back{background:#2c2c2e;color:#fff}
+</style>
+</head>
+<body>
+<div class="status-bar">
+  <button onclick="history.back()" style="background:none;border:none;color:#00ff88;font-size:15px;cursor:pointer">‹ Back</button>
+  <span id="st">9:41</span>
+  <span id="st-batt">📶 🔋</span>
+</div>
+<div class="header">
+  <h1>⚙️ Task Manager</h1>
+  <div class="subtitle">Snapdragon X Elite · 20 Cores · 12 GB LPDDR5X · iOS 17.4</div>
+</div>
+
+<!-- Specs chips -->
+<div class="specs-bar">
+  <div class="spec-chip">CPU: <span>Snapdragon X Elite</span></div>
+  <div class="spec-chip">Cores: <span>20</span></div>
+  <div class="spec-chip">RAM: <span>12 GB</span></div>
+  <div class="spec-chip">Storage: <span>512 GB NVMe</span></div>
+  <div class="spec-chip">GPU: <span>Adreno 830</span></div>
+  <div class="spec-chip">Clock: <span id="cpu-clock">3.8 GHz</span></div>
+</div>
+
+<!-- Gauges -->
+<div class="gauges">
+  <div class="gauge-card">
+    <div class="gauge-label">RAM <span class="gauge-val" id="ram-val">2.3 / 12 GB</span></div>
+    <div class="gauge-bar"><div class="gauge-fill ram" id="ram-bar" style="width:19%"></div></div>
+  </div>
+  <div class="gauge-card">
+    <div class="gauge-label">CPU <span class="gauge-val" id="cpu-val">12%</span></div>
+    <div class="gauge-bar"><div class="gauge-fill cpu" id="cpu-bar" style="width:12%"></div></div>
+  </div>
+  <div class="gauge-card">
+    <div class="gauge-label">GPU <span class="gauge-val" id="gpu-val">4%</span></div>
+    <div class="gauge-bar"><div class="gauge-fill gpu" id="gpu-bar" style="width:4%"></div></div>
+  </div>
+  <div class="gauge-card">
+    <div class="gauge-label">Temp <span class="gauge-val" id="temp-val">32°C</span></div>
+    <div class="gauge-bar"><div class="gauge-fill temp" id="temp-bar" style="width:20%"></div></div>
+  </div>
+</div>
+
+<!-- 20 CPU cores -->
+<div class="cores-section">
+  <div class="cores-title">CPU Cores (20) — Snapdragon X Elite</div>
+  <div class="cores-grid" id="cores-grid"></div>
+</div>
+
+<!-- RAM usage breakdown -->
+<div class="sec-hdr">RAM Usage <span class="count" id="ram-count">2.3 GB / 12 GB</span></div>
+<div class="ram-detail">
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:#8e8e93;margin-bottom:4px">
+    <span>Used: <b id="ram-used-gb" style="color:#00ff88">2.3 GB</b></span>
+    <span>Free: <b id="ram-free-gb" style="color:#30d158">9.7 GB</b></span>
+    <span>Wired: <b style="color:#ff9500">0.8 GB</b></span>
+  </div>
+  <div class="ram-seg-bar" id="ram-seg-bar"></div>
+  <div class="ram-legend" id="ram-legend"></div>
+</div>
+
+<!-- Background DMG Processes -->
+<div class="sec-hdr">Background System Processes <span class="count" id="dmg-count">3</span></div>
+<div id="dmg-list"></div>
+
+<!-- App Processes -->
+<div class="sec-hdr">Running Apps <span class="count" id="app-count">0</span></div>
+<div id="app-list"></div>
+
+<!-- System Processes -->
+<div class="sec-hdr">System Services</div>
+<div id="sys-list"></div>
+
+<div style="height:70px"></div>
+<div class="bottom-bar">
+  <button class="action-btn btn-back" onclick="history.back()">← Home</button>
+  <button class="action-btn btn-kill-all" onclick="killAllApps()">☠ Kill All Apps</button>
+  <button class="action-btn btn-launch" onclick="window.location.href='homescreen.html'">⊞ Launcher</button>
+</div>
+
+<script>
+function tick(){const d=new Date();document.getElementById('st').textContent=`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`}
+tick();setInterval(tick,1000);
+
+// ─── Data ───────────────────────────────────────────────────────────────────
+const DMG_PROCS = [
+  {id:'iphone-explorer',name:'iPhone Explorer',file:'iPhoneExplorer.dmg',icon:'💿',bg:'linear-gradient(135deg,#007aff,#0051d5)',ram:1.24,cpu:2.1,pid:4,desc:'Apple Mobile File Manager v3.2',protected:true},
+  {id:'system-dmg',name:'iOS System Core',file:'system.dmg',icon:'⚙️',bg:'linear-gradient(135deg,#636366,#3a3a3c)',ram:0.82,cpu:1.4,pid:1,desc:'Core OS Services — cannot terminate',protected:true},
+  {id:'features-dmg',name:'Feature Pack',file:'features.dmg',icon:'✨',bg:'linear-gradient(135deg,#af52de,#5e5ce6)',ram:0.47,cpu:0.8,pid:8,desc:'iOS Extended Feature Runtime v17.4',protected:true},
+];
+
+const SYS_PROCS = [
+  {name:'SpringBoard',icon:'🏠',bg:'#1c1c1e',ram:0.18,cpu:0.4,pid:12,desc:'Home Screen Daemon'},
+  {name:'backboardd',icon:'📋',bg:'#1c1c1e',ram:0.09,cpu:0.2,pid:15,desc:'Background Process Coordinator'},
+  {name:'locationd',icon:'📍',bg:'#1c1c1e',ram:0.06,cpu:0.1,pid:22,desc:'Location Services Daemon'},
+  {name:'bluetoothd',icon:'🔵',bg:'#1c1c1e',ram:0.04,cpu:0.05,pid:31,desc:'Bluetooth Core Daemon'},
+  {name:'powerd',icon:'🔋',bg:'#1c1c1e',ram:0.03,cpu:0.1,pid:5,desc:'Power Management Service'},
+  {name:'kernel_task',icon:'🫀',bg:'#1c1c1e',ram:0.22,cpu:1.1,pid:0,desc:'XNU Kernel — cannot terminate',protected:true},
+];
+
+// App processes (tracked in localStorage)
+function getOpenApps(){
+  try{return JSON.parse(localStorage.getItem('openApps')||'[]');}catch{return[];}
+}
+
+const APP_COLORS = {
+  'Safari':['🌐','linear-gradient(135deg,#007aff,#339cff)'],
+  'Messages':['💬','linear-gradient(135deg,#30d158,#34c759)'],
+  'Clock':['⏰','linear-gradient(135deg,#ff9500,#ff6b00)'],
+  'Calculator':['🧮','linear-gradient(135deg,#1c1c1e,#2c2c2e)'],
+  'Notes':['📝','linear-gradient(135deg,#ffcc02,#ff9500)'],
+  'Calendar':['📅','linear-gradient(135deg,#ff3b30,#ff6961)'],
+  'Reminders':['☑️','linear-gradient(135deg,#ff9500,#ff6b00)'],
+  'Contacts':['👤','linear-gradient(135deg,#8e8e93,#636366)'],
+  'Photos':['🖼️','linear-gradient(135deg,#007aff,#af52de)'],
+  'Maps':['🗺️','linear-gradient(135deg,#30d158,#007aff)'],
+  'Music':['🎵','linear-gradient(135deg,#ff2d55,#ff6b6b)'],
+  'Weather':['🌤️','linear-gradient(135deg,#007aff,#339cff)'],
+  'Health':['❤️','linear-gradient(135deg,#ff2d55,#ff6b6b)'],
+  'Translate':['🌐','linear-gradient(135deg,#007aff,#339cff)'],
+  'Find My':['📍','linear-gradient(135deg,#30d158,#34c759)'],
+  'Discord':['💬','linear-gradient(135deg,#5865F2,#4752C4)'],
+  'Stocks':['📈','linear-gradient(135deg,#30d158,#34c759)'],
+  'Podcasts':['🎧','linear-gradient(135deg,#af52de,#5e5ce6)'],
+  'Shortcuts':['🔳','linear-gradient(135deg,#ff9500,#ff6b00)'],
+  'Voice Memos':['🎙️','linear-gradient(135deg,#ff3b30,#ff6961)'],
+};
+function appMeta(name){return APP_COLORS[name]||['📱','linear-gradient(135deg,#2c2c2e,#3a3a3c)'];}
+
+// ─── Render ──────────────────────────────────────────────────────────────────
+function fmt(gb){return gb<1?(gb*1024).toFixed(0)+' MB':gb.toFixed(2)+' GB';}
+function fmtCpu(v){return v.toFixed(1)+'%';}
+
+function renderDmg(){
+  const list=document.getElementById('dmg-list');
+  document.getElementById('dmg-count').textContent=DMG_PROCS.length;
+  list.innerHTML=DMG_PROCS.map(p=>`
+    <div class="proc-row system-proc" id="row-${p.id}">
+      <div class="proc-icon" style="background:${p.icon.length>2?p.bg:'#1c1c1e'}">
+        ${p.icon}
+        <div class="dmg-badge">DMG</div>
+      </div>
+      <div class="proc-info">
+        <div class="proc-name">${p.name}</div>
+        <div class="proc-sub">PID ${p.pid} · ${p.file}</div>
+        <div class="proc-sub" style="color:#636366;font-size:10px">${p.desc}</div>
+      </div>
+      <div class="proc-stats">
+        <div class="stat-badge ram">${fmt(p.ram)}</div>
+        <div class="stat-badge cpu">${fmtCpu(p.cpu)}</div>
+        <button class="kill-btn protected" disabled title="System process — cannot terminate">🔒</button>
+      </div>
+    </div>`).join('');
+}
+
+let openApps=getOpenApps();
+function renderApps(){
+  const list=document.getElementById('app-list');
+  openApps=getOpenApps();
+  document.getElementById('app-count').textContent=openApps.length;
+  if(!openApps.length){list.innerHTML='<div style="padding:16px 18px;color:#636366;font-size:13px">No user apps running</div>';return;}
+  list.innerHTML=openApps.map((a,i)=>{
+    const [icon,bg]=appMeta(a.name);
+    const ramMB=(a.ram||Math.random()*.4+.05).toFixed(2);
+    const cpuV=(a.cpu||Math.random()*3+.5).toFixed(1);
+    const pid=a.pid||(100+i*7);
+    return`<div class="proc-row" id="app-row-${i}">
+      <div class="proc-icon" style="background:${bg}">${icon}</div>
+      <div class="proc-info">
+        <div class="proc-name">${a.name}</div>
+        <div class="proc-sub">PID ${pid} · ${a.url||a.name.toLowerCase()+'.html'}</div>
+      </div>
+      <div class="proc-stats">
+        <div class="stat-badge ram">${fmt(parseFloat(ramMB))}</div>
+        <div class="stat-badge cpu">${cpuV}%</div>
+        <button class="kill-btn" onclick="killApp(${i})" title="Kill process">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSys(){
+  const list=document.getElementById('sys-list');
+  list.innerHTML=SYS_PROCS.map(p=>`
+    <div class="proc-row system-proc">
+      <div class="proc-icon" style="background:#111;border:1px solid #2c2c2e;font-size:16px">${p.icon}</div>
+      <div class="proc-info">
+        <div class="proc-name" style="font-size:13px;color:#8e8e93">${p.name}</div>
+        <div class="proc-sub">PID ${p.pid} · ${p.desc}</div>
+      </div>
+      <div class="proc-stats">
+        <div class="stat-badge ram">${fmt(p.ram)}</div>
+        <div class="stat-badge cpu">${fmtCpu(p.cpu)}</div>
+        <button class="kill-btn protected" ${p.protected?'disabled':''} title="${p.protected?'System process':'Kill'}" onclick="${p.protected?'':''}">${p.protected?'🔒':'✕'}</button>
+      </div>
+    </div>`).join('');
+}
+
+// ─── RAM Segment Bar ─────────────────────────────────────────────────────────
+const RAM_SEGS=[
+  {label:'System DMGs',color:'#007aff',gb:()=>DMG_PROCS.reduce((s,p)=>s+p.ram,0)},
+  {label:'Running Apps',color:'#30d158',gb:()=>openApps.reduce((s,a)=>s+(a.ram||.15),0)},
+  {label:'System',color:'#ff9500',gb:()=>SYS_PROCS.reduce((s,p)=>s+p.ram,0)+0.8},
+  {label:'Wired',color:'#af52de',gb:()=>0.22},
+  {label:'Free',color:'#2c2c2e',gb:()=>null}, // computed
+];
+function renderRamBar(){
+  const TOTAL=12;
+  const used=RAM_SEGS.slice(0,-1).reduce((s,r)=>s+r.gb(),0);
+  const free=Math.max(0,TOTAL-used);
+  const bar=document.getElementById('ram-seg-bar');
+  const legend=document.getElementById('ram-legend');
+  bar.innerHTML=RAM_SEGS.map((r,i)=>{
+    const gb=i===RAM_SEGS.length-1?free:r.gb();
+    const pct=gb/TOTAL*100;
+    return`<div class="ram-seg" style="flex:${pct};background:${r.color};min-width:2px"></div>`;
+  }).join('');
+  legend.innerHTML=RAM_SEGS.map((r,i)=>{
+    const gb=i===RAM_SEGS.length-1?free:r.gb();
+    return`<div class="ram-leg-item"><div class="ram-dot" style="background:${r.color}"></div>${r.label}: ${fmt(gb)}</div>`;
+  }).join('');
+  const usedGb=fmt(used);
+  const freeGb=fmt(free);
+  document.getElementById('ram-count').textContent=`${usedGb} / ${TOTAL} GB`;
+  document.getElementById('ram-val').textContent=`${usedGb} / ${TOTAL} GB`;
+  document.getElementById('ram-used-gb').textContent=usedGb;
+  document.getElementById('ram-free-gb').textContent=freeGb;
+  const pct=used/TOTAL*100;
+  document.getElementById('ram-bar').style.width=pct+'%';
+}
+
+// ─── CPU Cores ───────────────────────────────────────────────────────────────
+const coreLoads=Array.from({length:20},()=>Math.random()*20+2);
+function renderCores(){
+  const grid=document.getElementById('cores-grid');
+  if(!grid.children.length){
+    grid.innerHTML=coreLoads.map((_,i)=>`
+      <div class="core-bar" title="Core ${i}">
+        <div class="core-label">C${i}</div>
+        <div class="core-fill" id="core-${i}" style="height:${coreLoads[i]}%"></div>
+      </div>`).join('');
+  } else {
+    coreLoads.forEach((_,i)=>{
+      const el=document.getElementById('core-'+i);
+      if(el)el.style.height=coreLoads[i]+'%';
+    });
+  }
+}
+
+// ─── Live update ─────────────────────────────────────────────────────────────
+let cpuTotal=12;
+function updateStats(){
+  // Jitter CPU
+  coreLoads.forEach((v,i)=>{
+    coreLoads[i]=Math.max(1,Math.min(95,v+(Math.random()-0.48)*8));
+  });
+  cpuTotal=coreLoads.reduce((s,v)=>s+v,0)/20;
+  const gpuV=Math.max(2,Math.min(40,parseFloat(document.getElementById('gpu-val').textContent)+( Math.random()-.5)*4));
+  const tempV=Math.max(28,Math.min(55,parseFloat(document.getElementById('temp-val').textContent)+(Math.random()-.5)*1.5));
+  document.getElementById('cpu-val').textContent=cpuTotal.toFixed(1)+'%';
+  document.getElementById('cpu-bar').style.width=cpuTotal+'%';
+  document.getElementById('gpu-val').textContent=gpuV.toFixed(1)+'%';
+  document.getElementById('gpu-bar').style.width=gpuV+'%';
+  document.getElementById('temp-val').textContent=tempV.toFixed(1)+'°C';
+  document.getElementById('temp-bar').style.width=(tempV-20)/50*100+'%';
+  document.getElementById('cpu-clock').textContent=(2.8+cpuTotal/100*1.5).toFixed(1)+' GHz';
+  renderCores();
+  renderApps();
+  renderRamBar();
+}
+
+// ─── Actions ─────────────────────────────────────────────────────────────────
+function killApp(i){
+  const name=openApps[i]?.name;
+  openApps.splice(i,1);
+  localStorage.setItem('openApps',JSON.stringify(openApps));
+  renderApps();renderRamBar();
+  showToast(`✕ Killed: ${name||'App'}`,'#ff3b30');
+}
+function killAllApps(){
+  if(!openApps.length){showToast('No apps running','#636366');return;}
+  const c=openApps.length;
+  openApps=[];
+  localStorage.setItem('openApps',JSON.stringify(openApps));
+  renderApps();renderRamBar();
+  showToast(`☠ Killed ${c} app${c!==1?'s':''}`,  '#ff3b30');
+}
+function showToast(msg,color='#333'){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText=`position:fixed;top:60px;left:50%;transform:translateX(-50%);background:${color};color:#fff;padding:8px 18px;border-radius:20px;z-index:999;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.5)`;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2000);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderDmg();renderCores();renderSys();updateStats();
+setInterval(updateStats,800);
+</script>
+</body>
+</html>

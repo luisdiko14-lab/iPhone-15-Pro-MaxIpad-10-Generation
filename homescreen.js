@@ -604,6 +604,8 @@ class HomeScreen {
     this.setupAppClick('translate-app', `translate.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Translate', '🌐');
     this.setupAppClick('voicememos-app', `voicememos.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Voice Memos', '🎙️');
     this.setupAppClick('files-app', `files.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Files', '📁');
+    this.setupAppClick('taskmanager-app', `taskmanager.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Task Manager', '⚙️');
+    this.setupAppClick('heavyapp-app', `heavyapp.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'HeavyLoad Pro', '🤖');
     this.setupAppClick('stocks-app', `stocks.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Stocks', '📈');
     this.setupAppClick('podcasts-app', `podcasts.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Podcasts', '🎙️');
     this.setupAppClick('shortcuts-app', `shortcuts.html?redirect_from=homescreen&callback=${this.generateCallback()}`, 'Shortcuts', '🔳');
