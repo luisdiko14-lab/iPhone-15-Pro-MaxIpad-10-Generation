@@ -46,7 +46,7 @@ jobs:
         run: |
           git add .
           git commit -m "🤖 Auto-update JavaScript packages. (Robot)"
-
+          git pull origin https://github.com/luisdiko14-lab/iPhone-15-Pro-MaxIpad-10-Generation
       - name: Push Changes
         if: steps.changes.outputs.changed == 'true'
         env:
