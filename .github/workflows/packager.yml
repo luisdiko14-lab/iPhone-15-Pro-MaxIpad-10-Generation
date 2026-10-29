@@ -1,8 +1,9 @@
 name: DependaUpdaterByLuis
 
 on:
-  schedule:
-    - cron: "0 3 * * 1" # Every Monday at 03:00 UTC
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["iphone"]
   workflow_dispatch:
     inputs:
       ncu_target:
