@@ -439,68 +439,49 @@ document.addEventListener('DOMContentLoaded', () => {
     checkUrlParams();
 });
 
-// ── Build the payload that gets saved to storage.json ──
-async function buildSavePayload(includeGeolocation = false) {
-    const allLocalStorage = {};
-    for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k === '__pending_save_payload') continue; // don't include the in-flight payload itself
-        const raw = localStorage.getItem(k);
-        try { allLocalStorage[k] = JSON.parse(raw); } catch { allLocalStorage[k] = raw; }
+// ── Build a small, non-sensitive snapshot of this simulated PC ──
+function getSnapshotClientId() {
+    let clientId = localStorage.getItem('pcSnapshotClientId');
+    if (!/^[a-f0-9]{32}$/.test(clientId || '')) {
+        if (window.crypto && window.crypto.getRandomValues) {
+            clientId = Array.from(window.crypto.getRandomValues(new Uint8Array(16)))
+                .map(byte => byte.toString(16).padStart(2, '0')).join('');
+        } else {
+            clientId = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        }
+        localStorage.setItem('pcSnapshotClientId', clientId);
     }
-    const ud          = allLocalStorage.windowsUserData || null;
-    const vmSpecs     = allLocalStorage.vmSpecs || window._vmSpecs || null;
-    const discordUser = allLocalStorage.discord_user_data || null;
-    const installed   = allLocalStorage.windowsInstalledDate || null;
+    return clientId;
+}
 
-    const browserInfo = {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language,
-        languages: navigator.languages,
-        cookieEnabled: navigator.cookieEnabled,
-        onLine: navigator.onLine,
-        screen: { width: screen.width, height: screen.height, colorDepth: screen.colorDepth, pixelRatio: window.devicePixelRatio },
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        timezoneOffset: new Date().getTimezoneOffset()
+function buildSavePayload() {
+    const specs = window._vmSpecs || {};
+    const safeText = value => value == null ? '' : String(value).trim().slice(0, 100);
+    const safeNumber = value => {
+        const number = Number(value);
+        return Number.isFinite(number) ? Math.max(0, number) : null;
     };
 
-    let browserGeo = { status: 'skipped' };
-    if (includeGeolocation && navigator.geolocation) {
-        browserGeo = await new Promise(resolve => {
-            const timer = setTimeout(() => resolve({ status: 'timeout' }), 4500);
-            navigator.geolocation.getCurrentPosition(
-                pos => { clearTimeout(timer); resolve({ status: 'ok', latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }); },
-                err => { clearTimeout(timer); resolve({ status: 'denied', error: err.message }); },
-                { timeout: 4000, maximumAge: 60000 }
-            );
-        });
-    }
-
     return {
-        username: ud?.username || ud?.name || discordUser?.username || 'unknown',
-        email: ud?.email || discordUser?.email || null,
-        createdAt: installed || ud?.createdAt || null,
-        account: ud,
-        vmPlan: vmSpecs,
-        discord: discordUser,
-        browserGeolocation: browserGeo,
-        browser: browserInfo,
-        settings: {
-            theme: ud?.theme || null,
-            accent: ud?.accent || null,
-            timezone: ud?.timezone || null,
-            cortana: ud?.cortana || null,
-            findDevice: ud?.findDevice || null,
-            privacy: ud ? Object.fromEntries(Object.entries(ud).filter(([k]) => k.startsWith('privacy'))) : null
+        clientId: getSnapshotClientId(),
+        machine: {
+            os: 'Windows 10 simulation',
+            plan: safeText(specs.plan || 'free'),
+            cpu: safeText(specs.cpu),
+            ram: safeText(specs.ram),
+            gpu: safeText(specs.gpu),
+            storage: safeText(specs.storage)
         },
-        allLocalStorage
+        usage: {
+            cpuPercent: safeNumber(cpuUsage),
+            memoryMB: safeNumber(memUsage)
+        }
     };
 }
 
 // ── Save Database: opens save_data.html in a new tab → user confirms → posts → redirects to saved.html ──
 async function saveDatabaseToServer() {
-    const payload = await buildSavePayload(true);
+    const payload = buildSavePayload();
     payload._savedFrom = 'manual';
     try { localStorage.setItem('__pending_save_payload', JSON.stringify(payload)); }
     catch (e) { addNotification('💾','Save Database','Payload too large for storage'); return; }
@@ -512,18 +493,21 @@ async function saveDatabaseToServer() {
     }
 }
 
-// ── AUTO-SAVE every 5 seconds in the background, with bottom status indicator ──
+// ── AUTO-SAVE the same PC snapshot every 39 seconds ──
+const AUTO_SAVE_INTERVAL_MS = 39000;
 window._autoSaveTimer = null;
 window._autoSaveLast = null;
 window._autoSaveCount = 0;
 window._autoSaveEnabled = (localStorage.getItem('autoSaveEnabled') !== 'false'); // on by default
-window._autoSaveInterval = parseInt(localStorage.getItem('autoSaveInterval') || '5000', 10);
+window._autoSaveInterval = AUTO_SAVE_INTERVAL_MS;
+window._autoSaveInFlight = false;
 
 async function autoSaveTick() {
-    if (!window._autoSaveEnabled) return;
+    if (!window._autoSaveEnabled || window._autoSaveInFlight) return;
+    window._autoSaveInFlight = true;
     setAutoSaveStatus('saving');
     try {
-        const payload = await buildSavePayload(false); // skip GPS (no permission popup loop)
+        const payload = buildSavePayload();
         payload._savedFrom = 'auto';
         const r = await fetch('/api/save-storage', {
             method: 'POST',
@@ -535,10 +519,12 @@ async function autoSaveTick() {
         const out = await r.json();
         if (!out.ok) throw new Error(out.error || 'server error');
         window._autoSaveLast = Date.now();
-        window._autoSaveCount = out.recordNumber;
+        window._autoSaveCount = out.deviceCount || 1;
         setAutoSaveStatus('saved');
     } catch (e) {
         setAutoSaveStatus('error', e.message);
+    } finally {
+        window._autoSaveInFlight = false;
     }
 }
 
@@ -553,16 +539,18 @@ function setAutoSaveStatus(state, errorMsg) {
     } else if (state === 'saved') {
         el.style.background = 'rgba(34,197,94,0.16)';
         el.style.color = '#86efac';
-        el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;"></span>Auto-saved · #${cnt}`;
+        el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px;"></span>Auto-saved · ${cnt} PC${cnt === 1 ? '' : 's'}`;
+        el.title = `This PC snapshot updates every ${AUTO_SAVE_INTERVAL_MS / 1000} seconds. Click to turn auto-save off.`;
     } else if (state === 'error') {
         el.style.background = 'rgba(239,68,68,0.18)';
         el.style.color = '#fca5a5';
         el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:6px;"></span>Save failed`;
-        el.title = errorMsg || '';
+        el.title = errorMsg || 'The PC snapshot could not be saved.';
     } else if (state === 'paused') {
         el.style.background = 'rgba(255,255,255,0.06)';
         el.style.color = '#9ca3af';
         el.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:6px;"></span>Auto-save off`;
+        el.title = 'Auto-save is off. Click to save this simulated PC snapshot every 39 seconds.';
     }
 }
 

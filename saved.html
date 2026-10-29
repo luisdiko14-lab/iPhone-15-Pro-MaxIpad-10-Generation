@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Database Saved</title>
+<title>PC Snapshot Saved</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -98,14 +98,12 @@
         <div class="header">
             <div class="check">✓</div>
             <div>
-                <h1>Database saved successfully!</h1>
+                <h1>PC snapshot saved</h1>
                 <div class="sub" id="sub">Loading…</div>
             </div>
         </div>
 
         <div class="grid" id="grid"></div>
-        <div id="mapBox"></div>
-
         <div class="row">
             <button class="ghost" onclick="window.close()">Close tab</button>
             <button class="primary" onclick="window.location.href='/'">Back to desktop</button>
@@ -116,33 +114,25 @@
     const get = (k) => params.get(k) || '';
     const escape = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-    const recordNumber = get('recordNumber');
     const savedAt = get('savedAt');
-    document.getElementById('sub').textContent = recordNumber
-        ? `Record #${recordNumber} • ${new Date(savedAt || Date.now()).toLocaleString()}`
-        : 'No record info found.';
+    const deviceCount = Number(get('deviceCount')) || 1;
+    document.getElementById('sub').textContent =
+        `Updated ${new Date(savedAt || Date.now()).toLocaleString()} • ${deviceCount} saved PC${deviceCount === 1 ? '' : 's'}`;
 
     const tiles = [
-        { label: 'Username',     value: get('username') || '(none)',          full: false },
-        { label: 'VM Plan',      value: (get('vmPlan') || 'none').toUpperCase(), full: false },
-        { label: 'IP Address',   value: get('ip') || '(unknown)',             full: false },
-        { label: 'ISP',          value: get('isp') || '(unknown)',            full: false },
-        { label: 'Location',     value: [get('city'), get('region'), get('country')].filter(Boolean).join(', ') || 'Unknown',  full: true },
-        { label: 'localStorage', value: get('keys') + ' keys',                full: false },
-        { label: 'Payload size', value: ((+get('size') || 0) / 1024).toFixed(1) + ' KB', full: false },
+        { label: 'Operating system', value: get('os') || 'Windows 10 simulation', full: true },
+        { label: 'VM plan', value: (get('plan') || 'free').toUpperCase(), full: false },
+        { label: 'CPU', value: get('cpu') || '(not set)', full: false },
+        { label: 'RAM', value: get('ram') || '(not set)', full: false },
+        { label: 'GPU', value: get('gpu') || '(not set)', full: true },
+        { label: 'Storage', value: get('storage') || '(not set)', full: false },
+        { label: 'Current CPU use', value: get('cpuUsage') ? get('cpuUsage') + '%' : 'Not available', full: false },
+        { label: 'Current memory use', value: get('memoryMB') ? get('memoryMB') + ' MB' : 'Not available', full: false },
     ];
     document.getElementById('grid').innerHTML = tiles.map(t =>
         `<div class="tile ${t.full ? 'full' : ''}"><div class="label">${escape(t.label)}</div><div class="value">${escape(t.value)}</div></div>`
     ).join('');
 
-    // Embed an OpenStreetMap if we have coords
-    const lat = parseFloat(get('lat')), lon = parseFloat(get('lon'));
-    if (!isNaN(lat) && !isNaN(lon)) {
-        const bbox = [lon - 0.05, lat - 0.05, lon + 0.05, lat + 0.05].join(',');
-        document.getElementById('mapBox').innerHTML = `
-            <div class="map"><iframe src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}"></iframe></div>
-        `;
-    }
 </script>
 </body>
 </html>

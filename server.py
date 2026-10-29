@@ -4,7 +4,11 @@ import os
 import secrets
 import urllib.parse
 import base64
+import re
 import json
+import tempfile
+import threading
+from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 from flask_cors import CORS
 
@@ -147,9 +151,132 @@ def index():
 def discord_verification():
     return send_from_directory('.well-known', 'discord', mimetype='text/plain')
 
+@app.route('/storage.json', methods=['GET', 'HEAD'])
+@app.route('/pc_snapshots.json', methods=['GET', 'HEAD'])
+@app.route('/.pc-snapshots-<path:filename>', methods=['GET', 'HEAD'])
+def block_private_snapshot_files(filename=None):
+    return '', 404
+
 @app.route('/<path:path>')
 def serve_static(path):
     return send_from_directory('.', path)
+
+# A single latest snapshot per browser installation. The client sends only
+# simulated PC specs and usage; account data, browser storage, and location
+# are deliberately not accepted or written here.
+_snapshot_lock = threading.Lock()
+_snapshot_path = os.path.join(os.path.dirname(__file__), 'pc_snapshots.json')
+
+
+def _snapshot_text(value, limit=100):
+    if isinstance(value, (str, int, float)) and not isinstance(value, bool):
+        return str(value).strip()[:limit]
+    return ''
+
+
+def _read_snapshot_store():
+    try:
+        with open(_snapshot_path, 'r', encoding='utf-8') as store_file:
+            raw = store_file.read()
+        if not raw.strip():
+            return {'version': 1, 'users': {}}
+        data = json.loads(raw)
+    except FileNotFoundError:
+        return {'version': 1, 'users': {}}
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError('The saved snapshot file could not be read safely.') from exc
+
+    if not isinstance(data, dict) or not isinstance(data.get('users', {}), dict):
+        raise ValueError('The saved snapshot file has an unsupported format.')
+    data.setdefault('version', 1)
+    data.setdefault('users', {})
+    return data
+
+
+@app.route('/api/save-storage', methods=['POST'])
+def save_storage():
+    if request.content_length and request.content_length > 32 * 1024:
+        return jsonify({'ok': False, 'error': 'Snapshot is too large.'}), 413
+
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({'ok': False, 'error': 'A snapshot payload is required.'}), 400
+
+    client_id = payload.get('clientId')
+    if not isinstance(client_id, str) or not re.fullmatch(r'[a-f0-9]{32}', client_id):
+        return jsonify({'ok': False, 'error': 'Invalid PC snapshot identifier.'}), 400
+
+    raw_machine = payload.get('machine')
+    raw_usage = payload.get('usage')
+    if not isinstance(raw_machine, dict) or not isinstance(raw_usage, dict):
+        return jsonify({'ok': False, 'error': 'PC specs and usage are required.'}), 400
+
+    machine = {
+        'os': _snapshot_text(raw_machine.get('os'), 60),
+        'plan': _snapshot_text(raw_machine.get('plan'), 40),
+        'cpu': _snapshot_text(raw_machine.get('cpu')),
+        'ram': _snapshot_text(raw_machine.get('ram')),
+        'gpu': _snapshot_text(raw_machine.get('gpu')),
+        'storage': _snapshot_text(raw_machine.get('storage')),
+    }
+
+    def bounded_number(value, maximum):
+        if isinstance(value, bool):
+            return None
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        if not (number >= 0 and number <= maximum):
+            return None
+        return round(number, 1)
+
+    usage = {
+        'cpuPercent': bounded_number(raw_usage.get('cpuPercent'), 100),
+        'memoryMB': bounded_number(raw_usage.get('memoryMB'), 1_000_000),
+    }
+
+    with _snapshot_lock:
+        try:
+            store = _read_snapshot_store()
+            users = store['users']
+            previous = users.get(client_id)
+            saved_at = datetime.now(timezone.utc).isoformat()
+            users[client_id] = {
+                'clientId': client_id,
+                'machine': machine,
+                'usage': usage,
+                'createdAt': previous.get('createdAt', saved_at) if isinstance(previous, dict) else saved_at,
+                'savedAt': saved_at,
+            }
+
+            directory = os.path.dirname(_snapshot_path)
+            temp_path = None
+            try:
+                with tempfile.NamedTemporaryFile(
+                    mode='w', encoding='utf-8', dir=directory,
+                    prefix='.pc-snapshots-', suffix='.tmp', delete=False
+                ) as temp_file:
+                    temp_path = temp_file.name
+                    json.dump(store, temp_file, indent=2, ensure_ascii=False)
+                    temp_file.write('\n')
+                os.replace(temp_path, _snapshot_path)
+            finally:
+                if temp_path and os.path.exists(temp_path):
+                    os.unlink(temp_path)
+        except (OSError, ValueError) as exc:
+            app.logger.exception('Could not update PC snapshot')
+            return jsonify({'ok': False, 'error': str(exc)}), 500
+
+    return jsonify({
+        'ok': True,
+        'recordNumber': len(users),
+        'deviceCount': len(users),
+        'savedAt': saved_at,
+        'updated': isinstance(previous, dict),
+        'machine': machine,
+        'usage': usage,
+    })
 
 # ============================================================
 # Discord OAuth2 — authorisation code flow with CSRF state
@@ -697,4 +824,4 @@ def siri_status():
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

@@ -181,7 +181,7 @@
                     <div class="icon-img">⚙️</div>
                     <div class="icon-label">Advanced</div>
                 </div>
-                <div class="desktop-icon" ondblclick="saveDatabaseToServer()" title="Save all your data (account, settings, VM plan, IP, location) to storage.json on the server">
+                <div class="desktop-icon" ondblclick="saveDatabaseToServer()" title="Save this simulated PC's specs and current CPU/RAM usage">
                     <div class="icon-img">💾</div>
                     <div class="icon-label">Save Database</div>
                 </div>
@@ -251,7 +251,7 @@
                 <div class="taskbar-center" id="taskbar-apps"></div>
                 <div class="taskbar-right">
                     <div class="system-tray">
-                        <span class="tray-icon" id="autosave-status" onclick="toggleAutoSave()" title="Click to toggle auto-save" style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;background:rgba(255,255,255,0.06);color:#9ca3af;cursor:pointer;user-select:none;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:6px;"></span>Auto-save off</span>
+                        <span class="tray-icon" id="autosave-status" onclick="toggleAutoSave()" title="Click to toggle PC snapshot auto-save (every 39 seconds)" style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;background:rgba(255,255,255,0.06);color:#9ca3af;cursor:pointer;user-select:none;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:6px;"></span>Auto-save starting…</span>
                         <span class="tray-icon plan-badge" id="plan-badge" onclick="openPlanPopup()" title="Active VM plan" style="display:none;font-size:11px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:10px;color:white;background:linear-gradient(135deg,#3ba55d,#22c55e);"></span>
                         <span class="tray-icon" onclick="openApp('taskmgr')">📊</span>
                         <span class="tray-icon" onclick="toggleVolumeMenu()">🔊</span>

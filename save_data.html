@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Save Database — Confirm</title>
+<title>Save PC Snapshot — Confirm</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -89,8 +89,8 @@
 <body>
     <div class="card">
         <div class="icon">💾</div>
-        <h1>New tab opened</h1>
-        <p>Please press <strong>OK</strong> to save your whole data (account, settings, VM plan, IP, location, browser info, full localStorage) to <code style="background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;font-size:12px;">storage.json</code> on the server.</p>
+        <h1>Save PC snapshot</h1>
+        <p>Press <strong>OK</strong> to save this simulated PC’s specs and current CPU/RAM usage. The server keeps one latest snapshot for this browser installation; passwords, account data, browser storage, and location are not included.</p>
         <div class="preview" id="preview">Loading payload preview…</div>
         <div class="row">
             <button class="cancel" onclick="window.close()">Cancel</button>
@@ -114,13 +114,16 @@
     } else {
         // Build a friendly preview
         const lines = [];
-        const add = (k, v) => lines.push(`<span class="k">${k}:</span> ${v}`);
-        add('username', payload.username || '(none)');
-        add('email', payload.email || '(none)');
-        add('VM plan', payload.vmPlan?.plan || '(none)');
-        add('Discord', payload.discord?.username || '(not logged in)');
-        add('localStorage keys', Object.keys(payload.allLocalStorage || {}).length);
-        add('size', (JSON.stringify(payload).length / 1024).toFixed(1) + ' KB');
+        const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const add = (k, v) => lines.push(`<span class="k">${escapeHtml(k)}:</span> ${escapeHtml(v)}`);
+        add('PC type', payload.machine?.os || 'Windows 10 simulation');
+        add('VM plan', payload.machine?.plan || '(none)');
+        add('CPU', payload.machine?.cpu || '(not set)');
+        add('RAM', payload.machine?.ram || '(not set)');
+        add('GPU', payload.machine?.gpu || '(not set)');
+        add('Storage', payload.machine?.storage || '(not set)');
+        add('Current CPU use', payload.usage?.cpuPercent == null ? '(not available)' : `${payload.usage.cpuPercent}%`);
+        add('Current memory use', payload.usage?.memoryMB == null ? '(not available)' : `${payload.usage.memoryMB} MB`);
         previewBox.innerHTML = lines.join('<br>');
     }
 
@@ -129,7 +132,7 @@
         const okBtn = document.getElementById('okBtn');
         okBtn.disabled = true; okBtn.style.opacity = '0.5';
         status.className = 'status loading';
-        status.innerHTML = '<span class="spinner"></span>Saving to storage.json…';
+        status.innerHTML = '<span class="spinner"></span>Saving PC snapshot…';
         try {
             const r = await fetch('/api/save-storage', {
                 method: 'POST',
@@ -145,18 +148,16 @@
             // Build the redirect URL with the saved-data summary
             const summary = {
                 recordNumber: out.recordNumber,
+                deviceCount: out.deviceCount,
                 savedAt: out.savedAt,
-                ip: out.ip,
-                city: out.location?.city || '',
-                region: out.location?.regionName || '',
-                country: out.location?.country || '',
-                isp: out.location?.isp || '',
-                lat: out.location?.lat || '',
-                lon: out.location?.lon || '',
-                username: payload.username || '',
-                vmPlan: payload.vmPlan?.plan || '',
-                keys: Object.keys(payload.allLocalStorage || {}).length,
-                size: JSON.stringify(payload).length
+                plan: payload.machine?.plan || '',
+                os: payload.machine?.os || '',
+                cpu: payload.machine?.cpu || '',
+                ram: payload.machine?.ram || '',
+                gpu: payload.machine?.gpu || '',
+                storage: payload.machine?.storage || '',
+                cpuUsage: payload.usage?.cpuPercent ?? '',
+                memoryMB: payload.usage?.memoryMB ?? ''
             };
             const qs = new URLSearchParams(summary).toString();
             window.location.href = '/saved.html?' + qs;

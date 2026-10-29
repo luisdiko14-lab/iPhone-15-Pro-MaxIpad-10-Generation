@@ -43,6 +43,10 @@ run = "python main.py & npm start & wait"
 build = "pip install . && npm install"
 
 [[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
 localPort = 5000
 externalPort = 80
 
