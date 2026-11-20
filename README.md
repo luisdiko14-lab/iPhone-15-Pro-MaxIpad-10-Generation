@@ -84,3 +84,41 @@ On the simulated iPhone home screen, open the floating **Nexus** control to acce
 15. Haptics & Accessibility: touch feedback, text size, bold text and reduced motion.
 
 These are simulated iOS interactions, not real device services or biometric/security controls. Data is stored locally in the browser.
+
+
+## Nexus iPhone Expansion Pack (+30)
+
+The Nexus panel now includes 30 additional iPhone-focused simulator tools (45 upgrades total):
+
+1. Call Screening — allow, screen and block sample callers with a recent-call log.
+2. Message Effects — compose local previews with iMessage-style bubble effects.
+3. Health Rings — track simulated steps, exercise minutes and stand goals.
+4. Journal — save dated entries with mood labels.
+5. Medication Tracker — keep a local dose checklist and schedule.
+6. Sleep Schedule — configure bedtime, wake-up and wind-down preferences.
+7. HomeKit Home — control mock room accessories and save scenes.
+8. AirPods Lab — explore device profiles, noise control and battery levels.
+9. Camera Studio — tune camera lens, format, exposure and capture settings.
+10. Photo Editor — preview color filters and save an edit preset.
+11. Safari Reader — create a distraction-free reading view with themes.
+12. Mail Rules — build sample inbox rules and categories.
+13. Calendar Planner — schedule local events with dates and times.
+14. Keyboard Lab — configure typing behavior and one-handed mode.
+15. Text Replacements — create and test typing shortcuts.
+16. CarPlay Dashboard — explore a driving-friendly dashboard profile.
+17. Crash Detection Demo — walk through a safety countdown UI.
+18. Location Sharing — manage mock sharing sessions and durations.
+19. Find Devices — view sample devices and trigger a demo sound state.
+20. Screen Distance — explore manual viewing-distance guidance.
+21. App Limits — set daily time budgets for selected apps.
+22. Notification Summary — plan a scheduled notification bundle.
+23. Emergency Contacts — save a local emergency contact list.
+24. Wallet Cards — organize placeholder cards using labels and last four digits only.
+25. iCloud Sync Lab — choose sample sync categories and run a mock sync.
+26. Voice Control — try navigation commands using typed input.
+27. AssistiveTouch — preview a floating accessibility control.
+28. Podcast Queue — build and reorder a podcast episode queue.
+29. Siri Shortcuts — create and run simple local automations.
+30. Game Mode — configure gaming focus and performance preferences.
+
+All added features are browser simulations. They do not connect to Apple services, place calls, read physical device sensors, transmit location, process payments, control smart accessories or provide medical/emergency services. Preferences and demo data are stored in browser localStorage.
