@@ -61,3 +61,26 @@ Preferred communication style: Simple, everyday language.
 
 ## Siri Issue.
 - Siri keeps saying **i dont understand**. why? becuase on **vercel&github pages** siri doesnt work and i didnt add the **api key** here. but.. on the replit version it should be there.
+
+
+## Nexus Upgrade Pack — iOS (15 additions)
+
+On the simulated iPhone home screen, open the floating **Nexus** control to access the new tools.
+
+1. Dynamic Island: demo music and timer live-status pills.
+2. Control Center+: hotspot, AirDrop, rotation lock, low-power and silent toggles.
+3. Lock Screen Studio: wallpaper and clock-style presets.
+4. Focus Profiles: Personal, Work, Sleep and Gaming modes.
+5. Live Activities: configurable countdown timer with island status.
+6. Home Screen Customizer: icon scale, labels, badges and grid layout.
+7. Privacy Dashboard: simulated camera, microphone, photos, location and tracking permissions.
+8. Battery Lab: virtual battery health, charge limit and optimized charging.
+9. StandBy Mode: full-screen bedside clock preview.
+10. Quick Notes: create, tag, save and delete local notes.
+11. Safari Tab Groups: save named website tabs and reopen them.
+12. AirDrop Share: share-sheet demo with clipboard fallback.
+13. Face ID Demo: animated unlock flow without collecting biometric data.
+14. Smart Stack: cycle through weather, calendar, reminders and battery cards.
+15. Haptics & Accessibility: touch feedback, text size, bold text and reduced motion.
+
+These are simulated iOS interactions, not real device services or biometric/security controls. Data is stored locally in the browser.
