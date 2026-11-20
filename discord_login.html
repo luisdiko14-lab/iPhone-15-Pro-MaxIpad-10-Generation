@@ -147,6 +147,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
+    <script src="ios-runtime.js"></script>
 </head>
 <body>
     <div class="login-card">
@@ -190,7 +191,12 @@
             const banner = document.getElementById('statusBanner');
             const signedIn = document.getElementById('signedInBanner');
             const qrImg = document.getElementById('qrImage');
-
+            if (window.IOSRuntime && window.IOSRuntime.isStaticHost) {
+                btn.disabled = true; btn.innerHTML = '⚠ Login Needs Live Server';
+                banner.classList.add('show', 'warn');
+                banner.textContent = 'Discord sign-in needs the live simulator server. GitHub Pages can host the interface, but it cannot run the Discord OAuth backend.';
+                qrImg.alt = 'QR login is unavailable on static hosting'; return;
+            }
             try {
                 const res = await fetch('/api/discord/status', { credentials: 'same-origin' });
                 if (!res.ok) throw new Error('Status check failed');

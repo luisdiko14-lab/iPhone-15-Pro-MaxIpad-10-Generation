@@ -85,6 +85,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 </style>
+    <script src="ios-runtime.js"></script>
 </head>
 <body>
     <div class="card">
@@ -133,6 +134,20 @@
         okBtn.disabled = true; okBtn.style.opacity = '0.5';
         status.className = 'status loading';
         status.innerHTML = '<span class="spinner"></span>Saving PC snapshot…';
+        if (window.IOSRuntime && window.IOSRuntime.isStaticHost) {
+            try {
+                const saved = JSON.parse(localStorage.getItem('iosSavedSnapshots') || '[]');
+                saved.unshift({ payload, savedAt: new Date().toISOString() });
+                localStorage.setItem('iosSavedSnapshots', JSON.stringify(saved.slice(0, 25)));
+                localStorage.removeItem('__pending_save_payload');
+                status.className = 'status success';
+                status.textContent = '✓ Snapshot saved locally on this device. Server sync is unavailable on static hosting.';
+                okBtn.textContent = 'Saved'; return;
+            } catch (error) {
+                status.className = 'status error'; status.textContent = '✗ Local save failed: ' + error.message;
+                okBtn.disabled = false; okBtn.style.opacity = '1'; return;
+            }
+        }
         try {
             const r = await fetch('/api/save-storage', {
                 method: 'POST',
@@ -160,7 +175,7 @@
                 memoryMB: payload.usage?.memoryMB ?? ''
             };
             const qs = new URLSearchParams(summary).toString();
-            window.location.href = '/saved.html?' + qs;
+            window.location.href = 'saved.html?' + qs;
         } catch (e) {
             status.className = 'status error';
             status.textContent = '✗ Save failed: ' + e.message;

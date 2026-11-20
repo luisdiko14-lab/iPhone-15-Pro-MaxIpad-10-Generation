@@ -338,6 +338,7 @@
         }
 
     </style>
+    <script src="ios-runtime.js"></script>
 </head>
 <body>
     <div class="status-bar">
@@ -627,8 +628,7 @@
                 document.getElementById('webview-container').appendChild(ifrm);
             }
             
-            const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-            ifrm.src = proxyUrl;
+            window.IOSRuntime.loadSafariFrame(ifrm, url);
             
             // Update UI
             document.getElementById('start-page').classList.remove('active');
@@ -755,7 +755,7 @@
                 const url = activeTab.history[activeTab.historyIndex];
                 activeTab.url = url;
                 const ifrm = document.querySelector(`.tab-webview[data-tab-id="${activeTabId}"]`);
-                ifrm.src = `/api/proxy?url=${encodeURIComponent(url)}`;
+                window.IOSRuntime.loadSafariFrame(ifrm, url);
                 updateAddressBar(url);
                 updateNavigationButtons();
             }
@@ -768,7 +768,7 @@
                 const url = activeTab.history[activeTab.historyIndex];
                 activeTab.url = url;
                 const ifrm = document.querySelector(`.tab-webview[data-tab-id="${activeTabId}"]`);
-                ifrm.src = `/api/proxy?url=${encodeURIComponent(url)}`;
+                window.IOSRuntime.loadSafariFrame(ifrm, url);
                 updateAddressBar(url);
                 updateNavigationButtons();
             }
@@ -782,7 +782,7 @@
 
         function reloadCurrent() {
             const ifrm = document.querySelector(`.tab-webview[data-tab-id="${activeTabId}"]`);
-            if (ifrm && ifrm.src) ifrm.src = ifrm.src;
+            if (ifrm) window.IOSRuntime.loadSafariFrame(ifrm, tabs.find(t => t.id === activeTabId)?.url || 'https://www.google.com');
         }
 
         // UI Handlers

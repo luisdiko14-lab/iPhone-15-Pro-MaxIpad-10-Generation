@@ -256,21 +256,25 @@ function renderApps(){
   }).join('');
 }
 
+function getKilledSystemProcesses(){try{return JSON.parse(localStorage.getItem('iosKilledSystemProcesses')||'[]');}catch(_){return[];}}
+function killSystemProcess(index){
+ const process=SYS_PROCS[index];if(!process||process.protected||getKilledSystemProcesses().includes(process.name))return;
+ const killed=getKilledSystemProcesses();killed.push(process.name);
+ try{localStorage.setItem('iosKilledSystemProcesses',JSON.stringify(killed));localStorage.setItem('iosSystemCrashProcess',process.name);localStorage.setItem('iosSystemState','stopped');}catch(_){}
+ renderSys();showToast('⚠ '+process.name+' terminated · iOS will stop when you return Home','#ff3b30');
+}
 function renderSys(){
-  const list=document.getElementById('sys-list');
-  list.innerHTML=SYS_PROCS.map(p=>`
-    <div class="proc-row system-proc">
-      <div class="proc-icon" style="background:#111;border:1px solid #2c2c2e;font-size:16px">${p.icon}</div>
-      <div class="proc-info">
-        <div class="proc-name" style="font-size:13px;color:#8e8e93">${p.name}</div>
-        <div class="proc-sub">PID ${p.pid} · ${p.desc}</div>
-      </div>
-      <div class="proc-stats">
-        <div class="stat-badge ram">${fmt(p.ram)}</div>
-        <div class="stat-badge cpu">${fmtCpu(p.cpu)}</div>
-        <button class="kill-btn protected" ${p.protected?'disabled':''} title="${p.protected?'System process':'Kill'}" onclick="${p.protected?'':''}">${p.protected?'🔒':'✕'}</button>
-      </div>
-    </div>`).join('');
+ const list=document.getElementById('sys-list'),killed=getKilledSystemProcesses();
+ list.innerHTML=SYS_PROCS.map((p,i)=>{
+  const stopped=killed.includes(p.name),locked=!!p.protected||stopped,stateLabel=stopped?'STOPPED':(p.protected?'PROTECTED':'RUNNING');
+  return '<div class="proc-row system-proc" style="'+(stopped?'opacity:.45':'')+'">'+
+   '<div class="proc-icon" style="background:#111;border:1px solid #2c2c2e;font-size:16px">'+p.icon+'</div>'+
+   '<div class="proc-info"><div class="proc-name" style="font-size:13px;color:'+(stopped?'#ff3b30':'#8e8e93')+'">'+p.name+'</div>'+
+   '<div class="proc-sub">PID '+p.pid+' · '+(stopped?'Process terminated':p.desc)+'</div>'+
+   '<div class="proc-sub" style="font-size:9px;letter-spacing:.7px;color:'+(stopped?'#ff6961':(p.protected?'#ff9500':'#30d158'))+'">'+stateLabel+'</div></div>'+
+   '<div class="proc-stats"><div class="stat-badge ram">'+fmt(p.ram)+'</div><div class="stat-badge cpu">'+fmtCpu(p.cpu)+'</div>'+
+   '<button class="kill-btn '+(locked?'protected':'')+'" '+(locked?'disabled':'')+' title="'+(p.protected?'Protected system process':(stopped?'Already stopped':'Terminate system process'))+'" onclick="'+(locked?'':'killSystemProcess('+i+')')+'">'+(stopped?'⏹':(p.protected?'🔒':'✕'))+'</button></div></div>';
+ }).join('');
 }
 
 // ─── RAM Segment Bar ─────────────────────────────────────────────────────────

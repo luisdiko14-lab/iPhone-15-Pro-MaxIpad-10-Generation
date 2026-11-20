@@ -399,6 +399,7 @@
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
     </style>
+    <script src="ios-runtime.js"></script>
 </head>
 <body>
     <div id="profile-ui">
@@ -619,7 +620,11 @@
             if (window.location.search.includes('access_token')) {
                 history.replaceState({}, '', window.location.pathname);
             }
-
+            if (window.IOSRuntime && window.IOSRuntime.isStaticHost) {
+                document.getElementById('profile-name').textContent = 'Discord Server Required';
+                document.getElementById('profile-handle').textContent = 'Static preview mode';
+                showToast('Discord profile and chat need the live simulator server.'); return;
+            }
             try {
                 const response = await fetch('/api/me', { credentials: 'same-origin' });
                 if (response.status === 401) {
