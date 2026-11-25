@@ -786,3 +786,26 @@ input, button, textarea {
     -webkit-user-select: text;
     user-select: text;
 }
+
+/* iPhone-sized viewport polish */
+html{min-height:100%;height:100%;overscroll-behavior:none}
+body{width:100%;min-height:100%;min-height:100dvh;height:100dvh;overflow:hidden;position:relative;background-position:center;background-size:cover}
+.status-bar{height:54px;padding:calc(env(safe-area-inset-top) + 7px) 24px 0;position:relative;z-index:5}
+.lock-screen-trigger{position:fixed;top:calc(env(safe-area-inset-top) + 6px);right:18px;z-index:3000;width:28px;height:28px;border:1px solid #ffffff45;border-radius:50%;background:#15152266;color:#fff;font-size:16px;backdrop-filter:blur(12px);cursor:pointer}
+.homescreen{box-sizing:border-box;width:min(100%,430px);max-width:430px;height:calc(100dvh - 122px - env(safe-area-inset-bottom));max-height:calc(100dvh - 122px - env(safe-area-inset-bottom));overflow-y:auto;overflow-x:hidden;scrollbar-width:none;grid-template-columns:repeat(4,minmax(0,1fr));align-content:start;gap:clamp(12px,2.2vh,20px) 8px;margin:4px auto 0;padding:10px 17px 28px}
+.homescreen::-webkit-scrollbar{display:none}
+.widgets-row{gap:10px;margin-bottom:6px}
+.widget{width:100%;height:auto;aspect-ratio:1.08;padding:11px;border-radius:20px}
+.widget-temp{font-size:clamp(30px,8vw,40px)}
+.widget-icon{font-size:28px}
+.clock-face{width:66px;height:66px}
+.clock-widget{gap:5px}
+.app{min-width:0;position:relative}
+.app-icon{width:clamp(48px,13.5vw,58px);height:clamp(48px,13.5vw,58px);border-radius:14px;font-size:25px;margin-bottom:5px}
+.app span{font-size:10px;line-height:1.2;max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dock{bottom:calc(10px + env(safe-area-inset-bottom));width:min(calc(100% - 32px),390px);justify-content:space-around;gap:8px;padding:10px 13px;border-radius:25px;background:rgba(245,245,255,.22);border:1px solid #ffffff38;box-shadow:0 12px 38px #0004}
+.dock .app-icon{width:clamp(48px,13vw,58px);height:clamp(48px,13vw,58px);margin:0;border-radius:14px}
+.dock .app span{display:none}
+.home-indicator-area{height:24px;bottom:0;z-index:2500}
+@media(min-width:600px){body{max-width:430px;height:min(100dvh,932px);min-height:600px;margin:0 auto;border-left:1px solid #ffffff22;border-right:1px solid #ffffff22;box-shadow:0 0 80px #0008}.homescreen{height:calc(100% - 122px);max-height:calc(100% - 122px)}}
+@media(max-height:700px){.homescreen{gap:10px 7px;padding-top:4px}.widget{aspect-ratio:1.25}.app-icon{width:46px;height:46px}.dock .app-icon{width:48px;height:48px}}
