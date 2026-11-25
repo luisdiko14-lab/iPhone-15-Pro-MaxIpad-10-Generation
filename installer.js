@@ -4,6 +4,8 @@ function selectDevice(device) {
     selectedDevice = device;
     document.getElementById('iosCard').classList.toggle('active', device === 'ios');
     document.getElementById('winCard').classList.toggle('active', device === 'windows');
+    document.getElementById('iosCard').setAttribute('aria-pressed', String(device === 'ios'));
+    document.getElementById('winCard').setAttribute('aria-pressed', String(device === 'windows'));
 }
 
 function startInstallation() {
