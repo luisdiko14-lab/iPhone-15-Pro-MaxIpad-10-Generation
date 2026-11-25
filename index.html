@@ -1,48 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VMware Installer</title>
-    <link rel="stylesheet" href="installer.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050507">
+  <title>iPhone Setup</title>
+  <link rel="stylesheet" href="installer.css">
 </head>
 <body>
-    <div class="installer-container">
-        <div class="glass-box">
-            <header>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/VMware_logo_2020.svg" alt="VMware" class="logo">
-                <h1>VMware Fusion Pro</h1>
-                <p>Choose your operating system to install</p>
-            </header>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <div class="status-bar"><span>9:41</span><span class="status-right"><span>●●●</span><span>Wi-Fi</span><span class="battery"><i></i></span></span></div>
+  <div class="dynamic-island" aria-hidden="true"><span></span><i></i></div>
 
-            <div class="device-selection">
-                <div class="device-card active" id="iosCard" onclick="selectDevice('ios')">
-                    <div class="device-icon">📱</div>
-                    <h3>iOS 17</h3>
-                    <p>Replica iPhone Experience</p>
-                    <div class="badge">Recommended</div>
-                </div>
-
-                <div class="device-card" id="winCard" onclick="selectDevice('windows')">
-                    <div class="device-icon">🪟</div>
-                    <h3>Windows 10</h3>
-                    <p>Professional Edition</p>
-                    <div class="badge">Available</div>
-                </div>
-            </div>
-
-            <div class="installer-footer">
-                <button id="installBtn" onclick="startInstallation()">Install Now</button>
-            </div>
-
-            <div id="progressSection" class="hidden">
-                <div class="progress-bar-container">
-                    <div id="progressBar" class="progress-bar"></div>
-                </div>
-                <p id="statusText">Preparing installation...</p>
-            </div>
+  <main class="installer-container">
+    <section class="glass-box">
+      <div class="eyebrow"><span class="eyebrow-dot"></span> DEVICE SETUP</div>
+      <header>
+        <div class="hero-device" aria-hidden="true">
+          <div class="phone-frame"><div class="phone-screen"><div class="screen-glow"></div><div class="screen-time">9:41</div><div class="screen-date">Tuesday, September 9</div><div class="screen-widgets"><span></span><span></span><span></span><span></span></div><div class="screen-dock"><i></i><i></i><i></i><i></i></div></div><div class="phone-island"></div></div>
+          <div class="device-orbit orbit-a"></div><div class="device-orbit orbit-b"></div>
         </div>
-    </div>
-    <script src="installer.js"></script>
+        <p class="kicker">A fresh start.</p>
+        <h1>Make it yours.</h1>
+        <p class="intro">Choose the experience you want to set up. A familiar, beautifully simple setup starts here.</p>
+      </header>
+
+      <div class="section-label"><span>CHOOSE YOUR EXPERIENCE</span><span>01 / 02</span></div>
+      <div class="device-selection">
+        <button type="button" class="device-card active" id="iosCard" onclick="selectDevice('ios')" aria-pressed="true">
+          <div class="card-top"><span class="device-icon">◉</span><span class="choice-check">✓</span></div>
+          <h3>iPhone</h3>
+          <p>iOS 17 · iPhone experience</p>
+          <span class="card-meta">Recommended</span>
+        </button>
+        <button type="button" class="device-card" id="winCard" onclick="selectDevice('windows')" aria-pressed="false">
+          <div class="card-top"><span class="device-icon windows-icon">⊞</span><span class="choice-check">✓</span></div>
+          <h3>Windows</h3>
+          <p>Windows 10 · PC setup</p>
+          <span class="card-meta secondary">Alternative</span>
+        </button>
+      </div>
+
+      <div class="installer-footer">
+        <button id="installBtn" onclick="startInstallation()">Continue <span>→</span></button>
+        <p class="footnote"><span class="lock">⌑</span> Your setup preferences stay on this device.</p>
+      </div>
+
+      <div id="progressSection" class="progress-section hidden" aria-live="polite">
+        <div class="progress-heading"><b>Preparing your experience</b><span class="progress-spark">✦</span></div>
+        <div class="progress-bar-container"><div id="progressBar" class="progress-bar"></div></div>
+        <p id="statusText">Getting things ready...</p>
+      </div>
+    </section>
+    <footer class="page-footer"><span>Designed for a more personal experience</span><span> inspired interface</span></footer>
+  </main>
+  <script src="installer.js"></script>
 </body>
 </html>
