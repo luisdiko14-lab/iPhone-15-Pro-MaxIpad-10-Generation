@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>(function(){try{if(sessionStorage.getItem("iphoneUnlocked")!=="1"){location.replace("Lock%20Screen.html");}}catch(e){location.replace("Lock%20Screen.html");}})();</script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>iOS Home Screen</title>
     <link rel="stylesheet" href="homescreen.css">
     <link rel="stylesheet" href="ios-upgrades.css">
 </head>
 <body>
+    <button class="lock-screen-trigger" type="button" onclick="sessionStorage.removeItem('iphoneUnlocked');location.href='Lock%20Screen.html'" aria-label="Lock iPhone">⌑</button>
     <!-- Status Bar -->
     <div class="status-bar">
         <div class="time" id="time">14:30</div>
