@@ -46,7 +46,7 @@ body:after{background:radial-gradient(ellipse 42% 68% at 93% 95%,#11146e 0%,#242
    <button class="key" data-digit="7">7<small>PQRS</small></button><button class="key" data-digit="8">8<small>TUV</small></button><button class="key" data-digit="9">9<small>WXYZ</small></button>
    <button class="key empty" disabled></button><button class="key" data-digit="0">0</button><button class="key delete" id="deleteKey">Delete</button>
   </div>
-  <div class="auth-actions"><button class="text-button" id="forgotBtn">Forgot Passcode?</button><button class="text-button" id="resetBtn" hidden>Reset demo</button></div>
+  <div class="auth-actions"><button class="text-button" id="forgotBtn">Forgot Passcode?</button><button class="text-button" id="submitBtn">Continue →</button><button class="text-button" id="resetBtn" hidden>Reset demo</button></div>
  </section>
  <div class="bottom-row"><button class="round-action" aria-label="Flashlight">⌁</button><button class="round-action" aria-label="Camera">◎</button></div>
  <div class="swipe-note">Swipe up to unlock</div>
@@ -59,7 +59,7 @@ function tick(){const d=new Date();$('clock').textContent=d.toLocaleTimeString([
 setInterval(tick,1000);tick();
 function updateDots(){[...$('dots').children].forEach((dot,i)=>dot.classList.toggle('filled',i<digits.length));}
 function message(t,error=false){$('authHint').textContent=t;$('authHint').classList.toggle('error',error);}
-function setMode(m){mode=m;digits='';first='';updateDots();$('resetBtn').hidden=m!=='unlock';$('authTitle').textContent=m==='create'?'Create Passcode':m==='confirm'?'Confirm Passcode':'Enter Passcode';message(m==='create'?'Choose a 4–6 digit passcode':m==='confirm'?'Enter it again to confirm':'Use your device passcode to unlock');}
+function setMode(m){mode=m;digits='';if(m!=='confirm')first='';updateDots();$('resetBtn').hidden=m!=='unlock';$('authTitle').textContent=m==='create'?'Create Passcode':m==='confirm'?'Confirm Passcode':'Enter Passcode';message(m==='create'?'Choose a 4–6 digit passcode':m==='confirm'?'Enter it again to confirm':'Use your device passcode to unlock');}
 async function digest(pin,salt){if(!crypto.subtle)throw new Error('Secure browser storage is unavailable. Open this page over HTTPS.');const enc=new TextEncoder();const key=await crypto.subtle.importKey('raw',enc.encode(pin),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:ITERATIONS,hash:'SHA-256'},key,256);return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function submit(){if(busy)return;busy=true;try{
  if(mode==='create'){if(digits.length<4){message('Use at least 4 digits',true);return;}first=digits;setMode('confirm');return;}
@@ -67,9 +67,10 @@ async function submit(){if(busy)return;busy=true;try{
  const saltText=localStorage.getItem(SALT_KEY),expected=localStorage.getItem(HASH_KEY);if(!saltText||!expected){setMode('create');return;}const actual=await digest(digits,saltText);if(actual===expected){message('Unlocked');unlock();}else{digits='';updateDots();message('Incorrect passcode. Try again.',true);$('dots').classList.add('error');setTimeout(()=>$('dots').classList.remove('error'),500);}
  }catch(e){message(e.message||'Could not verify passcode',true);}finally{busy=false;}}
 function unlock(){sessionStorage.setItem(UNLOCK_KEY,'1');location.replace('homescreen.html');}
-function typeDigit(d){if(busy||digits.length>=6)return;digits+=d;updateDots();if(digits.length>=4){clearTimeout(window.__pinTimer);window.__pinTimer=setTimeout(()=>{if(digits.length>=4)submit();},350);}}
+function typeDigit(d){if(busy||digits.length>=6)return;digits+=d;updateDots();if(digits.length===6){clearTimeout(window.__pinTimer);window.__pinTimer=setTimeout(submit,250);}}
 $('keypad').addEventListener('click',e=>{const b=e.target.closest('[data-digit]');if(b)typeDigit(b.dataset.digit);});
 $('deleteKey').addEventListener('click',()=>{if(busy)return;digits=digits.slice(0,-1);updateDots();});
+$('submitBtn').addEventListener('click',submit);
 $('forgotBtn').addEventListener('click',()=>message('This local demo cannot recover a forgotten passcode. Use Reset demo to clear it on this browser.',true));
 $('resetBtn').addEventListener('click',()=>{if(confirm('Reset this local iPhone demo passcode?')){localStorage.removeItem(HASH_KEY);localStorage.removeItem(SALT_KEY);sessionStorage.removeItem(UNLOCK_KEY);setMode('create');}});
 let startY=0;document.addEventListener('touchstart',e=>{startY=e.touches[0].clientY},{passive:true});document.addEventListener('touchend',e=>{if(startY>innerHeight-100&&startY-e.changedTouches[0].clientY>45&&digits.length>=4)submit()},{passive:true});
