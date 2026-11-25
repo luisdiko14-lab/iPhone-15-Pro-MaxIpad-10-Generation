@@ -122,3 +122,15 @@ The Nexus panel now includes 30 additional iPhone-focused simulator tools (45 up
 30. Game Mode — configure gaming focus and performance preferences.
 
 All added features are browser simulations. They do not connect to Apple services, place calls, read physical device sensors, transmit location, process payments, control smart accessories or provide medical/emergency services. Preferences and demo data are stored in browser localStorage.
+
+
+## Nexus Expansion Pack — +4 tools (49 total)
+
+The Nexus panel now adds four more working simulator utilities:
+
+46. **Device Backup** — export and restore safe local simulator data as JSON. Passwords, tokens, authentication/session values, API keys and credentials are excluded.
+47. **Device Diagnostics** — inspect browser API support, online status, touch support and local storage usage.
+48. **Network Lab** — switch between balanced, low-latency, data-saver and offline demo profiles, then run a simulated latency test.
+49. **Wallpaper Studio** — design a two-color gradient wallpaper, preview it and apply it to the current simulator page.
+
+These are browser-level simulations. Network profiles do not alter real connectivity, diagnostics do not inspect physical hardware, and backups remain local unless the user exports a file.
